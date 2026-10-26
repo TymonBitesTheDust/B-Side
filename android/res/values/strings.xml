@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">B-Side</string>
+    <string name="open_with">Play with B-Side</string>
+    <string name="channel_name">Playback</string>
+    <string name="channel_desc">Shows what\'s playing with playback controls</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="next">Next</string>
+    <string name="prev">Previous</string>
+</resources>

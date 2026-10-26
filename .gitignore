@@ -1,0 +1,16 @@
+# Build output
+android/build/
+
+# Signing keys: never commit these. Keep a private backup — updates must use the same key.
+*.jks
+*.keystore
+
+# Local tooling (aapt2, d8, apksigner, android.jar, ecj)
+tools/
+
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+__pycache__/
