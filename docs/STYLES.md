@@ -15,8 +15,7 @@ styles. B-Side applies it to a music player:
 - **One app, many skins.** The style sits on the root element: `<html data-skin="tide" data-theme="dark">`. Base
   components in `web/app.html` read only tokens (`--bg`, `--surface`, `--text`, `--accent`…). Each style lives in its
   own file under `web/skins/`, and every rule in it is scoped to `[data-skin="…"]`. No page is forked per style.
-- **Style-only pieces** (cut-out letters, the star field, the HUD dates, the ribbon, the help line, the "2 of 6"
-  counter) live in `web/skins.js` and render nothing, or are hidden, in other styles.
+- **Style-only pieces** (cut-out letters, the star field, the ribbon, the help line, the "2 of 6" counter) live in `web/skins.js` and render nothing, or are hidden, in other styles.
 - **A tribute, not a copy.** No game logos, art, screenshots, sound files or commercial fonts. Textures are CSS
   gradients or inline SVG (`feTurbulence` for paper, water and brush streaks), sounds are synthesized with the Web Audio
   API, and the fonts are free (SIL Open Font License) and embedded so everything works offline.
@@ -25,6 +24,10 @@ styles. B-Side applies it to a music player:
 - **Respect motion settings.** Every wipe, wiggle and stamp stops with the device's reduced-motion setting. Persona 5,
   which moves the most, also has its own *Animations* setting.
 - **Text must fit.** Big decorative words shrink to fit, and no page scrolls sideways on a phone.
+- **Only what a music player needs.** The guide's corner date widget is left out: the header holds just the page
+  title and its count.
+- **Icons are tributes too.** Checkmate's icons were the starting point, but each B-Side icon is drawn fresh from its
+  game, around something that says music: a record, a cut-out note, headphones, a star badge, a glitching note.
 
 How B-Side maps the guide's pieces onto a music player:
 
@@ -33,7 +36,7 @@ How B-Side maps the guide's pieces onto a music player:
 | Main menu (sidebar) | The library tabs: Tracks, Albums, Artists, Genres, Folders, Playlists |
 | Selected menu item | The open tab, and the song that's playing |
 | Task rows | Song rows, and the rows in sheets and the queue |
-| Page title and HUD widget | The big title at the top of each tab, its count, and a date widget in the corner |
+| Page title | The big title at the top of each tab, and its count |
 | Dialogs, menus, toasts | Dialogs, bottom sheets (menus and settings), toasts |
 | "Task done" moment | Adding a song to your favourites |
 | Page-change motion | Switching tabs or opening an album, artist, folder or playlist |
@@ -64,7 +67,8 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Page change:** the title glitches into place and the dashed rule draws out.
 - **Favourite:** a square locks on (steps in from 1.8× to 0.9×) and *ARCHIVED* appears in a dark band.
 - **Sound:** terminal blips (low-passed square and sine tones).
-- **Icon:** the picked plate, with its square marker and a note, between thin rules on the grid.
+- **Icon:** a record in YoRHa ink, with an offset shadow and a note on its label, inside a dashed orbit and a lock-on
+  reticle with one alert-red square, on the beige grid.
 
 ## Persona 5 (`riot`)
 
@@ -86,12 +90,13 @@ underline; the playing song turns the accent colour. Its icon is a white note on
   size and tilt from a generator seeded by the word, so a word always looks the same. The real text stays for screen
   readers; the letters are `aria-hidden`.
 - **Also:** a canvas star field of pulsing red stars, songs on jagged black plates with white edges, the page on a
-  black panel over a red slab, black menus, white paper dialogs with a black title band, a big tilted date box with
-  the time of day, the count as a big outlined number, and the play button as a white-edged red star.
+  black panel over a red slab, black menus, white paper dialogs with a black title band, the count as a big outlined
+  number, and the play button as a white-edged red star.
 - **Page change:** a red and a black shard sweep across and the screen shakes.
 - **Favourite:** a red slash across the screen and *Stolen!* stamped in cut-out letters.
 - **Sound:** square-wave blips, a whoosh and a kick on page change, a slash and cymbal ping when you like a song.
-- **Icon:** a white-edged red star with a white note, on black.
+- **Icon:** a calling card: a white cut-out **B** (Abril Fatface) and a red cut-out note, tilted against each other on
+  a white-edged black burst, over red rays.
 - **Settings:** *Animations* (Match device, Full or Reduced) and *Show the star field* replace the light/dark choice.
 
 ## Persona 3 Reload (`tide`)
@@ -110,14 +115,14 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Selection:** the tabs are a tilted stack of words, each at its own angle and in one of the three cyans. The open
   tab turns white with a hard dark shadow, grows, and sits on a red triangle cursor with a white copy offset behind.
   The playing song's black bar turns white with the cursor at its tip.
-- **Also:** `feTurbulence` caustics drifting near the surface, slanted light rays, a moon-phase date (mirrored in the
-  southern hemisphere), the count in a white wallet box, and on wide screens the page name huge on a white ribbon
+- **Also:** `feTurbulence` caustics drifting near the surface, slanted light rays, the count in a white wallet box, and on wide screens the page name huge on a white ribbon
   down the left (its size is the window height divided by the word's measured length, so long names fit) and a
   *Command* help line with button prompts, bottom right.
 - **Page change:** three rings ripple out.
 - **Favourite:** glass shards burst out and *FAVOURITE* slides in on a red underline.
 - **Sound:** glassy bells, bubbles and a soft echo.
-- **Icon:** the red and white cursor under a black italic note, on deep water with the white ribbon and the moon.
+- **Icon:** the full moon of the Dark Hour wearing headphones (black cups with cyan pads), glowing under water, with
+  the red and white cursor below.
 
 ## Red Dead Redemption 2 (`frontier`)
 
@@ -135,13 +140,14 @@ chosen. *Journal* is aged paper; *Campfire* is the menu at night.
 - **Selection:** every option sits on its own dark textured box (an SVG mask with ragged edges filled with
   `feTurbulence` streaks). The open tab, the playing song and the item you point at get a rough red brush frame,
   drawn as one 96×96 SVG used as a 9-slice `border-image`.
-- **Also:** titles in a black brush banner over a ruled line with a diamond, a tear-off almanac page for the date, a
-  grey "2 of 6" counter under the tabs, covers as photo prints, black native menus in both variants, paper dialogs
+- **Also:** titles in a black brush banner over a ruled line with a diamond, a grey "2 of 6"
+  counter under the tabs, covers as photo prints, black native menus in both variants, paper dialogs
   with a black banner head, toasts on a dark brush swatch, and a wax-seal play button.
 - **Page change:** an ink brush sweeps across.
 - **Favourite:** a red double-ruled *KEEPER* stamp, with ink spatters.
 - **Sound:** plucked guitar, a register bell, a rubber stamp, rustling paper and spurs.
-- **Icon:** the rough red brush frame round an off-white ink note, on black ink.
+- **Icon:** a brass six-pointed lawman's star with ball tips and a note at its centre, in the rough red brush frame,
+  on black ink.
 
 ## Cyberpunk 2077 (`neon`)
 
@@ -161,18 +167,19 @@ The light variant is the street-poster yellow.
   a faint fill; the open tab and the playing song get the same frame in cyan (black on the yellow page).
 - **Also:** chamfered shapes from `clip-path` tokens, a tiny code label over the title, a hairline with a red segment
   and tick marks under it, bracketed counts `[ 15 ]`, ‹ OFF › / ‹ ON › switches, a seek bar with tick marks and a
-  cyan block, a bracketed date readout, scanlines, and black menus on the yellow page.
+  cyan block, scanlines, and black menus on the yellow page.
 - **Page change:** red, cyan and yellow slices and a flicker; the title glitches into place.
 - **Favourite:** *TRACK SAVED* flickers in on a tag while pixels scatter and a scan sweeps the screen.
 - **Sound:** digital blips, saw zaps through a low-pass, glitch grains and a sub drop.
-- **Icon:** a yellow note splitting into cyan and red, on a black plate with cut corners.
+- **Icon:** a note glitching into cyan and red slices on a black cut-corner plate with a cyan offset, on
+  street-poster yellow with hazard stripes.
 
 ## Adding a style
 
 1. Collect references and write its sheet here first: palette, fonts, the selection treatment, rows, headings,
    panels, page change, the favourite moment, sounds and icon.
 2. Add `web/skins/<id>.css` (every rule scoped to `[data-skin="<id>"]`) and list it in `web/build.py`.
-3. Add it to `SKINS` in `web/app.html`, its sound bank to `SFX_SETS`, its HUD, wipe and favourite word in
+3. Add it to `SKINS` in `web/app.html`, its sound bank to `SFX_SETS`, its wipe and favourite word in
    `web/skins.js`, and its icon in `web/icons.js` (then run `android/gen_icons.py` and add a launcher alias).
 4. Check every page in light and dark at phone and desktop width, contrast on the chosen item, reduced motion, and that
    no page scrolls sideways.

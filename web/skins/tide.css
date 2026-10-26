@@ -3,7 +3,7 @@
    with drifting caustics and slanted light rays, a tilted stack of pale cyan
    command words in extra-bold italic with a red and white triangle cursor
    behind the chosen one, the page name huge on a white ribbon on wide
-   screens, a moon-phase date, white "wallet" boxes, black slanted rows that
+   screens, white "wallet" boxes, black slanted rows that
    turn white when chosen, and a Command help line. Rings ripple out when the
    page changes; glass shards and FAVOURITE when a song is liked.
    "Surface" (light) is bright water, "Depths" (dark) deep water.
@@ -35,7 +35,7 @@
 /* ---------- surface: water, caustics and rays ---------- */
 
 [data-skin="tide"] *, [data-skin="tide"] *::before, [data-skin="tide"] *::after { border-radius: 0 !important; }
-[data-skin="tide"] .play, [data-skin="tide"] .tide-moon *, [data-skin="tide"] .badge { border-radius: 50% !important; }
+[data-skin="tide"] .play, [data-skin="tide"] .badge { border-radius: 50% !important; }
 [data-skin="tide"] .switch, [data-skin="tide"] .switch::after { border-radius: 15px !important; }
 [data-skin="tide"] body { background: var(--o4); }
 [data-skin="tide"] ::selection { background: var(--accent); color: var(--on-accent); }
@@ -62,7 +62,7 @@
 @keyframes tide-drift { to { background-position: 900px 120px; } }
 @keyframes tide-rays { from { opacity: .65; } to { opacity: 1; } }
 
-/* ---------- header: tilted italic title, moon-phase date, wallet box ---------- */
+/* ---------- header: tilted italic title, wallet box ---------- */
 
 [data-skin="tide"] .hero h1 { font-style: italic; font-weight: 800; font-size: clamp(40px, 11.5vw, 58px); line-height: .95; letter-spacing: -.01em; text-transform: uppercase; color: #fff; text-shadow: 0 4px 0 rgba(0, 24, 100, .35); transform: rotate(-4deg); transform-origin: left bottom; }
 [data-skin="tide"] .hero.anim h1 { animation: tide-rise .4s cubic-bezier(.2, .9, .3, 1); }
@@ -70,15 +70,6 @@
 [data-skin="tide"] .hero p { display: inline-flex; align-items: baseline; gap: 8px; margin-top: 18px; padding: 6px 16px 7px 14px; background: #fff; color: var(--ink-dark); box-shadow: inset 0 0 0 2px var(--ink-dark), 5px 5px 0 rgba(3, 12, 50, .35); }
 [data-skin="tide"] .hs-n { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: -.03em; }
 [data-skin="tide"] .hs-l { font-family: var(--display); font-style: italic; font-weight: 600; font-size: 13px; text-transform: lowercase; color: #1d2b55; }
-[data-skin="tide"] .hud { display: flex; align-items: center; gap: 10px; transform: rotate(-3deg); }
-[data-skin="tide"] .tide-moon { filter: drop-shadow(0 0 10px rgba(190, 240, 255, .6)); flex: none; }
-[data-skin="tide"] .moon-dark { fill: rgba(2, 10, 40, .6); }
-[data-skin="tide"] .moon-lit { fill: #effbff; }
-[data-skin="tide"] .moon-rim { fill: none; stroke: rgba(255, 255, 255, .75); stroke-width: 1.2; }
-[data-skin="tide"] .td-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
-[data-skin="tide"] .td-num { display: flex; align-items: center; gap: 7px; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 34px; line-height: .9; letter-spacing: -.03em; color: #fff; -webkit-text-stroke: 1px #06123d; paint-order: stroke fill; text-shadow: 0 3px 0 rgba(0, 24, 100, .4); }
-[data-skin="tide"] .td-num small { font-size: 14px; padding: 4px 7px 3px; letter-spacing: .02em; text-transform: uppercase; background: var(--ink-dark); color: #fff; -webkit-text-stroke: 0; text-shadow: none; transform: skewX(-10deg); }
-[data-skin="tide"] .td-phase { font-family: var(--display); font-style: italic; font-weight: 600; font-size: 12px; color: #fff; margin-top: 5px; padding: 2px 18px 2px 6px; background: linear-gradient(90deg, rgba(5, 8, 22, .55), transparent); }
 [data-skin="tide"] .appbar { background: linear-gradient(180deg, color-mix(in srgb, var(--o2) 70%, var(--o3)), color-mix(in srgb, var(--o2) 45%, var(--o3))); }
 [data-skin="tide"] .ab-title { font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 19px; color: #fff; text-shadow: 0 2px 0 rgba(0, 24, 100, .3); }
 [data-skin="tide"] .appbar .ib { color: #fff; filter: drop-shadow(0 1px 0 rgba(0, 24, 100, .4)); }
@@ -316,10 +307,6 @@
 @keyframes tide-out { to { opacity: 0; transform: translateX(30px) rotate(-6deg); } }
 
 @media (max-width: 420px) {
-  [data-skin="tide"] .td-num { font-size: 25px; }
-  [data-skin="tide"] .td-num small { font-size: 12px; padding: 3px 5px 2px; }
-  [data-skin="tide"] .tide-moon { width: 30px; height: 30px; }
-  [data-skin="tide"] .td-phase { display: none; }
   [data-skin="tide"] .tab { font-size: 19px; padding: 8px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="tide"] .tab.on .hl::before, [data-skin="tide"] .tab.on .hl::after, [data-skin="tide"] .play::after { animation: none; } }

@@ -390,7 +390,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 .hero{position:relative}
 .hero,.view{z-index:1}
 .view{position:relative;overflow-x:clip}
-.deco,.fx,.wipe,.hud,.ribbon,.key-hints,.fr-counter,.hl,.ransom,.done-fx,.starfield{display:none;pointer-events:none}
+.deco,.fx,.wipe,.ribbon,.key-hints,.fr-counter,.hl,.ransom,.done-fx,.starfield{display:none;pointer-events:none}
 .deco{position:fixed;inset:0;z-index:0;overflow:hidden}
 .np-deco{position:absolute}
 .fx{position:fixed;inset:0;z-index:46}
@@ -398,7 +398,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 .wipe i{position:absolute;display:block}
 .starfield{position:fixed;inset:0;width:100%;height:100%;z-index:0}
 .done-fx{position:fixed;inset:0;z-index:96;display:grid;place-items:center;overflow:hidden}
-.hud{position:absolute;z-index:2;right:max(20px,calc((100vw - 1040px) / 2 + 26px));top:calc(var(--sat) + 18px)}
 .hero .hs-n{font-weight:inherit}
 :root[data-skin]:not([data-skin="bside"]) .np-bg{display:none}
 @media (prefers-reduced-motion:reduce){.wipe,.done-fx{display:none!important}.deco::before,.deco::after{animation:none!important}}
@@ -764,6 +763,8 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="riot"] button:focus-visible, [data-skin="riot"] [tabindex]:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
 [data-skin="riot"] .starfield:not([hidden]) { display: block; }
 [data-skin="riot"] .deco { display: block; z-index: 0; background: radial-gradient(120% 90% at 20% 40%, transparent 40%, rgba(15, 0, 3, .55) 100%); }
+/* the shake never widens the page: clipping on both keeps body from handing its overflow to the window */
+:root[data-skin="riot"], [data-skin="riot"] body { overflow-x: clip; }
 [data-skin="riot"] body.shake .view, [data-skin="riot"] body.shake .hero { animation: cc-shake .22s linear; }
 @keyframes cc-shake { 0% { transform: none; } 15% { transform: translate(-12px, 5px); } 30% { transform: translate(9px, -7px); } 45% { transform: translate(-6px, 4px); } 60% { transform: translate(4px, -2px); } 80% { transform: translate(-2px, 1px); } 100% { transform: none; } }
 
@@ -794,7 +795,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 @keyframes cc-hl-c { 0%, 100% { clip-path: polygon(8% 86%, 95% 66%, 102% 4%, 5% 32%); } 25% { clip-path: polygon(6% 92%, 97% 60%, 100% 12%, 7% 26%); } 50% { clip-path: polygon(10% 80%, 93% 72%, 103% 0%, 3% 38%); } 75% { clip-path: polygon(7% 88%, 96% 62%, 101% 8%, 6% 28%); } }
 @keyframes cc-pop { 0% { transform: scale(1); } 55% { transform: scale(1.32); } 100% { transform: scale(1.14); } }
 
-/* ---------- header: the date box, the count, the cut-out title ---------- */
+/* ---------- header: the count, the cut-out title ---------- */
 
 [data-skin="riot"] .hero, [data-skin="riot"] .appbar, [data-skin="riot"] .tabs { color: #fff; }
 [data-skin="riot"] .hero h1 { font-size: clamp(38px, 10.5vw, 58px); font-weight: 400; transform: rotate(-3deg); transform-origin: left center; letter-spacing: 0; }
@@ -804,13 +805,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="riot"] .hero p { display: flex; align-items: center; gap: 10px; margin-top: 12px; transform: rotate(-4deg); transform-origin: left center; }
 [data-skin="riot"] .hs-n { font: 400 44px/.82 "Anton", Impact, sans-serif; color: transparent; -webkit-text-stroke: 2.5px #fff; text-shadow: 5px 5px 0 rgba(0, 0, 0, .6); font-variant-numeric: tabular-nums; }
 [data-skin="riot"] .hs-l { font: 400 18px/1 var(--display); text-transform: uppercase; letter-spacing: .05em; background: #fff; color: #0b0a0a; padding: 4px 8px 3px; transform: skewX(-10deg); }
-[data-skin="riot"] .hud { display: flex; align-items: flex-start; gap: 8px; transform: rotate(-7deg); transform-origin: right top; animation: cc-pop-in .42s cubic-bezier(.2, 1.5, .4, 1) both; }
-@keyframes cc-pop-in { from { transform: rotate(-7deg) scale(1.8); opacity: 0; } }
-[data-skin="riot"] .rd-num { font: 400 52px/.9 "Anton", Impact, sans-serif; color: #fff; -webkit-text-stroke: 1.5px #0b0a0a; paint-order: stroke fill; text-shadow: 4px 4px 0 var(--red), 8px 8px 0 #0b0a0a; }
-[data-skin="riot"] .rd-num i { font-style: normal; color: var(--red); text-shadow: 4px 4px 0 #fff; margin: 0 -.04em; }
-[data-skin="riot"] .rd-side { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 4px; }
-[data-skin="riot"] .rd-day { font: 400 20px/1 "Anton", Impact, sans-serif; letter-spacing: .04em; background: #0b0a0a; color: #fff; padding: 4px 9px 3px; transform: rotate(7deg); box-shadow: 0 0 0 2px #fff; }
-[data-skin="riot"] .rd-tod { font: 700 italic 11.5px/1 var(--font); letter-spacing: .12em; text-transform: uppercase; background: var(--red); color: #fff; padding: 4px 8px; transform: rotate(-3deg) skewX(-10deg); white-space: nowrap; }
 
 [data-skin="riot"] .appbar { background: var(--blood); box-shadow: 0 3px 0 #0b0a0a; }
 [data-skin="riot"] .ab-title { font-weight: 400; font-size: 21px; text-transform: uppercase; letter-spacing: .04em; }
@@ -1023,9 +1017,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="riot"][data-motion="reduced"] *, [data-skin="riot"][data-motion="reduced"] *::before, [data-skin="riot"][data-motion="reduced"] *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 
 @media (max-width: 420px) {
-  [data-skin="riot"] .rd-num { font-size: 40px; }
-  [data-skin="riot"] .rd-day { font-size: 16px; }
-  [data-skin="riot"] .rd-tod { display: none; }
   [data-skin="riot"] .tab { font-size: 19px; padding: 8px 8px; }
   [data-skin="riot"] .hs-n { font-size: 38px; }
 }
@@ -1036,7 +1027,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
    with drifting caustics and slanted light rays, a tilted stack of pale cyan
    command words in extra-bold italic with a red and white triangle cursor
    behind the chosen one, the page name huge on a white ribbon on wide
-   screens, a moon-phase date, white "wallet" boxes, black slanted rows that
+   screens, white "wallet" boxes, black slanted rows that
    turn white when chosen, and a Command help line. Rings ripple out when the
    page changes; glass shards and FAVOURITE when a song is liked.
    "Surface" (light) is bright water, "Depths" (dark) deep water.
@@ -1068,7 +1059,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 /* ---------- surface: water, caustics and rays ---------- */
 
 [data-skin="tide"] *, [data-skin="tide"] *::before, [data-skin="tide"] *::after { border-radius: 0 !important; }
-[data-skin="tide"] .play, [data-skin="tide"] .tide-moon *, [data-skin="tide"] .badge { border-radius: 50% !important; }
+[data-skin="tide"] .play, [data-skin="tide"] .badge { border-radius: 50% !important; }
 [data-skin="tide"] .switch, [data-skin="tide"] .switch::after { border-radius: 15px !important; }
 [data-skin="tide"] body { background: var(--o4); }
 [data-skin="tide"] ::selection { background: var(--accent); color: var(--on-accent); }
@@ -1095,7 +1086,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 @keyframes tide-drift { to { background-position: 900px 120px; } }
 @keyframes tide-rays { from { opacity: .65; } to { opacity: 1; } }
 
-/* ---------- header: tilted italic title, moon-phase date, wallet box ---------- */
+/* ---------- header: tilted italic title, wallet box ---------- */
 
 [data-skin="tide"] .hero h1 { font-style: italic; font-weight: 800; font-size: clamp(40px, 11.5vw, 58px); line-height: .95; letter-spacing: -.01em; text-transform: uppercase; color: #fff; text-shadow: 0 4px 0 rgba(0, 24, 100, .35); transform: rotate(-4deg); transform-origin: left bottom; }
 [data-skin="tide"] .hero.anim h1 { animation: tide-rise .4s cubic-bezier(.2, .9, .3, 1); }
@@ -1103,15 +1094,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="tide"] .hero p { display: inline-flex; align-items: baseline; gap: 8px; margin-top: 18px; padding: 6px 16px 7px 14px; background: #fff; color: var(--ink-dark); box-shadow: inset 0 0 0 2px var(--ink-dark), 5px 5px 0 rgba(3, 12, 50, .35); }
 [data-skin="tide"] .hs-n { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: -.03em; }
 [data-skin="tide"] .hs-l { font-family: var(--display); font-style: italic; font-weight: 600; font-size: 13px; text-transform: lowercase; color: #1d2b55; }
-[data-skin="tide"] .hud { display: flex; align-items: center; gap: 10px; transform: rotate(-3deg); }
-[data-skin="tide"] .tide-moon { filter: drop-shadow(0 0 10px rgba(190, 240, 255, .6)); flex: none; }
-[data-skin="tide"] .moon-dark { fill: rgba(2, 10, 40, .6); }
-[data-skin="tide"] .moon-lit { fill: #effbff; }
-[data-skin="tide"] .moon-rim { fill: none; stroke: rgba(255, 255, 255, .75); stroke-width: 1.2; }
-[data-skin="tide"] .td-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
-[data-skin="tide"] .td-num { display: flex; align-items: center; gap: 7px; font-family: var(--display); font-style: italic; font-weight: 900; font-size: 34px; line-height: .9; letter-spacing: -.03em; color: #fff; -webkit-text-stroke: 1px #06123d; paint-order: stroke fill; text-shadow: 0 3px 0 rgba(0, 24, 100, .4); }
-[data-skin="tide"] .td-num small { font-size: 14px; padding: 4px 7px 3px; letter-spacing: .02em; text-transform: uppercase; background: var(--ink-dark); color: #fff; -webkit-text-stroke: 0; text-shadow: none; transform: skewX(-10deg); }
-[data-skin="tide"] .td-phase { font-family: var(--display); font-style: italic; font-weight: 600; font-size: 12px; color: #fff; margin-top: 5px; padding: 2px 18px 2px 6px; background: linear-gradient(90deg, rgba(5, 8, 22, .55), transparent); }
 [data-skin="tide"] .appbar { background: linear-gradient(180deg, color-mix(in srgb, var(--o2) 70%, var(--o3)), color-mix(in srgb, var(--o2) 45%, var(--o3))); }
 [data-skin="tide"] .ab-title { font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 19px; color: #fff; text-shadow: 0 2px 0 rgba(0, 24, 100, .3); }
 [data-skin="tide"] .appbar .ib { color: #fff; filter: drop-shadow(0 1px 0 rgba(0, 24, 100, .4)); }
@@ -1349,10 +1331,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 @keyframes tide-out { to { opacity: 0; transform: translateX(30px) rotate(-6deg); } }
 
 @media (max-width: 420px) {
-  [data-skin="tide"] .td-num { font-size: 25px; }
-  [data-skin="tide"] .td-num small { font-size: 12px; padding: 3px 5px 2px; }
-  [data-skin="tide"] .tide-moon { width: 30px; height: 30px; }
-  [data-skin="tide"] .td-phase { display: none; }
   [data-skin="tide"] .tab { font-size: 19px; padding: 8px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="tide"] .tab.on .hl::before, [data-skin="tide"] .tab.on .hl::after, [data-skin="tide"] .play::after { animation: none; } }
@@ -1361,8 +1339,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
    Red Dead Redemption 2 (id "frontier"): the game's native menus. Every option
    sits on its own dark textured box; whatever is chosen gets the rough red
    brush frame. Titles sit in a black brush banner over a ruled line with a
-   diamond, a tear-off almanac page shows the date, and the tabs end with a
-   grey "2 of 6" counter. Menus are black ink-roller panels in both variants.
+   diamond, and the tabs end with a grey "2 of 6" counter. Menus are black ink-roller panels in both variants.
    "Journal" (light) lays the pages on aged paper; "Campfire" (dark) is the
    menu at night, over a far ridge and the glow of a fire. An ink brush sweeps
    across when the page changes; KEEPER is stamped when a song is liked.
@@ -1435,7 +1412,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="frontier"][data-theme="dark"] .fx { mix-blend-mode: normal; background: radial-gradient(ellipse 120% 90% at 55% 40%, transparent 50%, var(--vignette)); }
 [data-skin="frontier"][data-theme="dark"] .deco { display: block; background: var(--fr-ridge) center bottom / 100% 150px no-repeat, radial-gradient(ellipse 70% 36% at 50% 104%, rgba(226, 112, 38, .26), transparent 70%), radial-gradient(ellipse 34% 18% at 50% 102%, rgba(255, 170, 70, .16), transparent 70%); }
 
-/* ---------- header: the brush banner, the almanac page ---------- */
+/* ---------- header: the brush banner ---------- */
 
 [data-skin="frontier"] .hero .wrap { padding-bottom: 42px; }
 [data-skin="frontier"] .hero .wrap::after { content: ""; position: absolute; left: 30px; bottom: 16px; width: 240px; height: 14px; background: var(--line-strong); -webkit-mask: var(--rule-mask) left center / 240px 14px no-repeat; mask: var(--rule-mask) left center / 240px 14px no-repeat; }
@@ -1446,10 +1423,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="frontier"] .hero .wrap { display: flex; flex-direction: column; position: relative; }
 [data-skin="frontier"] .hero p { font-style: italic; font-size: 15.5px; color: var(--text-2); margin-top: 12px; }
 [data-skin="frontier"] .hs-n { font-style: normal; font-variant: small-caps; font-weight: 700; color: var(--accent); }
-[data-skin="frontier"] .hud { display: flex; flex-direction: column; align-items: center; width: 86px; padding-bottom: 10px; background: #f0e3c4; color: #2a1c10; transform: rotate(3deg); box-shadow: 0 6px 14px rgba(20, 10, 2, .35), 0 0 0 1px rgba(84, 58, 30, .25); clip-path: polygon(0 0, 100% 0, 100% 92%, 93% 100%, 85% 93%, 76% 100%, 67% 94%, 58% 100%, 49% 93%, 40% 100%, 31% 94%, 22% 100%, 13% 93%, 6% 100%, 0 94%); }
-[data-skin="frontier"] .fr-month { align-self: stretch; text-align: center; background: #a8120c; color: #f7ecd4; font-variant: small-caps; font-weight: 700; letter-spacing: .08em; font-size: 13px; line-height: 1; padding: 6px 4px 5px; }
-[data-skin="frontier"] .fr-day { font-family: var(--display); font-size: 42px; line-height: 1; margin-top: 6px; }
-[data-skin="frontier"] .fr-wd { font-style: italic; font-size: 12.5px; color: #4a3725; }
 [data-skin="frontier"] .appbar { background: color-mix(in srgb, var(--bg) 92%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 [data-skin="frontier"][data-theme="dark"] .appbar { background: rgba(11, 9, 8, .86); }
 [data-skin="frontier"] .ab-title { font-weight: 400; font-size: 18px; letter-spacing: .02em; }
@@ -1635,9 +1608,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 @keyframes fr-fade { to { opacity: 0; } }
 
 @media (max-width: 420px) {
-  [data-skin="frontier"] .hud { width: 70px; }
-  [data-skin="frontier"] .fr-day { font-size: 32px; }
-  [data-skin="frontier"] .fr-month { font-size: 11px; }
   [data-skin="frontier"] .tab { padding: 9px 12px 10px; font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="frontier"] .tab.on::after { animation: none; } }
@@ -1705,7 +1675,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 /* the street poster: a halftone fading out of the top corner */
 [data-skin="neon"]:not([data-theme="dark"]) .deco { display: block; background: radial-gradient(circle, rgba(0, 0, 0, .16) 1.2px, transparent 1.7px) 0 0 / 9px 9px; -webkit-mask-image: radial-gradient(ellipse 70% 50% at 100% 0%, #000 0%, transparent 72%); mask-image: radial-gradient(ellipse 70% 50% at 100% 0%, #000 0%, transparent 72%); }
 
-/* ---------- header: code label, glitching title, tick rule, date readout ---------- */
+/* ---------- header: code label, glitching title, tick rule ---------- */
 
 [data-skin="neon"] .hero .wrap { position: relative; padding-bottom: 34px; }
 [data-skin="neon"] .hero .wrap::before { content: "■ SYS.VIEW // B-SIDE.NET"; display: block; margin-bottom: 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .26em; color: var(--code); }
@@ -1727,11 +1697,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 [data-skin="neon"] .hs-n::before { content: "[ "; color: var(--text-3); }
 [data-skin="neon"] .hs-n::after { content: " ]"; color: var(--text-3); }
 [data-skin="neon"][data-theme="dark"] .hs-n { color: var(--yl); }
-[data-skin="neon"] .hud { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; align-items: end; column-gap: 8px; padding: 8px 12px 6px; background: linear-gradient(var(--hot) 0 0) left top / 12px 2px no-repeat, linear-gradient(var(--hot) 0 0) left top / 2px 12px no-repeat, linear-gradient(var(--hot) 0 0) right bottom / 12px 2px no-repeat, linear-gradient(var(--hot) 0 0) right bottom / 2px 12px no-repeat; }
-[data-skin="neon"] .nn-wd { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 13px; letter-spacing: .16em; color: var(--hot); }
-[data-skin="neon"] .nn-yr { grid-column: 1; grid-row: 2; font-weight: 600; font-size: 12px; letter-spacing: .12em; color: var(--text-3); }
-[data-skin="neon"] .nn-num { grid-column: 2; grid-row: 1 / 3; font-weight: 700; font-size: 36px; line-height: .9; letter-spacing: .02em; color: var(--text); font-variant-numeric: tabular-nums; }
-[data-skin="neon"][data-theme="dark"] .nn-num { color: var(--yl); text-shadow: 0 0 14px rgba(252, 238, 10, .3); }
 [data-skin="neon"] .appbar { background: color-mix(in srgb, var(--bg) 94%, transparent); box-shadow: 0 1px 0 var(--line); }
 [data-skin="neon"] .ab-title { text-transform: uppercase; letter-spacing: .14em; font-weight: 700; font-size: 15px; color: var(--title); }
 [data-skin="neon"] .appbar .ib { color: var(--text-2); }
@@ -1936,7 +1901,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 @keyframes nn-out { to { opacity: 0; } }
 
 @media (max-width: 420px) {
-  [data-skin="neon"] .nn-num { font-size: 28px; }
   [data-skin="neon"] .hero .wrap::before { font-size: 9.5px; letter-spacing: .2em; }
   [data-skin="neon"] .tab { font-size: 14px; padding: 9px 11px 8px 13px; }
 }
@@ -1996,7 +1960,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 <div class="fx" aria-hidden="true"></div>
 <div class="ribbon" id="ribbon" aria-hidden="true"></div>
 <div class="key-hints" id="keyHints" aria-hidden="true"></div>
-<div id="hero" class="hero"><div class="hud" id="hud" aria-hidden="true"></div><div class="wrap"><h1 id="heroTitle">Tracks</h1><p id="heroSub">&nbsp;</p></div></div>
+<div id="hero" class="hero"><div class="wrap"><h1 id="heroTitle">Tracks</h1><p id="heroSub">&nbsp;</p></div></div>
 <header id="appbar" class="appbar">
   <div class="wrap ab-in">
     <button class="ib" id="abBack" aria-label="Back"><svg class="ico"><use href="#i-back"/></svg></button>
@@ -2163,17 +2127,13 @@ function iconGradient(hex) {
 }
 
 let iconSeq = 0;
-/* Game-style icons follow the theme guide, drawn on a 64-unit grid with B-Side's note as the mark:
-   NieR: Automata, the picked menu plate with its square marker between thin rules, on the grid;
-   Persona 5, a white-edged red star with a white note, on black; Persona 3, deep water with the
-   white ribbon, the red and white cursor under a black italic note, and the moon; Red Dead
-   Redemption 2, the rough red brush frame round an off-white ink note, on black ink; Cyberpunk 2077,
-   a yellow note splitting into cyan and red, on a black plate with cut corners. */
-function icBurst(cx, cy, outer, inner, points, rot) {
-  const pts = [];
-  for (let i = 0; i < points * 2; i++) { const r = i % 2 ? inner : outer, a = Math.PI * i / points - Math.PI / 2 + (rot || 0) * Math.PI / 180; pts.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1)); }
-  return pts.join(' ');
-}
+/* Game-style icons: a tribute to each game, drawn on a 64-unit grid, with Checkmate's icons as a starting point only.
+   NieR: Automata, a record in YoRHa ink under a lock-on reticle, on the beige grid;
+   Persona 5, the B and a note cut out like a calling card's ransom letters, on a black burst over red rays;
+   Persona 3 Reload, the full moon of the Dark Hour wearing headphones, under water, with the red cursor;
+   Red Dead Redemption 2, a brass lawman's star in the rough red brush frame, on black ink;
+   Cyberpunk 2077, a note glitching into cyan and red on a cut-corner black plate, on street-poster yellow.
+   Each returns its full-icon outline (shape), the background (bg) and the foreground (fg). */
 function icRng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
 function icRough(x, y, w, h, amp, seed, step) {
   step = step || 3; const r = icRng(seed), j = () => (r() * 2 - 1) * amp, pts = [];
@@ -2188,38 +2148,93 @@ function icNote(cx, cy, k, c, extra, edge) {
   const body = (col, sw, r) => `<path d="M9 17.5V6.2l10-2.2v11.3" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="17.5" r="${r}" fill="${col}"/><circle cx="16.5" cy="15.3" r="${r}" fill="${col}"/>`;
   return `<g transform="translate(${cx} ${cy}) ${extra || ''} scale(${k}) translate(-11.5 -11.6)">${edge ? body(edge, 2.3 + 2.6, 2.9 + 1.3) : ''}${body(c, 2.3, 2.9)}</g>`;
 }
+/* "B" from Abril Fatface (SIL Open Font License), 100 units to the em, baseline at y 0 */
+const IC_B = 'M2.1 -70H32Q45.9 -70 52.8 -66.2Q59.8 -62.5 59.8 -53.6Q59.8 -39.9 43.3 -37.2V-37Q63.3 -34.5 63.3 -19.6Q63.3 -8.7 55.1 -4.3Q46.9 0 31.5 0H2.1V-1.9H8.6V-68.1H2.1ZM28.1 -35.4V-1.9H32.8Q38.3 -1.9 40.5 -5.7Q42.7 -9.5 42.7 -16.9V-22.2Q42.7 -28.8 40 -32.1Q37.3 -35.4 30.4 -35.4ZM28.1 -68.1V-37.3H30.7Q35.9 -37.3 37.9 -40.4Q40 -43.6 40 -50.1V-54.8Q40 -62.2 38.2 -65.1Q36.4 -68.1 31.3 -68.1Z';
+function icPts(a) { return a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '); }
+function icJagged(cx, cy, n, rIn, rOut, seed, rot) {
+  const r = icRng(seed), pts = [];
+  for (let i = 0; i < n * 2; i++) {
+    const a = (i + (r() - .5) * .55) / (n * 2) * Math.PI * 2 + (rot || 0);
+    const rad = i % 2 ? rIn * (.85 + r() * .3) : rOut * (.82 + r() * .3);
+    pts.push([cx + rad * Math.cos(a), cy + rad * Math.sin(a)]);
+  }
+  return icPts(pts);
+}
+function icStar(cx, cy, n, ro, ri, rot) { const p = []; for (let i = 0; i < n * 2; i++) { const r = i % 2 ? ri : ro, a = Math.PI * i / n - Math.PI / 2 + (rot || 0); p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return icPts(p); }
+/* the background layer is drawn past the 64-unit grid, out to the edge of Android's 108 dp canvas */
+const EXT = '<rect x="-20" y="-20" width="104" height="104"';
 function gameIcon(kind, u) {
   switch (kind) {
-    case 'archive': return {
-      bg: shape => `<rect width="64" height="64" rx="${shape === 'rounded' ? 6 : 0}" fill="#d1cdb7"/><path d="${Array.from({length: 15}, (_, i) => `M${4 + i * 4} 0V64M0 ${4 + i * 4}H64`).join('')}" stroke="#c4bfa6" stroke-width=".4"/>`,
-      fg: '<rect x="9" y="12.6" width="36" height="1.2" fill="#57544a"/><rect x="49" y="11.5" width="3.4" height="3.4" fill="#57544a"/>' +
-        '<rect x="9" y="18" width="46" height="1.6" fill="#57544a"/><rect x="9" y="44.4" width="46" height="1.6" fill="#57544a"/>' +
-        '<rect x="9" y="22.5" width="46" height="19" fill="#57544a"/><rect x="5" y="25.5" width="2.2" height="13" fill="#57544a"/>' +
-        '<rect x="14" y="27.5" width="9" height="9" fill="#dad4bb"/>' + icNote(39.5, 32, .78, '#dad4bb'),
-    };
-    case 'riot': return {
-      bg: shape => `<rect width="64" height="64" rx="${shape === 'rounded' ? 6 : 0}" fill="#0b0a0a"/>`,
-      fg: `<polygon points="${icBurst(32, 34, 29, 13.6, 5, -6)}" fill="#ffffff"/><polygon points="${icBurst(32, 34, 25, 11.6, 5, -6)}" fill="#e5191c"/>` + icNote(31.5, 33.5, 1.22, '#ffffff', 'rotate(-8)', '#0b0a0a'),
-    };
-    case 'tide': return {
-      bg: shape => `<defs><linearGradient id="${u}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ff0ff"/><stop offset=".32" stop-color="#1a8ff0"/><stop offset=".72" stop-color="#1438c4"/><stop offset="1" stop-color="#0b1c82"/></linearGradient><clipPath id="${u}c"><rect width="64" height="64" rx="${shape === 'rounded' ? 14 : 0}"/></clipPath></defs>` +
-        `<g clip-path="url(#${u}c)"><rect width="64" height="64" fill="url(#${u}g)"/><path d="M0 6c6-3 10 2 16 0s9-4 15-1 10 2 15 0 12-2 18 1v5c-6-2-11 1-17 0s-9-3-15-1-10 3-16 1-10-2-16 1z" fill="#ffffff" opacity=".22"/>` +
-        `<g${shape === 'rounded' ? '' : ' transform="translate(11 0)"'}><path d="M-2 0h11L1 64h-5z" fill="#ffffff"/><path d="M11 0h2.2L5.2 64H3z" fill="#ff1f3d"/></g></g>`,
-      fg: '<path d="M49.5 6.5a6 6 0 1 0 6 6a4.8 4.8 0 0 1-6-6z" fill="#effbff"/>' +
-        '<polygon points="8,50 60,26 49,41" fill="#ffffff" transform="translate(2.5 -2.5) rotate(-3 34 38)"/><polygon points="8,50 60,26 49,41" fill="#ff1f3d"/>' +
-        icNote(34, 30, 1.2, '#050816', 'skewX(-14)'),
-    };
-    case 'frontier': return {
-      bg: shape => { const r = icRng(11), streaks = Array.from({length: 14}, (_, i) => `<rect x="${(r() * 10).toFixed(1)}" y="${(2 + i * 4.4 + r() * 1.5).toFixed(1)}" width="${(30 + r() * 34).toFixed(1)}" height="${(.5 + r() * 1.2).toFixed(1)}" opacity="${(.04 + r() * .07).toFixed(2)}"/>`).join(''); return `<clipPath id="${u}c"><rect width="64" height="64" rx="${shape === 'rounded' ? 10 : 0}"/></clipPath><g clip-path="url(#${u}c)"><rect width="64" height="64" fill="#0d0b09"/><g fill="#ffffff">${streaks}</g></g>`; },
-      fg: `<path d="${icRough(9, 13, 46, 38, 1.4, 5)}${icRough(14.5, 18.5, 35, 27, 1.2, 9)}" fill="#cc0000" fill-rule="evenodd"/>` +
-        '<path d="M10 16.2h18M33 15.4h20M12 48.6h25M40 47.8h13M11.2 30v6M52.6 27v9" stroke="#0d0b09" stroke-width=".7" opacity=".8"/>' +
-        icNote(32, 32, 1.02, '#f2ead8', 'rotate(-4)') + '<path d="M26 24.5l9-2" stroke="#0d0b09" stroke-width=".5" opacity=".35"/>',
-    };
-    case 'neon': return {
-      bg: shape => shape === 'rounded' ? '<path d="M0 0H50L64 14V64H14L0 50Z" fill="#07080e"/>' : '<rect width="64" height="64" fill="#07080e"/>',
-      fg: icNote(29.5, 32, 1.3, '#00f0ff') + icNote(34.5, 32, 1.3, '#ff2a4d') + icNote(32, 32, 1.3, '#fcee0a') +
-        '<path d="M22 28.5h6M36 23h6" stroke="#07080e" stroke-width="1.6"/><path d="M9 53h17" stroke="#fcee0a" stroke-width="3"/><path d="M44 9h8" stroke="#ff2a4d" stroke-width="3"/>',
-    };
+    case 'archive': {
+      const INK = '#4e4b42', grid = Array.from({length: 27}, (_, i) => `M${-20 + i * 4} -20V84M-20 ${-20 + i * 4}H84`).join('');
+      const rings = [15.6, 14, 12.4, 10.8, 9.2].map(r => `<circle cx="32" cy="32" r="${r}" fill="none" stroke="#d1cdb7" stroke-width=".3" opacity=".3"/>`).join('');
+      const br = (x, y, dx, dy) => `M${x + dx * 6.5} ${y}H${x}V${y + dy * 6.5}`;
+      return {
+        shape: '<rect width="64" height="64" rx="6"/>',
+        bg: `${EXT} fill="#d1cdb7"/><path d="${grid}" stroke="#c4bfa6" stroke-width=".35"/>`,
+        fg: `<circle cx="32" cy="32" r="22" fill="none" stroke="${INK}" stroke-width=".55" stroke-dasharray="1.3 1.5"/>` +
+          `<circle cx="34.6" cy="34.2" r="17.6" fill="#b4af9a"/><circle cx="32" cy="32" r="17.6" fill="${INK}"/>` + rings +
+          `<path d="M19.4 25.2A13.8 13.8 0 0 1 25.4 19.6" fill="none" stroke="#dad4bb" stroke-width="1" stroke-linecap="round" opacity=".6"/>` +
+          `<circle cx="32" cy="32" r="7" fill="#dad4bb"/>` + icNote(32, 32.2, .44, INK) +
+          `<path d="${br(10.5, 10.5, 1, 1)}${br(53.5, 10.5, -1, 1)}${br(10.5, 53.5, 1, -1)}${br(53.5, 53.5, -1, -1)}" fill="none" stroke="${INK}" stroke-width="1.5"/>` +
+          `<path d="M32 6.5V9.5M32 54.5V57.5M6.5 32H9.5M54.5 32H57.5" stroke="${INK}" stroke-width="1"/>` +
+          `<rect x="48.2" y="13.2" width="2.4" height="2.4" fill="#cd664d"/>`,
+      };
+    }
+    case 'riot': {
+      const rays = Array.from({length: 10}, (_, i) => { const a = i * Math.PI / 5, w = .16; return `<polygon points="${icPts([[32, 32], [32 + 90 * Math.cos(a - w), 32 + 90 * Math.sin(a - w)], [32 + 90 * Math.cos(a + w), 32 + 90 * Math.sin(a + w)]])}"/>`; }).join('');
+      const burst = icJagged(32, 32.5, 9, 17, 27.5, 7, -.2);
+      return {
+        shape: '<rect width="64" height="64" rx="6"/>',
+        bg: `${EXT} fill="#e5191c"/><g fill="#b70d10">${rays}</g>`,
+        fg: `<polygon points="${burst}" fill="#fff" transform="translate(32 32.5) scale(1.1) translate(-32 -32.5)"/><polygon points="${burst}" fill="#0b0a0a"/>` +
+          `<g transform="translate(23.5 30) rotate(-9)"><rect x="-11.5" y="-13" width="23" height="26" fill="#fff"/><path d="${IC_B}" transform="translate(-9.5 10.2) scale(.29)" fill="#0b0a0a"/></g>` +
+          `<g transform="translate(42.5 40.5) rotate(11)"><rect x="-9.5" y="-10.5" width="19" height="21" fill="#e5191c" stroke="#fff" stroke-width="1.6"/>${icNote(0, .3, .7, '#fff')}</g>`,
+      };
+    }
+    case 'tide': {
+      const rays = [[-6, 10, -10, 4], [16, 24, 8, 30], [36, 41, 30, 44]].map(([a, b, c, d]) => `<path d="M${a} -20H${b}L${d + 10} 84H${c - 6}Z"/>`).join('');
+      return {
+        shape: '<rect width="64" height="64" rx="14"/>',
+        bg: `<defs><linearGradient id="${u}g" gradientUnits="userSpaceOnUse" x1="0" y1="-4" x2="0" y2="68"><stop offset="0" stop-color="#5ff0ff"/><stop offset=".3" stop-color="#1a8ff0"/><stop offset=".68" stop-color="#1438c4"/><stop offset="1" stop-color="#0b1c82"/></linearGradient></defs>` +
+          `${EXT} fill="url(#${u}g)"/><g fill="#fff" opacity=".07">${rays}</g>` +
+          `<path d="M-20 3c6-3 10 2 16 0s9-4 15-1 10 2 15 0 12-2 18 1 9 2 14 0 10-2 16 1v5c-6-2-11 1-17 0s-9-3-15-1-10 3-16 1-10-2-16 1-9 1-14-1-10-1-16 1z" fill="#fff" opacity=".2"/>`,
+        fg: `<defs><radialGradient id="${u}m"><stop offset=".55" stop-color="#bff6ff" stop-opacity=".55"/><stop offset="1" stop-color="#bff6ff" stop-opacity="0"/></radialGradient></defs>` +
+          `<circle cx="32" cy="29" r="19" fill="url(#${u}m)"/><circle cx="32" cy="29" r="12" fill="#effbff"/>` +
+          `<g fill="#9fdcf2" opacity=".55"><circle cx="28" cy="25.5" r="2.6"/><circle cx="36.5" cy="32.5" r="1.9"/><circle cx="35.2" cy="23.6" r="1.2"/></g>` +
+          `<g transform="rotate(-8 32 34)"><path d="M13.5 38A18.5 18.5 0 0 1 50.5 38" fill="none" stroke="#050816" stroke-width="3.8"/><path d="M13.5 38A18.5 18.5 0 0 1 50.5 38" fill="none" stroke="#6ae6fb" stroke-width="1"/>` +
+          `<rect x="8" y="33" width="10" height="16" rx="3.8" fill="#050816"/><rect x="10.8" y="36.2" width="4.4" height="9.6" rx="2.2" fill="#0bc8ff"/>` +
+          `<rect x="46" y="33" width="10" height="16" rx="3.8" fill="#050816"/><rect x="48.8" y="36.2" width="4.4" height="9.6" rx="2.2" fill="#0bc8ff"/></g>` +
+          `<polygon points="12,58.5 52,49 41,58" fill="#fff" transform="translate(1.6 -1.8)"/><polygon points="12,58.5 52,49 41,58" fill="#ff1f3d"/>`,
+      };
+    }
+    case 'frontier': {
+      const r = icRng(11), streaks = Array.from({length: 22}, (_, i) => `<rect x="${(-20 + r() * 14).toFixed(1)}" y="${(-18 + i * 4.8 + r() * 1.5).toFixed(1)}" width="${(50 + r() * 60).toFixed(1)}" height="${(.5 + r() * 1.3).toFixed(1)}" opacity="${(.04 + r() * .07).toFixed(2)}"/>`).join('');
+      const tips = Array.from({length: 6}, (_, i) => { const a = i * Math.PI / 3 - Math.PI / 2; return `<circle cx="${(32 + 21.5 * Math.cos(a)).toFixed(2)}" cy="${(32 + 21.5 * Math.sin(a)).toFixed(2)}" r="2.6"/>`; }).join('');
+      return {
+        shape: '<rect width="64" height="64" rx="10"/>',
+        bg: `${EXT} fill="#0d0b09"/><g fill="#fff">${streaks}</g>`,
+        fg: `<defs><linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1d995"/><stop offset=".5" stop-color="#c49a48"/><stop offset="1" stop-color="#7e5a1e"/></linearGradient></defs>` +
+          `<path d="${icRough(9.5, 9.5, 45, 45, 1.4, 5)}${icRough(14.5, 14.5, 35, 35, 1.2, 9)}" fill="#cc0000" fill-rule="evenodd"/>` +
+          `<g fill="url(#${u}b)" stroke="#4d3510" stroke-width=".7"><polygon points="${icStar(32, 32, 6, 21.5, 11.6)}"/>${tips}</g>` +
+          `<polygon points="${icStar(32, 32, 6, 17.6, 9.6)}" fill="none" stroke="#fbe7b0" stroke-width=".55" opacity=".7"/>` +
+          `<circle cx="32" cy="32" r="7.4" fill="#22170c" stroke="#fbe7b0" stroke-width=".6"/>` + icNote(32, 32.2, .44, '#e8cf8a'),
+      };
+    }
+    case 'neon': {
+      const plate = 'M17 9H55V47L47 55H9V17Z';
+      const haz = Array.from({length: 10}, (_, i) => `<path d="M${-30 + i * 6} 84L${-6 + i * 6} 60h3L${-27 + i * 6} 84Z"/>`).join('');
+      const slices = [[8, 22, 0], [22, 27.5, 3.2], [27.5, 37, -1.2], [37, 40, 2.4], [40, 60, 0]];
+      const note = c => icNote(31.5, 31.8, 1.45, c);
+      const sliced = slices.map(([y0, y1, dx], i) => `<clipPath id="${u}s${i}"><rect x="0" y="${y0}" width="64" height="${y1 - y0}"/></clipPath><g transform="translate(${dx} 0)"><g clip-path="url(#${u}s${i})"><g transform="translate(-1.6 0)">${note('#ff2a4d')}</g><g transform="translate(1.6 0)">${note('#00f0ff')}</g>${note('#fcee0a')}</g></g>`).join('');
+      return {
+        shape: '<path d="M0 0H50L64 14V64H14L0 50Z"/>',
+        bg: `${EXT} fill="#fcee0a"/><g fill="#07080e">${haz}</g>`,
+        fg: `<path d="${plate}" fill="#00f0ff" transform="translate(2.6 2.6)"/><path d="${plate}" fill="#07080e"/>` +
+          `<path d="M10.5 18.5V10.5H18.5" fill="none" stroke="#ff2a4d" stroke-width="1"/><rect x="21" y="12.6" width="9" height="2.4" fill="#fcee0a"/><rect x="31.5" y="12.6" width="2.4" height="2.4" fill="#ff2a4d"/>` +
+          sliced + `<rect x="12" y="34.8" width="16" height=".9" fill="#00f0ff"/><path d="M38 50.5h8" stroke="#fcee0a" stroke-width="1.6"/><path d="M50 50.5h2" stroke="#ff2a4d" stroke-width="1.6"/>`,
+      };
+    }
   }
   return null;
 }
@@ -2227,10 +2242,9 @@ function iconSVG(kind, hex, layer, size) {
   layer = layer || 'full'; size = size || 64;
   const u = 'ci' + (++iconSeq) + '_';
   const g64 = gameIcon(kind, u);
-  if (g64) {
-    if (layer === 'bg') return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">${g64.bg('full')}</svg>`;
-    if (layer === 'fg') return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-20 -20 104 104">${g64.fg}</svg>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">${g64.bg('rounded')}${g64.fg}</svg>`;
+  if (g64) { // the adaptive layers are 108 dp, the 64-unit grid is its central 66 dp
+    if (layer === 'bg' || layer === 'fg') return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-20 -20 104 104">${g64[layer]}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64"><defs><clipPath id="${u}s">${g64.shape}</clipPath></defs><g clip-path="url(#${u}s)">${g64.bg}${g64.fg}</g></svg>`;
   }
   const note = (c, tf) => `<g transform="translate(54 54) ${tf || ''} scale(2.1) translate(-11.5 -11.6)"><path d="M9 17.5V6.2l10-2.2v11.3" fill="none" stroke="${c}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="17.5" r="2.9" fill="${c}"/><circle cx="16.5" cy="15.3" r="2.9" fill="${c}"/></g>`;
   const g = iconGradient(hex || ACCENTS[0].hex);
@@ -2899,11 +2913,10 @@ const SX_SELECT = '.mi:not(.static), .sw:not(.custom), .chipb:not([data-sfx]), .
 })();
 /* ───────────────────────── game-style pieces ─────────────────────────
    Theme-only components, after the Game UI theme guide: each renders nothing (or is hidden by CSS)
-   outside its own style. Persona 5 (riot): cut-out letters, the star field, the date box, the
-   wiggling highlight. Persona 3 (tide): moon-phase date, the page word on a white ribbon, the
-   command help line. Red Dead Redemption 2 (frontier): the almanac page and the "2 of 6" counter.
-   Cyberpunk 2077 (neon): the date readout. Every style: the page-change effect and the moment a
-   song is added to favourites. */
+   outside its own style. Persona 5 (riot): cut-out letters, the star field, the wiggling
+   highlight. Persona 3 (tide): the page word on a white ribbon, the command help line. Red Dead
+   Redemption 2 (frontier): the "2 of 6" counter. Every style: the page-change effect and the
+   moment a song is added to favourites. */
 
 /* Animations: Persona 5 has its own setting (Match device / Full / Reduced); the others follow the device. */
 function motionReduced() {
@@ -2940,44 +2953,6 @@ function setHeroTitle(text) {
 function setHeroSub(n, label) { // "15 songs": a number and a label each style can set apart
   $('#heroSub').innerHTML = n == null ? `<span class="hs-l">${esc(label)}</span>` : `<b class="hs-n">${n}</b> <span class="hs-l">${esc(label)}</span>`;
 }
-
-/* ── dates for the HUD widgets ── */
-const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const dayFirst = (() => { try { return new Intl.DateTimeFormat(undefined, {day: 'numeric', month: 'numeric'}).formatToParts(new Date(2000, 10, 22))[0].type === 'day'; } catch (e) { return true; } })();
-const pad2 = n => String(n).padStart(2, '0');
-function timeOfDay(h) { return h < 5 ? 'Late night' : h < 11 ? 'Morning' : h < 13 ? 'Midday' : h < 17 ? 'Afternoon' : h < 21 ? 'Evening' : 'Late night'; }
-/* Moon phase for the Persona 3 date (age of the moon from a known new moon). */
-const SYNODIC = 29.530588853, NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);
-const PHASES = [[1.84, 'New moon'], [5.53, 'Waxing crescent'], [9.22, 'First quarter'], [12.91, 'Waxing gibbous'], [16.61, 'Full moon'], [20.3, 'Waning gibbous'], [23.99, 'Last quarter'], [27.68, 'Waning crescent'], [99, 'New moon']];
-function moonPhase(d) {
-  const e = new Date(d); e.setHours(21, 0, 0, 0);
-  let age = ((e.getTime() - NEW_MOON) / 86400000) % SYNODIC; if (age < 0) age += SYNODIC;
-  return {fraction: age / SYNODIC, name: PHASES.find(([lim]) => age < lim)[1]};
-}
-function southern() { // the moon looks mirrored left to right south of the equator
-  try { return /^(Australia|Antarctica)\/|^Pacific\/(Auckland|Chatham|Fiji|Noumea|Efate|Port_Moresby)|^America\/(Argentina|Sao_Paulo|Santiago|Montevideo|Asuncion|La_Paz|Lima|Punta_Arenas)|^Africa\/(Johannesburg|Maputo|Harare|Windhoek|Gaborone|Lusaka|Maseru|Mbabane)|^Indian\/(Mauritius|Reunion|Antananarivo)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); } catch (e) { return false; }
-}
-function moonSVG(fraction, size = 44) {
-  const r = 20, c = 24, k = Math.cos(2 * Math.PI * fraction), rx = Math.abs(k) * r, waxing = fraction < .5, crescent = k > 0;
-  const lit = `M ${c} ${c - r} A ${r} ${r} 0 0 1 ${c} ${c + r} A ${rx.toFixed(2)} ${r} 0 0 ${crescent ? 0 : 1} ${c} ${c - r} Z`;
-  const mirror = waxing === southern();
-  return `<svg class="tide-moon" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true"><circle cx="${c}" cy="${c}" r="${r}" class="moon-dark"/>${fraction > .015 && fraction < .985 ? `<path d="${lit}" class="moon-lit"${mirror ? ' transform="translate(48 0) scale(-1 1)"' : ''}/>` : ''}<circle cx="${c}" cy="${c}" r="${r}" class="moon-rim"/></svg>`;
-}
-let hudKey = '';
-function updateHud() {
-  const el = $('#hud'), skin = skinOf(), d = new Date();
-  const key = skin + d.toDateString() + (skin === 'riot' ? timeOfDay(d.getHours()) : '');
-  if (key === hudKey) return; hudKey = key;
-  const a = dayFirst ? d.getDate() : d.getMonth() + 1, b = dayFirst ? d.getMonth() + 1 : d.getDate();
-  let h = '';
-  if (skin === 'riot') h = `<span class="rd-num">${a}<i>/</i>${b}</span><span class="rd-side"><span class="rd-day">${WD[d.getDay()].toUpperCase()}</span><span class="rd-tod">${timeOfDay(d.getHours())}</span></span>`;
-  else if (skin === 'tide') { const p = moonPhase(d); h = `${moonSVG(p.fraction)}<span class="td-text"><span class="td-num">${a}/${b}<small>${WD[d.getDay()]}</small></span><span class="td-phase">${p.name}</span></span>`; el.title = p.name; }
-  else if (skin === 'frontier') h = `<span class="fr-month">${MON[d.getMonth()]}</span><span class="fr-day">${d.getDate()}</span><span class="fr-wd">${WDL[d.getDay()]}</span>`;
-  else if (skin === 'neon') h = `<span class="nn-wd">${WD[d.getDay()].toUpperCase()}</span><span class="nn-num">${pad2(a)}.${pad2(b)}</span><span class="nn-yr">${d.getFullYear()}</span>`;
-  el.innerHTML = h; el.className = 'hud hud-' + skin;
-}
-setInterval(updateHud, 60000);
 
 /* Persona 3: the page name huge on a white ribbon down the left of wide windows. Its size comes from the
    window height divided by the word's measured length (Montserrat Black Italic, in em), so long names fit. */
@@ -4063,7 +4038,7 @@ async function settingsSheet() {
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.6 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -4451,7 +4426,7 @@ function applyTheme() {
   try { NATIVE && NATIVE.setBackground && NATIVE.setBackground(bar); } catch (e) {}
   notifColour = (cs.getPropertyValue('--accent') || '').trim() || ACCENTS[0].hex;
   setHeroTitle(tabTitle[S.tab] || 'Tracks');
-  applyMotion(); starfield.sync(); updateHud(); updateRibbon(); updateKeyHints();
+  applyMotion(); starfield.sync(); updateRibbon(); updateKeyHints();
   if (skin !== lastSkin) { const was = lastSkin; lastSkin = skin; if (was) { renderTabs(); updateChrome(); } }
   applyIcons();
 }

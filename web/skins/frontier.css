@@ -2,8 +2,7 @@
    Red Dead Redemption 2 (id "frontier"): the game's native menus. Every option
    sits on its own dark textured box; whatever is chosen gets the rough red
    brush frame. Titles sit in a black brush banner over a ruled line with a
-   diamond, a tear-off almanac page shows the date, and the tabs end with a
-   grey "2 of 6" counter. Menus are black ink-roller panels in both variants.
+   diamond, and the tabs end with a grey "2 of 6" counter. Menus are black ink-roller panels in both variants.
    "Journal" (light) lays the pages on aged paper; "Campfire" (dark) is the
    menu at night, over a far ridge and the glow of a fire. An ink brush sweeps
    across when the page changes; KEEPER is stamped when a song is liked.
@@ -76,7 +75,7 @@
 [data-skin="frontier"][data-theme="dark"] .fx { mix-blend-mode: normal; background: radial-gradient(ellipse 120% 90% at 55% 40%, transparent 50%, var(--vignette)); }
 [data-skin="frontier"][data-theme="dark"] .deco { display: block; background: var(--fr-ridge) center bottom / 100% 150px no-repeat, radial-gradient(ellipse 70% 36% at 50% 104%, rgba(226, 112, 38, .26), transparent 70%), radial-gradient(ellipse 34% 18% at 50% 102%, rgba(255, 170, 70, .16), transparent 70%); }
 
-/* ---------- header: the brush banner, the almanac page ---------- */
+/* ---------- header: the brush banner ---------- */
 
 [data-skin="frontier"] .hero .wrap { padding-bottom: 42px; }
 [data-skin="frontier"] .hero .wrap::after { content: ""; position: absolute; left: 30px; bottom: 16px; width: 240px; height: 14px; background: var(--line-strong); -webkit-mask: var(--rule-mask) left center / 240px 14px no-repeat; mask: var(--rule-mask) left center / 240px 14px no-repeat; }
@@ -87,10 +86,6 @@
 [data-skin="frontier"] .hero .wrap { display: flex; flex-direction: column; position: relative; }
 [data-skin="frontier"] .hero p { font-style: italic; font-size: 15.5px; color: var(--text-2); margin-top: 12px; }
 [data-skin="frontier"] .hs-n { font-style: normal; font-variant: small-caps; font-weight: 700; color: var(--accent); }
-[data-skin="frontier"] .hud { display: flex; flex-direction: column; align-items: center; width: 86px; padding-bottom: 10px; background: #f0e3c4; color: #2a1c10; transform: rotate(3deg); box-shadow: 0 6px 14px rgba(20, 10, 2, .35), 0 0 0 1px rgba(84, 58, 30, .25); clip-path: polygon(0 0, 100% 0, 100% 92%, 93% 100%, 85% 93%, 76% 100%, 67% 94%, 58% 100%, 49% 93%, 40% 100%, 31% 94%, 22% 100%, 13% 93%, 6% 100%, 0 94%); }
-[data-skin="frontier"] .fr-month { align-self: stretch; text-align: center; background: #a8120c; color: #f7ecd4; font-variant: small-caps; font-weight: 700; letter-spacing: .08em; font-size: 13px; line-height: 1; padding: 6px 4px 5px; }
-[data-skin="frontier"] .fr-day { font-family: var(--display); font-size: 42px; line-height: 1; margin-top: 6px; }
-[data-skin="frontier"] .fr-wd { font-style: italic; font-size: 12.5px; color: #4a3725; }
 [data-skin="frontier"] .appbar { background: color-mix(in srgb, var(--bg) 92%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 [data-skin="frontier"][data-theme="dark"] .appbar { background: rgba(11, 9, 8, .86); }
 [data-skin="frontier"] .ab-title { font-weight: 400; font-size: 18px; letter-spacing: .02em; }
@@ -276,9 +271,6 @@
 @keyframes fr-fade { to { opacity: 0; } }
 
 @media (max-width: 420px) {
-  [data-skin="frontier"] .hud { width: 70px; }
-  [data-skin="frontier"] .fr-day { font-size: 32px; }
-  [data-skin="frontier"] .fr-month { font-size: 11px; }
   [data-skin="frontier"] .tab { padding: 9px 12px 10px; font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="frontier"] .tab.on::after { animation: none; } }

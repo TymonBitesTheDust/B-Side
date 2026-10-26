@@ -52,17 +52,13 @@ function iconGradient(hex) {
 }
 
 let iconSeq = 0;
-/* Game-style icons follow the theme guide, drawn on a 64-unit grid with B-Side's note as the mark:
-   NieR: Automata, the picked menu plate with its square marker between thin rules, on the grid;
-   Persona 5, a white-edged red star with a white note, on black; Persona 3, deep water with the
-   white ribbon, the red and white cursor under a black italic note, and the moon; Red Dead
-   Redemption 2, the rough red brush frame round an off-white ink note, on black ink; Cyberpunk 2077,
-   a yellow note splitting into cyan and red, on a black plate with cut corners. */
-function icBurst(cx, cy, outer, inner, points, rot) {
-  const pts = [];
-  for (let i = 0; i < points * 2; i++) { const r = i % 2 ? inner : outer, a = Math.PI * i / points - Math.PI / 2 + (rot || 0) * Math.PI / 180; pts.push((cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1)); }
-  return pts.join(' ');
-}
+/* Game-style icons: a tribute to each game, drawn on a 64-unit grid, with Checkmate's icons as a starting point only.
+   NieR: Automata, a record in YoRHa ink under a lock-on reticle, on the beige grid;
+   Persona 5, the B and a note cut out like a calling card's ransom letters, on a black burst over red rays;
+   Persona 3 Reload, the full moon of the Dark Hour wearing headphones, under water, with the red cursor;
+   Red Dead Redemption 2, a brass lawman's star in the rough red brush frame, on black ink;
+   Cyberpunk 2077, a note glitching into cyan and red on a cut-corner black plate, on street-poster yellow.
+   Each returns its full-icon outline (shape), the background (bg) and the foreground (fg). */
 function icRng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
 function icRough(x, y, w, h, amp, seed, step) {
   step = step || 3; const r = icRng(seed), j = () => (r() * 2 - 1) * amp, pts = [];
@@ -77,38 +73,93 @@ function icNote(cx, cy, k, c, extra, edge) {
   const body = (col, sw, r) => `<path d="M9 17.5V6.2l10-2.2v11.3" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="17.5" r="${r}" fill="${col}"/><circle cx="16.5" cy="15.3" r="${r}" fill="${col}"/>`;
   return `<g transform="translate(${cx} ${cy}) ${extra || ''} scale(${k}) translate(-11.5 -11.6)">${edge ? body(edge, 2.3 + 2.6, 2.9 + 1.3) : ''}${body(c, 2.3, 2.9)}</g>`;
 }
+/* "B" from Abril Fatface (SIL Open Font License), 100 units to the em, baseline at y 0 */
+const IC_B = 'M2.1 -70H32Q45.9 -70 52.8 -66.2Q59.8 -62.5 59.8 -53.6Q59.8 -39.9 43.3 -37.2V-37Q63.3 -34.5 63.3 -19.6Q63.3 -8.7 55.1 -4.3Q46.9 0 31.5 0H2.1V-1.9H8.6V-68.1H2.1ZM28.1 -35.4V-1.9H32.8Q38.3 -1.9 40.5 -5.7Q42.7 -9.5 42.7 -16.9V-22.2Q42.7 -28.8 40 -32.1Q37.3 -35.4 30.4 -35.4ZM28.1 -68.1V-37.3H30.7Q35.9 -37.3 37.9 -40.4Q40 -43.6 40 -50.1V-54.8Q40 -62.2 38.2 -65.1Q36.4 -68.1 31.3 -68.1Z';
+function icPts(a) { return a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '); }
+function icJagged(cx, cy, n, rIn, rOut, seed, rot) {
+  const r = icRng(seed), pts = [];
+  for (let i = 0; i < n * 2; i++) {
+    const a = (i + (r() - .5) * .55) / (n * 2) * Math.PI * 2 + (rot || 0);
+    const rad = i % 2 ? rIn * (.85 + r() * .3) : rOut * (.82 + r() * .3);
+    pts.push([cx + rad * Math.cos(a), cy + rad * Math.sin(a)]);
+  }
+  return icPts(pts);
+}
+function icStar(cx, cy, n, ro, ri, rot) { const p = []; for (let i = 0; i < n * 2; i++) { const r = i % 2 ? ri : ro, a = Math.PI * i / n - Math.PI / 2 + (rot || 0); p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return icPts(p); }
+/* the background layer is drawn past the 64-unit grid, out to the edge of Android's 108 dp canvas */
+const EXT = '<rect x="-20" y="-20" width="104" height="104"';
 function gameIcon(kind, u) {
   switch (kind) {
-    case 'archive': return {
-      bg: shape => `<rect width="64" height="64" rx="${shape === 'rounded' ? 6 : 0}" fill="#d1cdb7"/><path d="${Array.from({length: 15}, (_, i) => `M${4 + i * 4} 0V64M0 ${4 + i * 4}H64`).join('')}" stroke="#c4bfa6" stroke-width=".4"/>`,
-      fg: '<rect x="9" y="12.6" width="36" height="1.2" fill="#57544a"/><rect x="49" y="11.5" width="3.4" height="3.4" fill="#57544a"/>' +
-        '<rect x="9" y="18" width="46" height="1.6" fill="#57544a"/><rect x="9" y="44.4" width="46" height="1.6" fill="#57544a"/>' +
-        '<rect x="9" y="22.5" width="46" height="19" fill="#57544a"/><rect x="5" y="25.5" width="2.2" height="13" fill="#57544a"/>' +
-        '<rect x="14" y="27.5" width="9" height="9" fill="#dad4bb"/>' + icNote(39.5, 32, .78, '#dad4bb'),
-    };
-    case 'riot': return {
-      bg: shape => `<rect width="64" height="64" rx="${shape === 'rounded' ? 6 : 0}" fill="#0b0a0a"/>`,
-      fg: `<polygon points="${icBurst(32, 34, 29, 13.6, 5, -6)}" fill="#ffffff"/><polygon points="${icBurst(32, 34, 25, 11.6, 5, -6)}" fill="#e5191c"/>` + icNote(31.5, 33.5, 1.22, '#ffffff', 'rotate(-8)', '#0b0a0a'),
-    };
-    case 'tide': return {
-      bg: shape => `<defs><linearGradient id="${u}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ff0ff"/><stop offset=".32" stop-color="#1a8ff0"/><stop offset=".72" stop-color="#1438c4"/><stop offset="1" stop-color="#0b1c82"/></linearGradient><clipPath id="${u}c"><rect width="64" height="64" rx="${shape === 'rounded' ? 14 : 0}"/></clipPath></defs>` +
-        `<g clip-path="url(#${u}c)"><rect width="64" height="64" fill="url(#${u}g)"/><path d="M0 6c6-3 10 2 16 0s9-4 15-1 10 2 15 0 12-2 18 1v5c-6-2-11 1-17 0s-9-3-15-1-10 3-16 1-10-2-16 1z" fill="#ffffff" opacity=".22"/>` +
-        `<g${shape === 'rounded' ? '' : ' transform="translate(11 0)"'}><path d="M-2 0h11L1 64h-5z" fill="#ffffff"/><path d="M11 0h2.2L5.2 64H3z" fill="#ff1f3d"/></g></g>`,
-      fg: '<path d="M49.5 6.5a6 6 0 1 0 6 6a4.8 4.8 0 0 1-6-6z" fill="#effbff"/>' +
-        '<polygon points="8,50 60,26 49,41" fill="#ffffff" transform="translate(2.5 -2.5) rotate(-3 34 38)"/><polygon points="8,50 60,26 49,41" fill="#ff1f3d"/>' +
-        icNote(34, 30, 1.2, '#050816', 'skewX(-14)'),
-    };
-    case 'frontier': return {
-      bg: shape => { const r = icRng(11), streaks = Array.from({length: 14}, (_, i) => `<rect x="${(r() * 10).toFixed(1)}" y="${(2 + i * 4.4 + r() * 1.5).toFixed(1)}" width="${(30 + r() * 34).toFixed(1)}" height="${(.5 + r() * 1.2).toFixed(1)}" opacity="${(.04 + r() * .07).toFixed(2)}"/>`).join(''); return `<clipPath id="${u}c"><rect width="64" height="64" rx="${shape === 'rounded' ? 10 : 0}"/></clipPath><g clip-path="url(#${u}c)"><rect width="64" height="64" fill="#0d0b09"/><g fill="#ffffff">${streaks}</g></g>`; },
-      fg: `<path d="${icRough(9, 13, 46, 38, 1.4, 5)}${icRough(14.5, 18.5, 35, 27, 1.2, 9)}" fill="#cc0000" fill-rule="evenodd"/>` +
-        '<path d="M10 16.2h18M33 15.4h20M12 48.6h25M40 47.8h13M11.2 30v6M52.6 27v9" stroke="#0d0b09" stroke-width=".7" opacity=".8"/>' +
-        icNote(32, 32, 1.02, '#f2ead8', 'rotate(-4)') + '<path d="M26 24.5l9-2" stroke="#0d0b09" stroke-width=".5" opacity=".35"/>',
-    };
-    case 'neon': return {
-      bg: shape => shape === 'rounded' ? '<path d="M0 0H50L64 14V64H14L0 50Z" fill="#07080e"/>' : '<rect width="64" height="64" fill="#07080e"/>',
-      fg: icNote(29.5, 32, 1.3, '#00f0ff') + icNote(34.5, 32, 1.3, '#ff2a4d') + icNote(32, 32, 1.3, '#fcee0a') +
-        '<path d="M22 28.5h6M36 23h6" stroke="#07080e" stroke-width="1.6"/><path d="M9 53h17" stroke="#fcee0a" stroke-width="3"/><path d="M44 9h8" stroke="#ff2a4d" stroke-width="3"/>',
-    };
+    case 'archive': {
+      const INK = '#4e4b42', grid = Array.from({length: 27}, (_, i) => `M${-20 + i * 4} -20V84M-20 ${-20 + i * 4}H84`).join('');
+      const rings = [15.6, 14, 12.4, 10.8, 9.2].map(r => `<circle cx="32" cy="32" r="${r}" fill="none" stroke="#d1cdb7" stroke-width=".3" opacity=".3"/>`).join('');
+      const br = (x, y, dx, dy) => `M${x + dx * 6.5} ${y}H${x}V${y + dy * 6.5}`;
+      return {
+        shape: '<rect width="64" height="64" rx="6"/>',
+        bg: `${EXT} fill="#d1cdb7"/><path d="${grid}" stroke="#c4bfa6" stroke-width=".35"/>`,
+        fg: `<circle cx="32" cy="32" r="22" fill="none" stroke="${INK}" stroke-width=".55" stroke-dasharray="1.3 1.5"/>` +
+          `<circle cx="34.6" cy="34.2" r="17.6" fill="#b4af9a"/><circle cx="32" cy="32" r="17.6" fill="${INK}"/>` + rings +
+          `<path d="M19.4 25.2A13.8 13.8 0 0 1 25.4 19.6" fill="none" stroke="#dad4bb" stroke-width="1" stroke-linecap="round" opacity=".6"/>` +
+          `<circle cx="32" cy="32" r="7" fill="#dad4bb"/>` + icNote(32, 32.2, .44, INK) +
+          `<path d="${br(10.5, 10.5, 1, 1)}${br(53.5, 10.5, -1, 1)}${br(10.5, 53.5, 1, -1)}${br(53.5, 53.5, -1, -1)}" fill="none" stroke="${INK}" stroke-width="1.5"/>` +
+          `<path d="M32 6.5V9.5M32 54.5V57.5M6.5 32H9.5M54.5 32H57.5" stroke="${INK}" stroke-width="1"/>` +
+          `<rect x="48.2" y="13.2" width="2.4" height="2.4" fill="#cd664d"/>`,
+      };
+    }
+    case 'riot': {
+      const rays = Array.from({length: 10}, (_, i) => { const a = i * Math.PI / 5, w = .16; return `<polygon points="${icPts([[32, 32], [32 + 90 * Math.cos(a - w), 32 + 90 * Math.sin(a - w)], [32 + 90 * Math.cos(a + w), 32 + 90 * Math.sin(a + w)]])}"/>`; }).join('');
+      const burst = icJagged(32, 32.5, 9, 17, 27.5, 7, -.2);
+      return {
+        shape: '<rect width="64" height="64" rx="6"/>',
+        bg: `${EXT} fill="#e5191c"/><g fill="#b70d10">${rays}</g>`,
+        fg: `<polygon points="${burst}" fill="#fff" transform="translate(32 32.5) scale(1.1) translate(-32 -32.5)"/><polygon points="${burst}" fill="#0b0a0a"/>` +
+          `<g transform="translate(23.5 30) rotate(-9)"><rect x="-11.5" y="-13" width="23" height="26" fill="#fff"/><path d="${IC_B}" transform="translate(-9.5 10.2) scale(.29)" fill="#0b0a0a"/></g>` +
+          `<g transform="translate(42.5 40.5) rotate(11)"><rect x="-9.5" y="-10.5" width="19" height="21" fill="#e5191c" stroke="#fff" stroke-width="1.6"/>${icNote(0, .3, .7, '#fff')}</g>`,
+      };
+    }
+    case 'tide': {
+      const rays = [[-6, 10, -10, 4], [16, 24, 8, 30], [36, 41, 30, 44]].map(([a, b, c, d]) => `<path d="M${a} -20H${b}L${d + 10} 84H${c - 6}Z"/>`).join('');
+      return {
+        shape: '<rect width="64" height="64" rx="14"/>',
+        bg: `<defs><linearGradient id="${u}g" gradientUnits="userSpaceOnUse" x1="0" y1="-4" x2="0" y2="68"><stop offset="0" stop-color="#5ff0ff"/><stop offset=".3" stop-color="#1a8ff0"/><stop offset=".68" stop-color="#1438c4"/><stop offset="1" stop-color="#0b1c82"/></linearGradient></defs>` +
+          `${EXT} fill="url(#${u}g)"/><g fill="#fff" opacity=".07">${rays}</g>` +
+          `<path d="M-20 3c6-3 10 2 16 0s9-4 15-1 10 2 15 0 12-2 18 1 9 2 14 0 10-2 16 1v5c-6-2-11 1-17 0s-9-3-15-1-10 3-16 1-10-2-16 1-9 1-14-1-10-1-16 1z" fill="#fff" opacity=".2"/>`,
+        fg: `<defs><radialGradient id="${u}m"><stop offset=".55" stop-color="#bff6ff" stop-opacity=".55"/><stop offset="1" stop-color="#bff6ff" stop-opacity="0"/></radialGradient></defs>` +
+          `<circle cx="32" cy="29" r="19" fill="url(#${u}m)"/><circle cx="32" cy="29" r="12" fill="#effbff"/>` +
+          `<g fill="#9fdcf2" opacity=".55"><circle cx="28" cy="25.5" r="2.6"/><circle cx="36.5" cy="32.5" r="1.9"/><circle cx="35.2" cy="23.6" r="1.2"/></g>` +
+          `<g transform="rotate(-8 32 34)"><path d="M13.5 38A18.5 18.5 0 0 1 50.5 38" fill="none" stroke="#050816" stroke-width="3.8"/><path d="M13.5 38A18.5 18.5 0 0 1 50.5 38" fill="none" stroke="#6ae6fb" stroke-width="1"/>` +
+          `<rect x="8" y="33" width="10" height="16" rx="3.8" fill="#050816"/><rect x="10.8" y="36.2" width="4.4" height="9.6" rx="2.2" fill="#0bc8ff"/>` +
+          `<rect x="46" y="33" width="10" height="16" rx="3.8" fill="#050816"/><rect x="48.8" y="36.2" width="4.4" height="9.6" rx="2.2" fill="#0bc8ff"/></g>` +
+          `<polygon points="12,58.5 52,49 41,58" fill="#fff" transform="translate(1.6 -1.8)"/><polygon points="12,58.5 52,49 41,58" fill="#ff1f3d"/>`,
+      };
+    }
+    case 'frontier': {
+      const r = icRng(11), streaks = Array.from({length: 22}, (_, i) => `<rect x="${(-20 + r() * 14).toFixed(1)}" y="${(-18 + i * 4.8 + r() * 1.5).toFixed(1)}" width="${(50 + r() * 60).toFixed(1)}" height="${(.5 + r() * 1.3).toFixed(1)}" opacity="${(.04 + r() * .07).toFixed(2)}"/>`).join('');
+      const tips = Array.from({length: 6}, (_, i) => { const a = i * Math.PI / 3 - Math.PI / 2; return `<circle cx="${(32 + 21.5 * Math.cos(a)).toFixed(2)}" cy="${(32 + 21.5 * Math.sin(a)).toFixed(2)}" r="2.6"/>`; }).join('');
+      return {
+        shape: '<rect width="64" height="64" rx="10"/>',
+        bg: `${EXT} fill="#0d0b09"/><g fill="#fff">${streaks}</g>`,
+        fg: `<defs><linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1d995"/><stop offset=".5" stop-color="#c49a48"/><stop offset="1" stop-color="#7e5a1e"/></linearGradient></defs>` +
+          `<path d="${icRough(9.5, 9.5, 45, 45, 1.4, 5)}${icRough(14.5, 14.5, 35, 35, 1.2, 9)}" fill="#cc0000" fill-rule="evenodd"/>` +
+          `<g fill="url(#${u}b)" stroke="#4d3510" stroke-width=".7"><polygon points="${icStar(32, 32, 6, 21.5, 11.6)}"/>${tips}</g>` +
+          `<polygon points="${icStar(32, 32, 6, 17.6, 9.6)}" fill="none" stroke="#fbe7b0" stroke-width=".55" opacity=".7"/>` +
+          `<circle cx="32" cy="32" r="7.4" fill="#22170c" stroke="#fbe7b0" stroke-width=".6"/>` + icNote(32, 32.2, .44, '#e8cf8a'),
+      };
+    }
+    case 'neon': {
+      const plate = 'M17 9H55V47L47 55H9V17Z';
+      const haz = Array.from({length: 10}, (_, i) => `<path d="M${-30 + i * 6} 84L${-6 + i * 6} 60h3L${-27 + i * 6} 84Z"/>`).join('');
+      const slices = [[8, 22, 0], [22, 27.5, 3.2], [27.5, 37, -1.2], [37, 40, 2.4], [40, 60, 0]];
+      const note = c => icNote(31.5, 31.8, 1.45, c);
+      const sliced = slices.map(([y0, y1, dx], i) => `<clipPath id="${u}s${i}"><rect x="0" y="${y0}" width="64" height="${y1 - y0}"/></clipPath><g transform="translate(${dx} 0)"><g clip-path="url(#${u}s${i})"><g transform="translate(-1.6 0)">${note('#ff2a4d')}</g><g transform="translate(1.6 0)">${note('#00f0ff')}</g>${note('#fcee0a')}</g></g>`).join('');
+      return {
+        shape: '<path d="M0 0H50L64 14V64H14L0 50Z"/>',
+        bg: `${EXT} fill="#fcee0a"/><g fill="#07080e">${haz}</g>`,
+        fg: `<path d="${plate}" fill="#00f0ff" transform="translate(2.6 2.6)"/><path d="${plate}" fill="#07080e"/>` +
+          `<path d="M10.5 18.5V10.5H18.5" fill="none" stroke="#ff2a4d" stroke-width="1"/><rect x="21" y="12.6" width="9" height="2.4" fill="#fcee0a"/><rect x="31.5" y="12.6" width="2.4" height="2.4" fill="#ff2a4d"/>` +
+          sliced + `<rect x="12" y="34.8" width="16" height=".9" fill="#00f0ff"/><path d="M38 50.5h8" stroke="#fcee0a" stroke-width="1.6"/><path d="M50 50.5h2" stroke="#ff2a4d" stroke-width="1.6"/>`,
+      };
+    }
   }
   return null;
 }
@@ -116,10 +167,9 @@ function iconSVG(kind, hex, layer, size) {
   layer = layer || 'full'; size = size || 64;
   const u = 'ci' + (++iconSeq) + '_';
   const g64 = gameIcon(kind, u);
-  if (g64) {
-    if (layer === 'bg') return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">${g64.bg('full')}</svg>`;
-    if (layer === 'fg') return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-20 -20 104 104">${g64.fg}</svg>`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">${g64.bg('rounded')}${g64.fg}</svg>`;
+  if (g64) { // the adaptive layers are 108 dp, the 64-unit grid is its central 66 dp
+    if (layer === 'bg' || layer === 'fg') return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-20 -20 104 104">${g64[layer]}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64"><defs><clipPath id="${u}s">${g64.shape}</clipPath></defs><g clip-path="url(#${u}s)">${g64.bg}${g64.fg}</g></svg>`;
   }
   const note = (c, tf) => `<g transform="translate(54 54) ${tf || ''} scale(2.1) translate(-11.5 -11.6)"><path d="M9 17.5V6.2l10-2.2v11.3" fill="none" stroke="${c}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="17.5" r="2.9" fill="${c}"/><circle cx="16.5" cy="15.3" r="2.9" fill="${c}"/></g>`;
   const g = iconGradient(hex || ACCENTS[0].hex);

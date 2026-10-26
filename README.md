@@ -59,8 +59,8 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 | **B-Side** | Soft, rounded and calm, in your choice of theme colour | Accent underline | Light and dark |
 | **NieR: Automata** | YoRHa menus: beige paper on a fine grid, light-brown plates with square markers, scanlines | The plate fills dark from the left while thin lines slide out above and below | Paper and Ink |
 | **Persona 5** | The calling card: blood red, a field of pulsing star ripples, cut-out ransom letters, jagged black plates with white edges | A red and cyan highlight wiggling behind it | Always dark |
-| **Persona 3 Reload** | The pause menu under water: drifting caustics and light rays, a tilted stack of italic command words, a moon-phase date | White, on a red and white triangle cursor | Surface and Depths |
-| **Red Dead Redemption 2** | Native menus: every option on its own ink box, titles in a black brush banner, a tear-off almanac date | A rough red brush frame | Journal (paper) and Campfire (night) |
+| **Persona 3 Reload** | The pause menu under water: drifting caustics and light rays, a tilted stack of italic command words, the page name on a white ribbon on wide screens | White, on a red and white triangle cursor | Surface and Depths |
+| **Red Dead Redemption 2** | Native menus: every option on its own ink box, titles in a black brush banner, a "2 of 6" counter | A rough red brush frame | Journal (paper) and Campfire (night) |
 | **Cyberpunk 2077** | Settings menus: salmon red on near-black, cut corners, tick marks, bracketed counts, ‹ ON › switches | A cyan cut-corner frame | Neon (dark) and Yellow (street poster) |
 
 - **Every style moves its own way** when you change page: Persona 5 sweeps a red wipe and shakes the screen, Persona 3 ripples rings out, Red Dead sweeps an ink brush across, Cyberpunk slices and flickers, and NieR's titles glitch into place.
@@ -68,7 +68,7 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 - **Persona 5 has its own settings**: it's always dark, so *Settings* swaps the light/dark choice for *Animations* (Match device, Full or Reduced) and *Show the star field*. Every style respects your device's reduced-motion setting.
 - **Sound effects** synthesized live, with a different bank for each style: Persona 5's square-wave blips, whoosh and kick; Persona 3's glassy bells and bubbles; NieR's terminal blips; Red Dead's plucked guitar, register bell and rubber stamp; Cyberpunk's digital blips, saw zaps and sub drops. Choose *Off*, *Actions* or *Everything* (adds a soft tick as you move through menus) and set the volume. The effects never pass through the music equaliser.
 - **Theme colour** for the B-Side style: 11 colours or any colour code. Colours are adjusted for readable text in light and dark mode.
-- **The app icon follows the style and colour**: the browser tab icon on the web, and the home-screen icon on Android.
+- **The app icon follows the style and colour**: the browser tab icon on the web, and the home-screen icon on Android. Each game style has its own icon drawn from its game: a YoRHa record under a lock-on reticle (NieR), the B and a note cut out like calling-card letters (Persona 5), the Dark Hour moon wearing headphones (Persona 3), a brass lawman's star in the rough red frame (Red Dead) and a glitching note on street-poster yellow (Cyberpunk).
 
 <p align="center"><img src="docs/screenshots/favourite-moments.png" alt="Adding a song to favourites in each game style: Stolen!, FAVOURITE, KEEPER, TRACK SAVED and ARCHIVED" width="88%"></p>
 <p align="center"><img src="docs/screenshots/now-playing-styles.png" alt="Now Playing in Persona 5, Persona 3 Reload (Depths), Red Dead Redemption 2 (Campfire), Cyberpunk 2077 (Yellow) and NieR: Automata (Ink)" width="88%"></p>
@@ -213,7 +213,7 @@ b-side/
 ├── web/
 │   ├── app.html          the player: markup, base styles and code
 │   ├── skins/            one CSS file per game style, every rule scoped to [data-skin="…"]
-│   ├── skins.js          style-only pieces: cut-out letters, star field, HUD dates, page changes
+│   ├── skins.js          style-only pieces: cut-out letters, star field, ribbon, page changes
 │   ├── icons.js          app icon generator (tab icon, settings previews, launcher icons)
 │   ├── fonts.css         display fonts for the styles (embedded, works offline)
 │   ├── build.py          builds the single-file player

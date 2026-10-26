@@ -1,10 +1,9 @@
 /* ───────────────────────── game-style pieces ─────────────────────────
    Theme-only components, after the Game UI theme guide: each renders nothing (or is hidden by CSS)
-   outside its own style. Persona 5 (riot): cut-out letters, the star field, the date box, the
-   wiggling highlight. Persona 3 (tide): moon-phase date, the page word on a white ribbon, the
-   command help line. Red Dead Redemption 2 (frontier): the almanac page and the "2 of 6" counter.
-   Cyberpunk 2077 (neon): the date readout. Every style: the page-change effect and the moment a
-   song is added to favourites. */
+   outside its own style. Persona 5 (riot): cut-out letters, the star field, the wiggling
+   highlight. Persona 3 (tide): the page word on a white ribbon, the command help line. Red Dead
+   Redemption 2 (frontier): the "2 of 6" counter. Every style: the page-change effect and the
+   moment a song is added to favourites. */
 
 /* Animations: Persona 5 has its own setting (Match device / Full / Reduced); the others follow the device. */
 function motionReduced() {
@@ -41,44 +40,6 @@ function setHeroTitle(text) {
 function setHeroSub(n, label) { // "15 songs": a number and a label each style can set apart
   $('#heroSub').innerHTML = n == null ? `<span class="hs-l">${esc(label)}</span>` : `<b class="hs-n">${n}</b> <span class="hs-l">${esc(label)}</span>`;
 }
-
-/* ── dates for the HUD widgets ── */
-const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const dayFirst = (() => { try { return new Intl.DateTimeFormat(undefined, {day: 'numeric', month: 'numeric'}).formatToParts(new Date(2000, 10, 22))[0].type === 'day'; } catch (e) { return true; } })();
-const pad2 = n => String(n).padStart(2, '0');
-function timeOfDay(h) { return h < 5 ? 'Late night' : h < 11 ? 'Morning' : h < 13 ? 'Midday' : h < 17 ? 'Afternoon' : h < 21 ? 'Evening' : 'Late night'; }
-/* Moon phase for the Persona 3 date (age of the moon from a known new moon). */
-const SYNODIC = 29.530588853, NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);
-const PHASES = [[1.84, 'New moon'], [5.53, 'Waxing crescent'], [9.22, 'First quarter'], [12.91, 'Waxing gibbous'], [16.61, 'Full moon'], [20.3, 'Waning gibbous'], [23.99, 'Last quarter'], [27.68, 'Waning crescent'], [99, 'New moon']];
-function moonPhase(d) {
-  const e = new Date(d); e.setHours(21, 0, 0, 0);
-  let age = ((e.getTime() - NEW_MOON) / 86400000) % SYNODIC; if (age < 0) age += SYNODIC;
-  return {fraction: age / SYNODIC, name: PHASES.find(([lim]) => age < lim)[1]};
-}
-function southern() { // the moon looks mirrored left to right south of the equator
-  try { return /^(Australia|Antarctica)\/|^Pacific\/(Auckland|Chatham|Fiji|Noumea|Efate|Port_Moresby)|^America\/(Argentina|Sao_Paulo|Santiago|Montevideo|Asuncion|La_Paz|Lima|Punta_Arenas)|^Africa\/(Johannesburg|Maputo|Harare|Windhoek|Gaborone|Lusaka|Maseru|Mbabane)|^Indian\/(Mauritius|Reunion|Antananarivo)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone || ''); } catch (e) { return false; }
-}
-function moonSVG(fraction, size = 44) {
-  const r = 20, c = 24, k = Math.cos(2 * Math.PI * fraction), rx = Math.abs(k) * r, waxing = fraction < .5, crescent = k > 0;
-  const lit = `M ${c} ${c - r} A ${r} ${r} 0 0 1 ${c} ${c + r} A ${rx.toFixed(2)} ${r} 0 0 ${crescent ? 0 : 1} ${c} ${c - r} Z`;
-  const mirror = waxing === southern();
-  return `<svg class="tide-moon" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true"><circle cx="${c}" cy="${c}" r="${r}" class="moon-dark"/>${fraction > .015 && fraction < .985 ? `<path d="${lit}" class="moon-lit"${mirror ? ' transform="translate(48 0) scale(-1 1)"' : ''}/>` : ''}<circle cx="${c}" cy="${c}" r="${r}" class="moon-rim"/></svg>`;
-}
-let hudKey = '';
-function updateHud() {
-  const el = $('#hud'), skin = skinOf(), d = new Date();
-  const key = skin + d.toDateString() + (skin === 'riot' ? timeOfDay(d.getHours()) : '');
-  if (key === hudKey) return; hudKey = key;
-  const a = dayFirst ? d.getDate() : d.getMonth() + 1, b = dayFirst ? d.getMonth() + 1 : d.getDate();
-  let h = '';
-  if (skin === 'riot') h = `<span class="rd-num">${a}<i>/</i>${b}</span><span class="rd-side"><span class="rd-day">${WD[d.getDay()].toUpperCase()}</span><span class="rd-tod">${timeOfDay(d.getHours())}</span></span>`;
-  else if (skin === 'tide') { const p = moonPhase(d); h = `${moonSVG(p.fraction)}<span class="td-text"><span class="td-num">${a}/${b}<small>${WD[d.getDay()]}</small></span><span class="td-phase">${p.name}</span></span>`; el.title = p.name; }
-  else if (skin === 'frontier') h = `<span class="fr-month">${MON[d.getMonth()]}</span><span class="fr-day">${d.getDate()}</span><span class="fr-wd">${WDL[d.getDay()]}</span>`;
-  else if (skin === 'neon') h = `<span class="nn-wd">${WD[d.getDay()].toUpperCase()}</span><span class="nn-num">${pad2(a)}.${pad2(b)}</span><span class="nn-yr">${d.getFullYear()}</span>`;
-  el.innerHTML = h; el.className = 'hud hud-' + skin;
-}
-setInterval(updateHud, 60000);
 
 /* Persona 3: the page name huge on a white ribbon down the left of wide windows. Its size comes from the
    window height divided by the word's measured length (Montserrat Black Italic, in em), so long names fit. */

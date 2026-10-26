@@ -371,7 +371,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 .hero{position:relative}
 .hero,.view{z-index:1}
 .view{position:relative;overflow-x:clip}
-.deco,.fx,.wipe,.hud,.ribbon,.key-hints,.fr-counter,.hl,.ransom,.done-fx,.starfield{display:none;pointer-events:none}
+.deco,.fx,.wipe,.ribbon,.key-hints,.fr-counter,.hl,.ransom,.done-fx,.starfield{display:none;pointer-events:none}
 .deco{position:fixed;inset:0;z-index:0;overflow:hidden}
 .np-deco{position:absolute}
 .fx{position:fixed;inset:0;z-index:46}
@@ -379,7 +379,6 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 .wipe i{position:absolute;display:block}
 .starfield{position:fixed;inset:0;width:100%;height:100%;z-index:0}
 .done-fx{position:fixed;inset:0;z-index:96;display:grid;place-items:center;overflow:hidden}
-.hud{position:absolute;z-index:2;right:max(20px,calc((100vw - 1040px) / 2 + 26px));top:calc(var(--sat) + 18px)}
 .hero .hs-n{font-weight:inherit}
 :root[data-skin]:not([data-skin="bside"]) .np-bg{display:none}
 @media (prefers-reduced-motion:reduce){.wipe,.done-fx{display:none!important}.deco::before,.deco::after{animation:none!important}}
@@ -524,7 +523,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 <div class="fx" aria-hidden="true"></div>
 <div class="ribbon" id="ribbon" aria-hidden="true"></div>
 <div class="key-hints" id="keyHints" aria-hidden="true"></div>
-<div id="hero" class="hero"><div class="hud" id="hud" aria-hidden="true"></div><div class="wrap"><h1 id="heroTitle">Tracks</h1><p id="heroSub">&nbsp;</p></div></div>
+<div id="hero" class="hero"><div class="wrap"><h1 id="heroTitle">Tracks</h1><p id="heroSub">&nbsp;</p></div></div>
 <header id="appbar" class="appbar">
   <div class="wrap ab-in">
     <button class="ib" id="abBack" aria-label="Back"><svg class="ico"><use href="#i-back"/></svg></button>
@@ -2283,7 +2282,7 @@ async function settingsSheet() {
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.6 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -2671,7 +2670,7 @@ function applyTheme() {
   try { NATIVE && NATIVE.setBackground && NATIVE.setBackground(bar); } catch (e) {}
   notifColour = (cs.getPropertyValue('--accent') || '').trim() || ACCENTS[0].hex;
   setHeroTitle(tabTitle[S.tab] || 'Tracks');
-  applyMotion(); starfield.sync(); updateHud(); updateRibbon(); updateKeyHints();
+  applyMotion(); starfield.sync(); updateRibbon(); updateKeyHints();
   if (skin !== lastSkin) { const was = lastSkin; lastSkin = skin; if (was) { renderTabs(); updateChrome(); } }
   applyIcons();
 }
