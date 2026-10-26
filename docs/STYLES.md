@@ -121,9 +121,9 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Page change:** three rings ripple out.
 - **Favourite:** glass shards burst out and *FAVOURITE* slides in on a red underline.
 - **Sound:** glassy bells, bubbles and a soft echo.
-- **Icon:** an original pocket music player, a nod to the hero who always has music on: a white player with a hard
-  dark shadow, the moon on its screen, a red play button and earbuds, glowing under water above the red and white
-  cursor.
+- **Icon:** an original pocket music player, a nod to the hero who always has music on, drawn in brush ink: a black
+  player with a white keyline and a cyan shadow, the moon on its screen, a cyan play ring and earbuds, glowing under
+  water above the red and white cursor.
 
 ## Red Dead Redemption 2 (`frontier`)
 

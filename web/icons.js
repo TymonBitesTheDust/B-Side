@@ -55,7 +55,7 @@ let iconSeq = 0;
 /* Game-style icons: a tribute to each game, drawn on a 64-unit grid, with Checkmate's icons as a starting point only.
    NieR: Automata, a record in YoRHa ink under a lock-on reticle, on the beige grid;
    Persona 5, a big white note slashed across a red and black split, with halftone dots, stars and shards;
-   Persona 3 Reload, an original pocket music player with earbuds, the moon on its screen, under water;
+   Persona 3 Reload, an original pocket music player in brush ink with a cyan shadow and earbuds, under water;
    Red Dead Redemption 2, a brass lawman's star in the rough red brush frame, on black ink;
    Cyberpunk 2077, a note glitching into cyan and red on a cut-corner black plate, on street-poster yellow.
    Each returns its full-icon outline (shape), the background (bg) and the foreground (fg). */
@@ -113,23 +113,24 @@ function gameIcon(kind, u) {
     }
     case 'tide': {
       const tri = (x, y, w, h, dir) => dir > 0 ? `M${x} ${y - h / 2}L${x + w} ${y}L${x} ${y + h / 2}Z` : `M${x + w} ${y - h / 2}L${x} ${y}L${x + w} ${y + h / 2}Z`;
+      const cable = 'M35 52.4C35.6 57.6 42.6 59.4 46.6 55.8C50.4 52.4 47.4 47.6 49.6 43.6C51 41 53.6 40.6 55.2 41.8M49.6 43.6C48.6 40.2 49 36.6 51.6 34.6';
       return { shape: '<rect width="64" height="64" rx="14"/>',
         bg: icOcean(u),
-        fg: `<defs><radialGradient id="${u}g"><stop offset=".35" stop-color="#bff6ff" stop-opacity=".55"/><stop offset="1" stop-color="#bff6ff" stop-opacity="0"/></radialGradient><linearGradient id="${u}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a5fe0"/><stop offset="1" stop-color="#050c3a"/></linearGradient></defs>` +
-          `<circle cx="34" cy="30" r="25" fill="url(#${u}g)"/>` +
-          `<polygon points="4,58 50,46 40,56" fill="#fff" transform="translate(1.6 -1.9)"/><polygon points="4,58 50,46 40,56" fill="#ff1f3d"/>` +
-          `<g transform="rotate(-11 32 31)" fill="none" stroke="#fff" stroke-width="1.05" stroke-linecap="round"><path d="M35.5 7.5C35.5 2.6 28 1.4 22.6 4"/><path d="M22.6 4C18.6 6 15.6 8.6 13.4 11.6"/><path d="M22.6 4C20 8.6 18.4 13 17.6 17.4"/></g>` +
-          `<g transform="rotate(-11 32 31)">` +
-          `<rect x="24.6" y="11.6" width="23" height="40" rx="4.6" fill="#050816"/><rect x="22" y="9" width="23" height="40" rx="4.6" fill="#f4fbff"/><rect x="22" y="9" width="23" height="40" rx="4.6" fill="none" stroke="#050816" stroke-width="1"/>` +
-          `<rect x="24.8" y="12" width="17.4" height="17.6" rx="1.6" fill="url(#${u}d)"/>` +
-          `<circle cx="33.5" cy="19" r="4.4" fill="#f2f8d8"/><path d="M26.4 25.2h14.2" stroke="#6ae6fb" stroke-width=".6" opacity=".7"/><rect x="26.4" y="26.9" width="14.2" height="1" fill="#0b1c82"/><rect x="26.4" y="26.9" width="8.6" height="1" fill="#6ae6fb"/>` +
-          `<circle cx="33.5" cy="39.2" r="4.6" fill="#ff1f3d"/><path d="${tri(32.2, 39.2, 3.6, 4, 1)}" fill="#fff"/>` +
-          `<path d="${tri(24.4, 39.2, 2.2, 2.8, -1)}${tri(26.4, 39.2, 2.2, 2.8, -1)}${tri(38.4, 39.2, 2.2, 2.8, 1)}${tri(40.4, 39.2, 2.2, 2.8, 1)}" fill="#050816"/>` +
-          `<path d="M27 45.2h13" stroke="#050816" stroke-width=".8" stroke-linecap="round" opacity=".35"/>` +
-          `<path d="M35.5 9.2V7.2" stroke="#050816" stroke-width="2.2"/></g>` +
-          `<g transform="rotate(-11 32 31)"><g transform="rotate(35 11.8 14.2)"><rect x="11" y="9.6" width="1.6" height="3.6" rx=".8" fill="#050816"/><circle cx="11.8" cy="14.2" r="3.1" fill="#050816"/><circle cx="11.8" cy="14.2" r="1.5" fill="#0bc8ff"/></g>` +
-          `<g transform="rotate(10 17 21.6)"><rect x="16.2" y="17" width="1.6" height="3.6" rx=".8" fill="#050816"/><circle cx="17" cy="21.6" r="3.1" fill="#050816"/><circle cx="17" cy="21.6" r="1.5" fill="#0bc8ff"/></g></g>` +
-          icNote(52.5, 22, .5, '#fff') + icNote(51, 51.5, .32, '#e6fdff'),
+        fg: `<defs><radialGradient id="${u}g"><stop offset=".35" stop-color="#bff6ff" stop-opacity=".5"/><stop offset="1" stop-color="#bff6ff" stop-opacity="0"/></radialGradient><linearGradient id="${u}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a5fe0"/><stop offset="1" stop-color="#050c3a"/></linearGradient></defs>` +
+          `<circle cx="32" cy="30" r="25" fill="url(#${u}g)"/>` +
+          `<polygon points="4,59 47,47.5 37.5,57" fill="#fff" transform="translate(1.6 -1.9)"/><polygon points="4,59 47,47.5 37.5,57" fill="#ff1f3d"/>` +
+          `<g transform="rotate(-14 32 32)">` +
+          `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="${cable}" stroke="#0bc8ff" stroke-width="1.6" transform="translate(1 1)"/><path d="${cable}" stroke="#050816" stroke-width="1.5"/></g>` +
+          `<g transform="translate(55.2 41.8) rotate(-30)"><ellipse cx="1" cy="1" rx="2.4" ry="3" fill="#0bc8ff"/><ellipse rx="2.4" ry="3" fill="#050816"/><path d="M-1.2 -1.6l1.2-.8" stroke="#fff" stroke-width=".6" stroke-linecap="round"/></g>` +
+          `<g transform="translate(51.6 34.6) rotate(20)"><ellipse cx="1" cy="1" rx="2.4" ry="3" fill="#0bc8ff"/><ellipse rx="2.4" ry="3" fill="#050816"/><path d="M-1.2 -1.6l1.2-.8" stroke="#fff" stroke-width=".6" stroke-linecap="round"/></g>` +
+          `<path d="${icRough(23.8, 10.8, 22, 44, .9, 8, 2)}" fill="#0bc8ff"/><path d="${icRough(19.9, 6.9, 24.2, 46.2, .55, 12, 2)}" fill="#fff"/><path d="${icRough(21, 8, 22, 44, .45, 4, 2)}" fill="#050816"/>` +
+          `<path d="M22.4 12.5L23.5 12.2L23 47.5L22.2 47.8Z" fill="#fff" opacity=".9"/><path d="M38.5 9.3L41.8 9.1L41.7 10.2Z" fill="#fff" opacity=".8"/>` +
+          `<rect x="24.2" y="12" width="15.6" height="17.4" fill="url(#${u}d)"/><circle cx="32" cy="18.8" r="4.3" fill="#f2f8d8"/><path d="M25.6 26.2h12.8" stroke="#6ae6fb" stroke-width=".6" opacity=".75"/>` +
+          `<path d="M26.6 12L24.2 15.2V13.6L25.4 12ZM37.4 29.4L39.8 26.2V27.8L38.6 29.4Z" fill="#fff" opacity=".35"/>` +
+          `<circle cx="32" cy="39.6" r="5" fill="none" stroke="#0bc8ff" stroke-width="1.2"/><path d="${tri(30.5, 39.6, 3.8, 4.4, 1)}" fill="#fff"/>` +
+          `<path d="${tri(23.4, 39.6, 2, 2.6, -1)}${tri(25.2, 39.6, 2, 2.6, -1)}${tri(38.8, 39.6, 2, 2.6, 1)}${tri(40.6, 39.6, 2, 2.6, 1)}" fill="#fff"/>` +
+          `<path d="M27 47.6h10" stroke="#fff" stroke-width=".8" stroke-linecap="round" opacity=".35"/></g>` +
+          icNote(11.4, 14, .5, '#fff') + `<g fill="#fff"><circle cx="18" cy="9.5" r=".7"/><circle cx="8" cy="24" r=".55"/></g>`,
       };
     }
     case 'frontier': {

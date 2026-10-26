@@ -2282,7 +2282,7 @@ async function settingsSheet() {
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7.1 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7.2 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
