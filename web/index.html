@@ -2129,8 +2129,8 @@ function iconGradient(hex) {
 let iconSeq = 0;
 /* Game-style icons: a tribute to each game, drawn on a 64-unit grid, with Checkmate's icons as a starting point only.
    NieR: Automata, a record in YoRHa ink under a lock-on reticle, on the beige grid;
-   Persona 5, the B and a note cut out like a calling card's ransom letters, on a black burst over red rays;
-   Persona 3 Reload, the full moon of the Dark Hour wearing headphones, under water, with the red cursor;
+   Persona 5, a big white note slashed across a red and black split, with halftone dots, stars and shards;
+   Persona 3 Reload, an original pocket music player with earbuds, the moon on its screen, under water;
    Red Dead Redemption 2, a brass lawman's star in the rough red brush frame, on black ink;
    Cyberpunk 2077, a note glitching into cyan and red on a cut-corner black plate, on street-poster yellow.
    Each returns its full-icon outline (shape), the background (bg) and the foreground (fg). */
@@ -2148,19 +2148,15 @@ function icNote(cx, cy, k, c, extra, edge) {
   const body = (col, sw, r) => `<path d="M9 17.5V6.2l10-2.2v11.3" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="17.5" r="${r}" fill="${col}"/><circle cx="16.5" cy="15.3" r="${r}" fill="${col}"/>`;
   return `<g transform="translate(${cx} ${cy}) ${extra || ''} scale(${k}) translate(-11.5 -11.6)">${edge ? body(edge, 2.3 + 2.6, 2.9 + 1.3) : ''}${body(c, 2.3, 2.9)}</g>`;
 }
-/* "B" from Abril Fatface (SIL Open Font License), 100 units to the em, baseline at y 0 */
-const IC_B = 'M2.1 -70H32Q45.9 -70 52.8 -66.2Q59.8 -62.5 59.8 -53.6Q59.8 -39.9 43.3 -37.2V-37Q63.3 -34.5 63.3 -19.6Q63.3 -8.7 55.1 -4.3Q46.9 0 31.5 0H2.1V-1.9H8.6V-68.1H2.1ZM28.1 -35.4V-1.9H32.8Q38.3 -1.9 40.5 -5.7Q42.7 -9.5 42.7 -16.9V-22.2Q42.7 -28.8 40 -32.1Q37.3 -35.4 30.4 -35.4ZM28.1 -68.1V-37.3H30.7Q35.9 -37.3 37.9 -40.4Q40 -43.6 40 -50.1V-54.8Q40 -62.2 38.2 -65.1Q36.4 -68.1 31.3 -68.1Z';
 function icPts(a) { return a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '); }
-function icJagged(cx, cy, n, rIn, rOut, seed, rot) {
-  const r = icRng(seed), pts = [];
-  for (let i = 0; i < n * 2; i++) {
-    const a = (i + (r() - .5) * .55) / (n * 2) * Math.PI * 2 + (rot || 0);
-    const rad = i % 2 ? rIn * (.85 + r() * .3) : rOut * (.82 + r() * .3);
-    pts.push([cx + rad * Math.cos(a), cy + rad * Math.sin(a)]);
-  }
-  return icPts(pts);
-}
 function icStar(cx, cy, n, ro, ri, rot) { const p = []; for (let i = 0; i < n * 2; i++) { const r = i % 2 ? ri : ro, a = Math.PI * i / n - Math.PI / 2 + (rot || 0); p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return icPts(p); }
+/* halftone dots that shrink away from cx,cy */
+function icHalftone(cx, cy, step, rmax, reach, fill, op) { let s = '', row = 0; for (let y = -20; y <= 84; y += step, row++) for (let x = -20 + (row % 2 ? step / 2 : 0); x <= 84; x += step) { const r = rmax * (1 - Math.hypot(x - cx, y - cy) / reach); if (r > .18) s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}"/>`; } return `<g fill="${fill}" opacity="${op}">${s}</g>`; }
+/* Persona 3 Reload: the ocean, its light rays, the bright surface and a few bubbles */
+const icOcean = u => `<defs><linearGradient id="${u}o" gradientUnits="userSpaceOnUse" x1="0" y1="-4" x2="0" y2="68"><stop offset="0" stop-color="#2fd2ff"/><stop offset=".28" stop-color="#1a7ff0"/><stop offset=".62" stop-color="#1438c4"/><stop offset=".86" stop-color="#0b1c82"/><stop offset="1" stop-color="#071052"/></linearGradient></defs>` +
+  `${EXT} fill="url(#${u}o)"/><g fill="#fff" opacity=".07"><path d="M-6 -20H10L-4 84H-20Z"/><path d="M18 -20H25L14 84H4Z"/><path d="M38 -20H44L44 84H32Z"/></g>` +
+  `<path d="M-20 1c6-3 10 2 16 0s9-4 15-1 10 2 15 0 12-2 18 1 9 2 14 0 10-2 16 1v5c-6-2-11 1-17 0s-9-3-15-1-10 3-16 1-10-2-16 1-9 1-14-1-10-1-16 1z" fill="#fff" opacity=".18"/>` +
+  `<g fill="none" stroke="#fff" stroke-width=".45" opacity=".45"><circle cx="9" cy="47" r="1.4"/><circle cx="12" cy="41" r=".8"/><circle cx="55" cy="44" r="1.1"/><circle cx="52" cy="53" r=".7"/></g>`;
 /* the background layer is drawn past the 64-unit grid, out to the edge of Android's 108 dp canvas */
 const EXT = '<rect x="-20" y="-20" width="104" height="104"';
 function gameIcon(kind, u) {
@@ -2182,30 +2178,33 @@ function gameIcon(kind, u) {
       };
     }
     case 'riot': {
-      const rays = Array.from({length: 10}, (_, i) => { const a = i * Math.PI / 5, w = .16; return `<polygon points="${icPts([[32, 32], [32 + 90 * Math.cos(a - w), 32 + 90 * Math.sin(a - w)], [32 + 90 * Math.cos(a + w), 32 + 90 * Math.sin(a + w)]])}"/>`; }).join('');
-      const burst = icJagged(32, 32.5, 9, 17, 27.5, 7, -.2);
-      return {
-        shape: '<rect width="64" height="64" rx="6"/>',
-        bg: `${EXT} fill="#e5191c"/><g fill="#b70d10">${rays}</g>`,
-        fg: `<polygon points="${burst}" fill="#fff" transform="translate(32 32.5) scale(1.1) translate(-32 -32.5)"/><polygon points="${burst}" fill="#0b0a0a"/>` +
-          `<g transform="translate(23.5 30) rotate(-9)"><rect x="-11.5" y="-13" width="23" height="26" fill="#fff"/><path d="${IC_B}" transform="translate(-9.5 10.2) scale(.29)" fill="#0b0a0a"/></g>` +
-          `<g transform="translate(42.5 40.5) rotate(11)"><rect x="-9.5" y="-10.5" width="19" height="21" fill="#e5191c" stroke="#fff" stroke-width="1.6"/>${icNote(0, .3, .7, '#fff')}</g>`,
+      const seam = icPts([[-20, 66], [6, 54], [12, 57], [26, 46], [31, 49], [48, 36], [52, 39], [84, 16]]);
+      return { shape: '<rect width="64" height="64" rx="6"/>',
+        bg: `${EXT} fill="#e5191c"/>${icHalftone(4, 4, 3, 1.4, 40, '#0b0a0a', .5)}<polygon points="${seam} 84,84 -20,84" fill="#0b0a0a"/><polyline points="${seam}" fill="none" stroke="#fff" stroke-width="1.5" stroke-linejoin="miter"/>`,
+        fg: icNote(34.4, 34.6, 1.95, '#0b0a0a', 'rotate(-11)', '#0b0a0a') + icNote(32, 32, 1.95, '#fff', 'rotate(-11)', '#0b0a0a') +
+          `<polygon points="47,12 55,9 51,16" fill="#fff" stroke="#0b0a0a" stroke-width=".8"/><polygon points="9,22 15,25 8,27" fill="#0b0a0a" stroke="#fff" stroke-width=".8"/><polygon points="52,48 58,52 50,53" fill="#fff" stroke="#0b0a0a" stroke-width=".8"/>` +
+          `<polygon points="${icStar(15, 13, 5, 4.6, 2, -.2)}" fill="#fff" stroke="#0b0a0a" stroke-width="1"/><polygon points="${icStar(53, 27, 5, 2.6, 1.1, .3)}" fill="#0b0a0a" stroke="#fff" stroke-width=".8"/>`,
       };
     }
     case 'tide': {
-      const rays = [[-6, 10, -10, 4], [16, 24, 8, 30], [36, 41, 30, 44]].map(([a, b, c, d]) => `<path d="M${a} -20H${b}L${d + 10} 84H${c - 6}Z"/>`).join('');
-      return {
-        shape: '<rect width="64" height="64" rx="14"/>',
-        bg: `<defs><linearGradient id="${u}g" gradientUnits="userSpaceOnUse" x1="0" y1="-4" x2="0" y2="68"><stop offset="0" stop-color="#5ff0ff"/><stop offset=".3" stop-color="#1a8ff0"/><stop offset=".68" stop-color="#1438c4"/><stop offset="1" stop-color="#0b1c82"/></linearGradient></defs>` +
-          `${EXT} fill="url(#${u}g)"/><g fill="#fff" opacity=".07">${rays}</g>` +
-          `<path d="M-20 3c6-3 10 2 16 0s9-4 15-1 10 2 15 0 12-2 18 1 9 2 14 0 10-2 16 1v5c-6-2-11 1-17 0s-9-3-15-1-10 3-16 1-10-2-16 1-9 1-14-1-10-1-16 1z" fill="#fff" opacity=".2"/>`,
-        fg: `<defs><radialGradient id="${u}m"><stop offset=".55" stop-color="#bff6ff" stop-opacity=".55"/><stop offset="1" stop-color="#bff6ff" stop-opacity="0"/></radialGradient></defs>` +
-          `<circle cx="32" cy="29" r="19" fill="url(#${u}m)"/><circle cx="32" cy="29" r="12" fill="#effbff"/>` +
-          `<g fill="#9fdcf2" opacity=".55"><circle cx="28" cy="25.5" r="2.6"/><circle cx="36.5" cy="32.5" r="1.9"/><circle cx="35.2" cy="23.6" r="1.2"/></g>` +
-          `<g transform="rotate(-8 32 34)"><path d="M13.5 38A18.5 18.5 0 0 1 50.5 38" fill="none" stroke="#050816" stroke-width="3.8"/><path d="M13.5 38A18.5 18.5 0 0 1 50.5 38" fill="none" stroke="#6ae6fb" stroke-width="1"/>` +
-          `<rect x="8" y="33" width="10" height="16" rx="3.8" fill="#050816"/><rect x="10.8" y="36.2" width="4.4" height="9.6" rx="2.2" fill="#0bc8ff"/>` +
-          `<rect x="46" y="33" width="10" height="16" rx="3.8" fill="#050816"/><rect x="48.8" y="36.2" width="4.4" height="9.6" rx="2.2" fill="#0bc8ff"/></g>` +
-          `<polygon points="12,58.5 52,49 41,58" fill="#fff" transform="translate(1.6 -1.8)"/><polygon points="12,58.5 52,49 41,58" fill="#ff1f3d"/>`,
+      const tri = (x, y, w, h, dir) => dir > 0 ? `M${x} ${y - h / 2}L${x + w} ${y}L${x} ${y + h / 2}Z` : `M${x + w} ${y - h / 2}L${x} ${y}L${x + w} ${y + h / 2}Z`;
+      return { shape: '<rect width="64" height="64" rx="14"/>',
+        bg: icOcean(u),
+        fg: `<defs><radialGradient id="${u}g"><stop offset=".35" stop-color="#bff6ff" stop-opacity=".55"/><stop offset="1" stop-color="#bff6ff" stop-opacity="0"/></radialGradient><linearGradient id="${u}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a5fe0"/><stop offset="1" stop-color="#050c3a"/></linearGradient></defs>` +
+          `<circle cx="34" cy="30" r="25" fill="url(#${u}g)"/>` +
+          `<polygon points="4,58 50,46 40,56" fill="#fff" transform="translate(1.6 -1.9)"/><polygon points="4,58 50,46 40,56" fill="#ff1f3d"/>` +
+          `<g transform="rotate(-11 32 31)" fill="none" stroke="#fff" stroke-width="1.05" stroke-linecap="round"><path d="M35.5 7.5C35.5 2.6 28 1.4 22.6 4"/><path d="M22.6 4C18.6 6 15.6 8.6 13.4 11.6"/><path d="M22.6 4C20 8.6 18.4 13 17.6 17.4"/></g>` +
+          `<g transform="rotate(-11 32 31)">` +
+          `<rect x="24.6" y="11.6" width="23" height="40" rx="4.6" fill="#050816"/><rect x="22" y="9" width="23" height="40" rx="4.6" fill="#f4fbff"/><rect x="22" y="9" width="23" height="40" rx="4.6" fill="none" stroke="#050816" stroke-width="1"/>` +
+          `<rect x="24.8" y="12" width="17.4" height="17.6" rx="1.6" fill="url(#${u}d)"/>` +
+          `<circle cx="33.5" cy="19" r="4.4" fill="#f2f8d8"/><path d="M26.4 25.2h14.2" stroke="#6ae6fb" stroke-width=".6" opacity=".7"/><rect x="26.4" y="26.9" width="14.2" height="1" fill="#0b1c82"/><rect x="26.4" y="26.9" width="8.6" height="1" fill="#6ae6fb"/>` +
+          `<circle cx="33.5" cy="39.2" r="4.6" fill="#ff1f3d"/><path d="${tri(32.2, 39.2, 3.6, 4, 1)}" fill="#fff"/>` +
+          `<path d="${tri(24.4, 39.2, 2.2, 2.8, -1)}${tri(26.4, 39.2, 2.2, 2.8, -1)}${tri(38.4, 39.2, 2.2, 2.8, 1)}${tri(40.4, 39.2, 2.2, 2.8, 1)}" fill="#050816"/>` +
+          `<path d="M27 45.2h13" stroke="#050816" stroke-width=".8" stroke-linecap="round" opacity=".35"/>` +
+          `<path d="M35.5 9.2V7.2" stroke="#050816" stroke-width="2.2"/></g>` +
+          `<g transform="rotate(-11 32 31)"><g transform="rotate(35 11.8 14.2)"><rect x="11" y="9.6" width="1.6" height="3.6" rx=".8" fill="#050816"/><circle cx="11.8" cy="14.2" r="3.1" fill="#050816"/><circle cx="11.8" cy="14.2" r="1.5" fill="#0bc8ff"/></g>` +
+          `<g transform="rotate(10 17 21.6)"><rect x="16.2" y="17" width="1.6" height="3.6" rx=".8" fill="#050816"/><circle cx="17" cy="21.6" r="3.1" fill="#050816"/><circle cx="17" cy="21.6" r="1.5" fill="#0bc8ff"/></g></g>` +
+          icNote(52.5, 22, .5, '#fff') + icNote(51, 51.5, .32, '#e6fdff'),
       };
     }
     case 'frontier': {
@@ -4038,7 +4037,7 @@ async function settingsSheet() {
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7.1 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);

@@ -27,7 +27,7 @@ styles. B-Side applies it to a music player:
 - **Only what a music player needs.** The guide's corner date widget is left out: the header holds just the page
   title and its count.
 - **Icons are tributes too.** Checkmate's icons were the starting point, but each B-Side icon is drawn fresh from its
-  game, around something that says music: a record, a cut-out note, headphones, a star badge, a glitching note.
+  game, around something that says music: a record, a slashed note, a pocket player, a star badge, a glitching note.
 
 How B-Side maps the guide's pieces onto a music player:
 
@@ -95,8 +95,8 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Page change:** a red and a black shard sweep across and the screen shakes.
 - **Favourite:** a red slash across the screen and *Stolen!* stamped in cut-out letters.
 - **Sound:** square-wave blips, a whoosh and a kick on page change, a slash and cymbal ping when you like a song.
-- **Icon:** a calling card: a white cut-out **B** (Abril Fatface) and a red cut-out note, tilted against each other on
-  a white-edged black burst, over red rays.
+- **Icon:** a big white note with a black outline and a hard black shadow, slashed across a red and black split by a
+  jagged white seam, with halftone dots, stars and flying shards.
 - **Settings:** *Animations* (Match device, Full or Reduced) and *Show the star field* replace the light/dark choice.
 
 ## Persona 3 Reload (`tide`)
@@ -121,8 +121,9 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Page change:** three rings ripple out.
 - **Favourite:** glass shards burst out and *FAVOURITE* slides in on a red underline.
 - **Sound:** glassy bells, bubbles and a soft echo.
-- **Icon:** the full moon of the Dark Hour wearing headphones (black cups with cyan pads), glowing under water, with
-  the red and white cursor below.
+- **Icon:** an original pocket music player, a nod to the hero who always has music on: a white player with a hard
+  dark shadow, the moon on its screen, a red play button and earbuds, glowing under water above the red and white
+  cursor.
 
 ## Red Dead Redemption 2 (`frontier`)
 

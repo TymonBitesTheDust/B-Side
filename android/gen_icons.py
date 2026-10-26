@@ -102,7 +102,8 @@ async def main():
             layers = (('full', 192, ''),) if vector else (('bg', 432, '_bg'), ('fg', 432, '_fg'), ('full', 192, ''))
             for layer, px, suffix in layers:
                 url = await page.evaluate('([k, h, l, s]) => render(k, h, l, s)', [v['kind'], v['hex'], layer, px])
-                save_png(url, OUT / 'mipmap-xxxhdpi' / f"ic_l_{vid}{suffix}.png", palette=not vector)
+                # Persona 3's soft glow bands when cut to 256 colours, so it stays full colour
+                save_png(url, OUT / 'mipmap-xxxhdpi' / f"ic_l_{vid}{suffix}.png", palette=not vector and vid != 'tide')
             if vector:
                 a, b, c = await page.evaluate('h => iconGradient(h)', v['hex'])
                 (OUT / 'drawable' / f'ic_l_{vid}_bg.xml').write_text(VEC_BG.format(a=argb(a), b=argb(b), c=argb(c)), encoding='utf-8')
