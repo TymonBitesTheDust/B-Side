@@ -291,3 +291,10 @@
   [data-skin="neon"] .tab { font-size: 14px; padding: 9px 11px 8px 13px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="neon"] .hero.anim h1 { animation: none; } }
+/* ---------- fast scroll: technical letters, the chosen one in glowing cyan; the bubble is a cut-corner menu frame ---------- */
+[data-skin="neon"] .fs-rail b { font-weight: 700; font-size: 12px; color: var(--text-3); }
+[data-skin="neon"] .fs-rail b.on { color: var(--accent); text-shadow: 0 0 8px rgba(var(--accent-rgb), .6); }
+[data-skin="neon"] .fscroll.drag .fs-rail { background: var(--fr-fill); box-shadow: inset 0 0 0 1px var(--line-strong); clip-path: var(--cut-tr-sm); }
+[data-skin="neon"] .fs-thumb i { width: 4px; background: var(--fr); opacity: .8; }
+[data-skin="neon"] .fscroll.drag .fs-thumb i, [data-skin="neon"] .fs-thumb:hover i { width: 6px; background: var(--sel); opacity: 1; }
+[data-skin="neon"] .fs-bubble { background: #0d0f17; color: #5ef6ff; font-weight: 700; text-transform: uppercase; box-shadow: inset 0 0 0 1px #5ef6ff, inset 4px 0 0 #5ef6ff; text-shadow: 0 0 12px rgba(94, 246, 255, .55); clip-path: var(--cut-tr); }

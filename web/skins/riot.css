@@ -294,3 +294,12 @@
   [data-skin="riot"] .hs-n { font-size: 38px; }
 }
 @media (pointer: coarse) { [data-skin="riot"] .row:hover { translate: none; } }
+/* ---------- fast scroll: a jagged black plate for the letters; the chosen one flips to white and tilts ---------- */
+[data-skin="riot"] .fs-rail { background: #0b0a0a; box-shadow: inset 0 0 0 2px #fff; clip-path: polygon(14% 0, 100% 1.5%, 86% 100%, 0 98.5%); }
+[data-skin="riot"] .fs-rail b { font-weight: 400; font-size: 12px; color: #fff; }
+[data-skin="riot"] .fs-rail b.dot { color: var(--text-3); }
+[data-skin="riot"] .fs-rail b.on { color: #0b0a0a; background: #fff; transform: rotate(-8deg); }
+[data-skin="riot"] .fs-thumb i { background: #fff; opacity: 1; box-shadow: 3px 3px 0 var(--red); }
+[data-skin="riot"] .fscroll.drag .fs-thumb i, [data-skin="riot"] .fs-thumb:hover i { background: var(--red); box-shadow: 3px 3px 0 #fff; }
+[data-skin="riot"] .fs-bubble { background: #0b0a0a; color: #fff; font-weight: 400; font-size: 40px; box-shadow: inset 0 0 0 3px #fff; text-shadow: 3px 3px 0 var(--red); clip-path: var(--cp-btn); }
+[data-skin="riot"] .fscroll.drag .fs-bubble.on { transform: rotate(-6deg); }
