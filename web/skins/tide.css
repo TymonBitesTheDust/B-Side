@@ -310,3 +310,11 @@
   [data-skin="tide"] .tab { font-size: 19px; padding: 8px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="tide"] .tab.on .hl::before, [data-skin="tide"] .tab.on .hl::after, [data-skin="tide"] .play::after { animation: none; } }
+/* ---------- fast scroll: italic command letters; the chosen one is white on the red-edged cursor ---------- */
+[data-skin="tide"] .fs-rail b { font-style: italic; font-weight: 800; color: var(--text-2); }
+[data-skin="tide"] .fs-rail b.on { color: var(--navy); background: #fff; transform: skewX(-12deg); box-shadow: 2px 2px 0 var(--hot); }
+[data-skin="tide"] .fscroll.drag .fs-rail { background: var(--row); }
+[data-skin="tide"] .fs-thumb i { background: #fff; opacity: .8; }
+[data-skin="tide"] .fscroll.drag .fs-thumb i, [data-skin="tide"] .fs-thumb:hover i { background: #fff; box-shadow: 2px 2px 0 var(--hot); }
+[data-skin="tide"] .fs-bubble { background: #fff; color: var(--navy); font-style: italic; font-weight: 900; box-shadow: 4px 4px 0 var(--hot), 0 10px 26px rgba(0, 10, 50, .45); }
+[data-skin="tide"] .fscroll.drag .fs-bubble.on { transform: skewX(-12deg); }

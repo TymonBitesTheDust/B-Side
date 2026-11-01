@@ -45,7 +45,8 @@ How B-Side maps the guide's pieces onto a music player:
 
 The calm default. Soft, rounded cards on a near-white or near-black page, the system font, and an accent colour you
 choose (11 presets or any colour code, adjusted for contrast in light and dark). The chosen tab gets a short accent
-underline; the playing song turns the accent colour. Its icon is a white note on the accent's gradient.
+underline; the playing song turns the accent colour. Fast scroll uses a soft rounded handle and an accent bubble. Its icon is a
+white note on the accent's gradient.
 
 ## NieR: Automata (`archive`)
 
@@ -64,6 +65,7 @@ underline; the playing song turns the accent colour. Its icon is a white note on
   left while thin lines slide out above and below; the open tab and the playing song stay filled.
 - **Also:** a square marker before each tab, light-brown header bands with a square bullet, dark header bands on
   sheets and dialogs, two-bar footers, faint scanlines and a vignette.
+- **Fast scroll:** a plate handle; the current letter fills dark, and the bubble is a dark plate with its square marker.
 - **Page change:** the title glitches into place and the dashed rule draws out.
 - **Favourite:** a square locks on (steps in from 1.8× to 0.9×) and *ARCHIVED* appears in a dark band.
 - **Sound:** terminal blips (low-passed square and sine tones).
@@ -92,6 +94,7 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Also:** a canvas star field of pulsing red stars, songs on jagged black plates with white edges, the page on a
   black panel over a red slab, black menus, white paper dialogs with a black title band, the count as a big outlined
   number, and the play button as a white-edged red star.
+- **Fast scroll:** the letters sit on a jagged black plate with a white edge; the current one flips to white and tilts, and the bubble letter casts a red shadow.
 - **Page change:** a red and a black shard sweep across and the screen shakes.
 - **Favourite:** a red slash across the screen and *Stolen!* stamped in cut-out letters.
 - **Sound:** square-wave blips, a whoosh and a kick on page change, a slash and cymbal ping when you like a song.
@@ -118,6 +121,7 @@ underline; the playing song turns the accent colour. Its icon is a white note on
 - **Also:** `feTurbulence` caustics drifting near the surface, slanted light rays, the count in a white wallet box, and on wide screens the page name huge on a white ribbon
   down the left (its size is the window height divided by the word's measured length, so long names fit) and a
   *Command* help line with button prompts, bottom right.
+- **Fast scroll:** italic command letters; the current one is white on the red-edged cursor, and the bubble is a skewed white box.
 - **Page change:** three rings ripple out.
 - **Favourite:** glass shards burst out and *FAVOURITE* slides in on a red underline.
 - **Sound:** glassy bells, bubbles and a soft echo.
@@ -144,6 +148,7 @@ chosen. *Journal* is aged paper; *Campfire* is the menu at night.
 - **Also:** titles in a black brush banner over a ruled line with a diamond, a grey "2 of 6"
   counter under the tabs, covers as photo prints, black native menus in both variants, paper dialogs
   with a black banner head, toasts on a dark brush swatch, and a wax-seal play button.
+- **Fast scroll:** small-caps letters with the current one in red; the bubble is black ink inside the rough red brush frame.
 - **Page change:** an ink brush sweeps across.
 - **Favourite:** a red double-ruled *KEEPER* stamp, with ink spatters.
 - **Sound:** plucked guitar, a register bell, a rubber stamp, rustling paper and spurs.
@@ -169,6 +174,7 @@ The light variant is the street-poster yellow.
 - **Also:** chamfered shapes from `clip-path` tokens, a tiny code label over the title, a hairline with a red segment
   and tick marks under it, bracketed counts `[ 15 ]`, ‹ OFF › / ‹ ON › switches, a seek bar with tick marks and a
   cyan block, scanlines, and black menus on the yellow page.
+- **Fast scroll:** technical letters with the current one glowing cyan; the bubble is a cut-corner menu frame.
 - **Page change:** red, cyan and yellow slices and a flicker; the title glitches into place.
 - **Favourite:** *TRACK SAVED* flickers in on a tag while pixels scatter and a scan sweeps the screen.
 - **Sound:** digital blips, saw zaps through a low-pass, glitch grains and a sub drop.

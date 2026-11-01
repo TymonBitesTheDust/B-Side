@@ -332,6 +332,32 @@ final class WebHost {
             });
         }
 
+        /** Opens a Spotify search: in the Spotify app when it's installed, otherwise on open.spotify.com in the browser. */
+        @JavascriptInterface
+        public void openSpotify(final String query) {
+            final String q = query == null ? "" : query.trim();
+            if (q.isEmpty()) return;
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    Context c = activity != null ? activity : app;
+                    Intent inApp = new Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:" + Uri.encode(q)));
+                    inApp.putExtra(Intent.EXTRA_REFERRER, Uri.parse("android-app://" + app.getPackageName()));
+                    if (activity == null) inApp.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        c.startActivity(inApp);
+                    } catch (Exception e) {
+                        Intent web = new Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/" + Uri.encode(q)));
+                        if (activity == null) web.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        try {
+                            c.startActivity(web);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            });
+        }
+
         @JavascriptInterface
         public String insets() {
             float dn = app.getResources().getDisplayMetrics().density;

@@ -30,6 +30,7 @@ keeps going after you close the app, a media notification, lock-screen and heads
 - **Genres** are split the same way, so a song tagged "Pop/Rock" appears under both Pop and Rock.
 - **Folders work like a file explorer.** Only the folders you added sit at the top level; tap through to subfolders and songs, with a breadcrumb path to jump back up. Playing or shuffling a folder plays everything inside it.
 - **Albums your way.** Choose where the album artist appears: *On albums* (under album names), *Everywhere* (also on songs, in the player and the notification, as "Album artist – Album" when it differs from the singer) or *Nowhere* (albums show their singers instead). Switch off *Separate albums by album artist* to keep every song with the same album title in one album. With it on, songs missing an album-artist tag still join their album when it's in the same folder. Find both in *Settings → Albums*.
+- **Fast scroll, your choice.** *Settings → Fast scroll* keeps lists as they are (*Off*), adds a **Scrollbar** handle on the right edge that you drag through long lists (a bubble shows the letter you're at), or adds an **A–Z** index: tap or slide along the letters to land on the first song, album, artist, genre or folder starting with that letter. Accented names file under their plain letter (*Élan* under E), numbers and symbols under #, Korean under its first consonant, and other scripts by their first character. Pages that aren't in A–Z order, like an album or a playlist, get the scrollbar instead.
 - **Smart playlists** (Favourites, Recently added, Most played, Recently played) alongside your own playlists.
 - **Reads everything from the files:** title, artist, album, album artist, track and disc numbers, year, genre, cover art and lyrics. It also picks up `cover.jpg` / `folder.jpg` and matching `.lrc` lyric files in a folder.
 
@@ -42,7 +43,8 @@ keeps going after you close the app, a media notification, lock-screen and heads
 - **Sleep timer** (15 min to 1 h 30 min, or at the end of the current song) that fades the music out.
 - **Playback speed** from 0.5× to 2×.
 - **Lyrics view** for plain lyrics and time-synced `.lrc` lyrics. Synced lines highlight as the song plays; tap a line to jump to it.
-- **Choose your player buttons.** Pick which buttons sit under the controls and drag them into order: Lyrics, Playing queue, Sound (equaliser and volume levelling), Sleep timer, Playback speed, Add to playlist, Go to album and Details. Long-press the row, or use *Settings → Player buttons*. Hidden ones stay one tap away in the ⋮ menu.
+- **Open in Spotify** from any song's ⋮ menu, Now Playing, or an album or artist page. On Android it opens a search in the Spotify app when it's installed; otherwise it opens the search on open.spotify.com.
+- **Choose your player buttons.** Pick which buttons sit under the controls and drag them into order: Lyrics, Playing queue, Sound (equaliser and volume levelling), Sleep timer, Playback speed, Add to playlist, Go to album, Details and Open in Spotify. Long-press the row, or use *Settings → Player buttons*. Hidden ones stay one tap away in the ⋮ menu.
 
 <p align="center"><img src="docs/screenshots/customise.png" alt="Genres tab, choosing between a duet's two artists, customising the library tabs and the player buttons" width="92%"></p>
 
@@ -82,7 +84,8 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 - Draws edge to edge and follows the system's dark mode.
 
 ### Private by design
-No accounts, no ads, no analytics and no network requests. Songs you add are copied into B-Side's own storage on your
+No accounts, no ads, no analytics and no network requests. The one way out is *Open in Spotify*: when you tap it, the
+song, album or artist name is handed to Spotify as a search, and nothing else. Songs you add are copied into B-Side's own storage on your
 device so your library is still there next time. You can switch that off in *Settings → Library*. Removing a song from
 B-Side never touches the original file.
 
@@ -117,6 +120,8 @@ the `docs` folder of your main branch.
 | Change style, colour, sounds or theme | **⋮** in the top-right corner → *Settings* |
 | Show, hide or reorder tabs | Long-press the tab bar (right-click on desktop) |
 | Choose the player buttons | Long-press the button row in Now Playing, or ⋮ → *Customise buttons* |
+| Jump through a long list | *Settings → Fast scroll* → *Scrollbar* or *A–Z*, then drag the handle or tap a letter on the right |
+| Find a song on Spotify | Its **⋮** → *Open in Spotify* (also on album and artist pages, and in Now Playing) |
 | Fix how an artist is split | *Settings → Artists*: switch separators on or off, or add the name to *Never split* |
 | Even out loud and quiet songs | Now Playing → Sound button → *Volume levelling* |
 | Stop an album splitting in two | *Settings → Albums* → switch off *Separate albums by album artist* |

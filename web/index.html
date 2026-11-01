@@ -487,6 +487,25 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 .ex-head .dcover{width:84px;border-radius:22px;box-shadow:none}
 .ex-head .dinfo h2{font-size:clamp(22px,5.4vw,30px);-webkit-line-clamp:2}
 
+/* fast scroll: a drag handle, or an A–Z rail, on the right edge (Settings → Layout → Fast scroll).
+   JS sets top and height to the space between the header and the mini player. */
+.fscroll{position:fixed;z-index:24;top:0;height:0;right:max(0px,calc((100% - 1040px) / 2 - 34px));width:34px;pointer-events:none}
+.fs-thumb{position:absolute;right:0;top:0;width:34px;height:52px;display:flex;justify-content:flex-end;padding:0 4px 0 0;touch-action:none;cursor:grab;opacity:0;pointer-events:none;transition:opacity .3s;will-change:transform}
+.fs-thumb i{display:block;width:6px;height:100%;border-radius:4px;background:var(--text-3);opacity:.75;transition:width .15s,background .15s,opacity .15s}
+.fscroll.show .fs-thumb,.fscroll.drag .fs-thumb{opacity:1;pointer-events:auto}
+.fscroll.drag .fs-thumb{cursor:grabbing}
+.fscroll.drag .fs-thumb i,.fs-thumb:hover i{width:9px;background:var(--accent);opacity:1}
+.fs-rail{position:absolute;right:3px;top:50%;width:26px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:stretch;padding:4px 0;border-radius:13px;pointer-events:auto;touch-action:none;cursor:pointer;transition:background .15s}
+.fs-rail b{flex:1;min-height:0;display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;color:var(--text-2);font-family:var(--display);transition:color .12s}
+.fs-rail b.dot{font-size:7px;color:var(--text-3)}
+.fs-rail b.on{color:var(--accent)}
+.fscroll.drag .fs-rail{background:var(--surface-2)}
+.fscroll[data-m="bar"] .fs-rail,.fscroll[data-m="letters"] .fs-thumb{display:none}
+.fs-bubble{position:absolute;right:52px;top:0;min-width:64px;height:64px;padding:0 16px;margin-top:-32px;display:grid;place-items:center;border-radius:32px 32px 6px 32px;background:var(--accent);color:var(--on-accent);font:700 32px/1 var(--display);white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.24);opacity:0;transform:scale(.7);transform-origin:100% 50%;transition:opacity .15s,transform .15s var(--ease)}
+.fscroll.drag .fs-bubble.on{opacity:1;transform:none}
+body.np-open .fscroll{visibility:hidden}
+@media (max-width:1119px){body.fs-index .view{padding-right:40px}}
+
 /* ==========================================================================
    NieR: Automata (id "archive"): a YoRHa menu. Beige paper on a fine grid,
    dark-brown ink, light-brown plates with small square markers. Whatever you
@@ -724,6 +743,13 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 
 @media (max-width: 420px) { [data-skin="archive"] .tab { letter-spacing: .1em; padding: 9px 12px 9px 10px; } }
 @media (prefers-reduced-motion: reduce) { [data-skin="archive"] .hero.anim h1 { animation: none; } }
+/* ---------- fast scroll: a plate handle; the chosen letter fills dark; the bubble is a plate with its square ---------- */
+[data-skin="archive"] .fs-rail b { font-weight: 600; letter-spacing: .04em; }
+[data-skin="archive"] .fs-rail b.on { background: var(--accent); color: var(--on-accent); }
+[data-skin="archive"] .fscroll.drag .fs-rail { background: var(--na-row); box-shadow: inset 0 0 0 1px var(--line-strong); }
+[data-skin="archive"] .fs-thumb i { background: var(--accent); opacity: .5; }
+[data-skin="archive"] .fs-bubble { padding-left: 30px; background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow); font-weight: 600; letter-spacing: .1em; }
+[data-skin="archive"] .fs-bubble::before { content: ""; position: absolute; left: 12px; top: 50%; width: 8px; height: 8px; margin-top: -4px; background: var(--on-accent); }
 
 /* ==========================================================================
    Persona 5 (id "riot"): the Calling Card design. Blood red with a field of
@@ -1021,6 +1047,15 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
   [data-skin="riot"] .hs-n { font-size: 38px; }
 }
 @media (pointer: coarse) { [data-skin="riot"] .row:hover { translate: none; } }
+/* ---------- fast scroll: a jagged black plate for the letters; the chosen one flips to white and tilts ---------- */
+[data-skin="riot"] .fs-rail { background: #0b0a0a; box-shadow: inset 0 0 0 2px #fff; clip-path: polygon(14% 0, 100% 1.5%, 86% 100%, 0 98.5%); }
+[data-skin="riot"] .fs-rail b { font-weight: 400; font-size: 12px; color: #fff; }
+[data-skin="riot"] .fs-rail b.dot { color: var(--text-3); }
+[data-skin="riot"] .fs-rail b.on { color: #0b0a0a; background: #fff; transform: rotate(-8deg); }
+[data-skin="riot"] .fs-thumb i { background: #fff; opacity: 1; box-shadow: 3px 3px 0 var(--red); }
+[data-skin="riot"] .fscroll.drag .fs-thumb i, [data-skin="riot"] .fs-thumb:hover i { background: var(--red); box-shadow: 3px 3px 0 #fff; }
+[data-skin="riot"] .fs-bubble { background: #0b0a0a; color: #fff; font-weight: 400; font-size: 40px; box-shadow: inset 0 0 0 3px #fff; text-shadow: 3px 3px 0 var(--red); clip-path: var(--cp-btn); }
+[data-skin="riot"] .fscroll.drag .fs-bubble.on { transform: rotate(-6deg); }
 
 /* ==========================================================================
    Persona 3 Reload (id "tide"): the pause menu under water. An ocean gradient
@@ -1334,6 +1369,14 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
   [data-skin="tide"] .tab { font-size: 19px; padding: 8px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="tide"] .tab.on .hl::before, [data-skin="tide"] .tab.on .hl::after, [data-skin="tide"] .play::after { animation: none; } }
+/* ---------- fast scroll: italic command letters; the chosen one is white on the red-edged cursor ---------- */
+[data-skin="tide"] .fs-rail b { font-style: italic; font-weight: 800; color: var(--text-2); }
+[data-skin="tide"] .fs-rail b.on { color: var(--navy); background: #fff; transform: skewX(-12deg); box-shadow: 2px 2px 0 var(--hot); }
+[data-skin="tide"] .fscroll.drag .fs-rail { background: var(--row); }
+[data-skin="tide"] .fs-thumb i { background: #fff; opacity: .8; }
+[data-skin="tide"] .fscroll.drag .fs-thumb i, [data-skin="tide"] .fs-thumb:hover i { background: #fff; box-shadow: 2px 2px 0 var(--hot); }
+[data-skin="tide"] .fs-bubble { background: #fff; color: var(--navy); font-style: italic; font-weight: 900; box-shadow: 4px 4px 0 var(--hot), 0 10px 26px rgba(0, 10, 50, .45); }
+[data-skin="tide"] .fscroll.drag .fs-bubble.on { transform: skewX(-12deg); }
 
 /* ==========================================================================
    Red Dead Redemption 2 (id "frontier"): the game's native menus. Every option
@@ -1611,6 +1654,13 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
   [data-skin="frontier"] .tab { padding: 9px 12px 10px; font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="frontier"] .tab.on::after { animation: none; } }
+/* ---------- fast scroll: small-caps letters, the chosen one in red; the bubble is ink inside the red brush frame ---------- */
+[data-skin="frontier"] .fs-rail b { font-family: var(--serif); font-variant: small-caps; font-size: 12.5px; color: var(--text-2); }
+[data-skin="frontier"] .fs-rail b.on { color: var(--accent); }
+[data-skin="frontier"] .fscroll.drag .fs-rail { background: var(--box-hover); border-radius: 2px; }
+[data-skin="frontier"] .fs-thumb i { background: var(--text-2); border-radius: 1px; }
+[data-skin="frontier"] .fscroll.drag .fs-thumb i, [data-skin="frontier"] .fs-thumb:hover i { background: var(--accent); }
+[data-skin="frontier"] .fs-bubble { height: 72px; min-width: 72px; margin-top: -36px; border: 11px solid transparent; border-image: var(--fr-frame) 30 stretch; border-radius: 0; background: var(--banner) padding-box; color: var(--banner-ink); font-weight: 400; font-size: 30px; box-shadow: none; filter: drop-shadow(0 10px 18px rgba(20, 10, 2, .45)); }
 
 /* ==========================================================================
    Cyberpunk 2077 (id "neon"): the game's settings menus. Salmon-red text and
@@ -1905,6 +1955,13 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
   [data-skin="neon"] .tab { font-size: 14px; padding: 9px 11px 8px 13px; }
 }
 @media (prefers-reduced-motion: reduce) { [data-skin="neon"] .hero.anim h1 { animation: none; } }
+/* ---------- fast scroll: technical letters, the chosen one in glowing cyan; the bubble is a cut-corner menu frame ---------- */
+[data-skin="neon"] .fs-rail b { font-weight: 700; font-size: 12px; color: var(--text-3); }
+[data-skin="neon"] .fs-rail b.on { color: var(--accent); text-shadow: 0 0 8px rgba(var(--accent-rgb), .6); }
+[data-skin="neon"] .fscroll.drag .fs-rail { background: var(--fr-fill); box-shadow: inset 0 0 0 1px var(--line-strong); clip-path: var(--cut-tr-sm); }
+[data-skin="neon"] .fs-thumb i { width: 4px; background: var(--fr); opacity: .8; }
+[data-skin="neon"] .fscroll.drag .fs-thumb i, [data-skin="neon"] .fs-thumb:hover i { width: 6px; background: var(--sel); opacity: 1; }
+[data-skin="neon"] .fs-bubble { background: #0d0f17; color: #5ef6ff; font-weight: 700; text-transform: uppercase; box-shadow: inset 0 0 0 1px #5ef6ff, inset 4px 0 0 #5ef6ff; text-shadow: 0 0 12px rgba(94, 246, 255, .55); clip-path: var(--cut-tr); }
 
 </style>
 </head>
@@ -1953,6 +2010,8 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
   <symbol id="i-genre" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/><path d="M12 3.5v5.5"/></symbol>
   <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3.5" y="7" width="15" height="10" rx="2"/><path d="M20.5 10.5v3"/><path d="M10.5 9l-2 3h4l-2 3"/></symbol>
   <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M13.5 4.5h6v6M19.5 4.5l-8.5 8.5"/><path d="M18 14v3.5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2H10"/></symbol>
+  <symbol id="i-az" viewBox="0 0 24 24"><path d="M3.5 11l3-7.5 3 7.5M4.6 8.4h3.8M3.8 13.5h5.4l-5.4 7h5.4"/><path d="M17 4v16M13.5 16.5L17 20l3.5-3.5"/></symbol>
 </svg>
 
 <canvas id="starfield" class="starfield" aria-hidden="true" hidden></canvas>
@@ -1979,6 +2038,11 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
   <div class="wrap fr-counter" id="frCounter" aria-hidden="true"></div>
 </nav>
 <main id="view" class="wrap view"></main>
+<div id="fscroll" class="fscroll" aria-hidden="true" hidden>
+  <div class="fs-rail" id="fsRail"></div>
+  <div class="fs-thumb" id="fsThumb"><i></i></div>
+  <div class="fs-bubble" id="fsBubble"></div>
+</div>
 
 <div id="mini" class="mini" role="region" aria-label="Mini player">
   <div class="mini-hit" id="miniOpen" role="button" tabindex="0" aria-label="Open player">
@@ -2031,6 +2095,7 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
         <button class="ib" id="actAddpl" aria-label="Add to playlist" hidden><svg class="ico"><use href="#i-addpl"/></svg></button>
         <button class="ib" id="actAlbum" aria-label="Go to album" hidden><svg class="ico"><use href="#i-disc"/></svg></button>
         <button class="ib" id="actInfo" aria-label="Details" hidden><svg class="ico"><use href="#i-info"/></svg></button>
+        <button class="ib" id="actSpotify" aria-label="Open in Spotify" hidden><svg class="ico"><use href="#i-open"/></svg></button>
       </div>
     </div>
   </div>
@@ -2262,7 +2327,7 @@ const iconURL = (kind, hex, layer, size) => 'data:image/svg+xml,' + encodeURICom
 const LS_KEY = 'bside:v1';
 const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } })();
 const DEFAULT_SETTINGS = {motion: 'system', stars: true, tabs: null, npActs: null, split: null, bgAsked: false, accent: 'cobalt', matchIcon: true, skin: 'bside', sfx: 'all', sfxVol: .6, theme: 'system', persist: true, speed: 1, sort: 'title', eqOn: false, eqPreset: 'Normal', eqGains: [0, 0, 0, 0, 0, 0, 0], volume: 1,
-  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true};
+  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off'};
 const S = {
   tracks: new Map(), files: new Map(), arts: new Map(),
   fav: new Set(saved.fav || []), playlists: Array.isArray(saved.playlists) ? saved.playlists : [],
@@ -3090,7 +3155,7 @@ function menuItem(icon, label, act, {sub = '', cls = '', extra = ''} = {}) { ret
 function menuSheet(head, items) { // items: [icon,label,fn,opts]
   const list = items.filter(Boolean);
   openSheet({head, body: list.map((it, i) => it === '-' ? '<div class="sep"></div>' : menuItem(it[0], it[1], String(i), it[3] || {})).join(''),
-    onClick: async e => { const b = e.target.closest('[data-mi]'); if (!b) return; const it = list[+b.dataset.mi]; await closeTop(); it[2](); }});
+    onClick: async e => { const b = e.target.closest('[data-mi]'); if (!b) return; const it = list[+b.dataset.mi]; if (it[3] && it[3].now) { it[2](); closeTop(); return; } await closeTop(); it[2](); }});
 }
 
 /* ───────────────────────── audio engine ───────────────────────── */
@@ -3539,6 +3604,7 @@ const NP_ACTS = {
   addpl: {label: 'Add to playlist', icon: 'addpl', el: 'actAddpl'},
   album: {label: 'Go to album', icon: 'disc', el: 'actAlbum'},
   info: {label: 'Details', icon: 'info', el: 'actInfo'},
+  spotify: {label: 'Open in Spotify', icon: 'open', el: 'actSpotify'},
 };
 const DEFAULT_NP_ON = ['lyrics', 'queue', 'eq', 'sleep', 'speed'];
 const npActOrder = () => orderList(S.settings.npActs, Object.keys(NP_ACTS), DEFAULT_NP_ON);
@@ -3553,6 +3619,7 @@ function runNpAct(id) {
   const cur = S.current;
   if (id === 'lyrics') toggleLyrics(); else if (id === 'queue') queueSheet(); else if (id === 'eq') eqSheet(); else if (id === 'sleep') sleepSheet(); else if (id === 'speed') speedSheet();
   else if (cur && id === 'addpl') addToPlaylist([cur]); else if (cur && id === 'album') goAlbumOf(cur); else if (cur && id === 'info') detailsSheet(cur);
+  else if (cur && id === 'spotify') spotifyTrack(cur);
 }
 function updateModes() {
   $('#btnShuffle').classList.toggle('on', S.shuffle);
@@ -3650,12 +3717,26 @@ $('#npLyrics').addEventListener('click', e => { const p = e.target.closest('[dat
 
 /* ───────────────────────── rendering ───────────────────────── */
 const view = $('#view');
+/* Fast scroll's A–Z index: each item is keyed by the first character of what its list is sorted by.
+   Accents are dropped (É → E), digits and symbols share "#", Korean syllables group under their first
+   consonant, and other scripts keep their own first character. */
+const AZ_FOLD = {'Æ': 'A', 'Ø': 'O', 'Œ': 'O', 'Ð': 'D', 'Đ': 'D', 'Þ': 'T', 'Ł': 'L', 'Ħ': 'H'};
+const HANGUL_INITIALS = 'ㄱㄱㄴㄷㄷㄹㅁㅂㅂㅅㅅㅇㅈㅈㅊㅋㅌㅍㅎ'; // ㄲ ㄸ ㅃ ㅆ ㅉ join their plain consonant
+function azKey(str) {
+  const cp = String(str || '').trimStart().codePointAt(0);
+  if (cp == null) return '#';
+  if (cp >= 0xac00 && cp <= 0xd7a3) return HANGUL_INITIALS[Math.floor((cp - 0xac00) / 588)];
+  const ch = String.fromCodePoint(cp).normalize('NFD').charAt(0).toUpperCase().charAt(0);
+  return /\p{L}/u.test(ch) ? AZ_FOLD[ch] || ch : '#';
+}
+const azAttr = (on, str) => on ? ` data-k="${esc(azKey(str))}"` : '';
+const AZ_SORTS = {title: t => t.title, artist: artistOf, album: albumOf}; // song sorts that are alphabetical
 function rowHTML(t, i, o = {}) {
   const lead = o.num ? `<div class="num">${t.track || i + 1}</div>` : artHTML(t.artKey, t.album || t.title);
   const sub = o.sub ? o.sub(t) : songSub(t);
-  return `<div class="row" role="button" tabindex="0" data-i="${i}" data-id="${t.id}">${lead}<div class="meta"><div class="t">${esc(t.title)}</div><div class="s">${esc(sub)}</div></div><div class="dur">${t.duration ? fmt(t.duration) : ''}</div><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><button class="ib more" data-more="${t.id}" aria-label="More options for ${esc(t.title)}">${ic('more')}</button><i class="hl"></i></div>`;
+  return `<div class="row" role="button" tabindex="0" data-i="${i}" data-id="${t.id}"${o.az ? azAttr(true, o.az(t)) : ''}>${lead}<div class="meta"><div class="t">${esc(t.title)}</div><div class="s">${esc(sub)}</div></div><div class="dur">${t.duration ? fmt(t.duration) : ''}</div><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><button class="ib more" data-more="${t.id}" aria-label="More options for ${esc(t.title)}">${ic('more')}</button><i class="hl"></i></div>`;
 }
-function listHTML(key, ids, ctx, o) { S.lists[key] = ids; S.listCtx[key] = ctx; return `<div class="card list" data-list="${key}">${ids.map((id, i) => rowHTML(T(id), i, o)).join('')}</div>`; }
+function listHTML(key, ids, ctx, o) { S.lists[key] = ids; S.listCtx[key] = ctx; return `<div class="card list" data-list="${key}"${o && o.az ? ' data-az' : ''}>${ids.map((id, i) => rowHTML(T(id), i, o)).join('')}</div>`; }
 function markPlaying() { $$('.row.on').forEach(r => r.classList.remove('on')); if (S.current) $$(`.row[data-id="${S.current}"]`).forEach(r => r.classList.add('on')); }
 function updateRowDur(id, d) { $$(`.row[data-id="${id}"] .dur`).forEach(el => { el.textContent = fmt(d); }); if (id === S.current) $('#tDur').textContent = fmt(d); }
 function emptyHTML() {
@@ -3681,27 +3762,27 @@ function renderTabs() {
   updateFrCounter();
 }
 function genresHTML() {
-  const gs = [...groups().genres.values()].sort((x, y) => (x.name === 'Unknown genre') - (y.name === 'Unknown genre') || cmp(x.name, y.name));
-  return `<div class="card list">${gs.map(g => `<div class="row" role="button" tabindex="0" data-genre="${esc(g.key)}">${mosaicHTML(g.ids, g.name, 'thumb')}<div class="meta"><div class="t">${esc(g.name)}</div><div class="s">${plural(g.ids.length, 'song')} · ${plural(g.albums.size, 'album')}</div></div>${ic('right', 'chev')}</div>`).join('')}</div>`;
+  const gs = [...groups().genres.values()].sort((x, y) => (x.name === 'Unknown genre') - (y.name === 'Unknown genre') || cmp(x.name, y.name)), az = fsOn();
+  return `<div class="card list"${az ? ' data-az' : ''}>${gs.map(g => `<div class="row" role="button" tabindex="0" data-genre="${esc(g.key)}"${azAttr(az, g.name)}>${mosaicHTML(g.ids, g.name, 'thumb')}<div class="meta"><div class="t">${esc(g.name)}</div><div class="s">${plural(g.ids.length, 'song')} · ${plural(g.albums.size, 'album')}</div></div>${ic('right', 'chev')}</div>`).join('')}</div>`;
 }
 function tracksHTML() {
-  const ids = sortedIds();
-  return `<div class="bar-row"><button class="pill" data-act="shuffle-all">${ic('shuffle')}<span>Shuffle</span><b>${ids.length}</b></button><button class="chip" data-act="sort">${ic('sort')}<span>${SORTS[S.settings.sort]}</span></button></div>` + listHTML('tracks', ids, {label: 'Tracks'});
+  const ids = sortedIds(), az = fsOn() && AZ_SORTS[S.settings.sort];
+  return `<div class="bar-row"><button class="pill" data-act="shuffle-all">${ic('shuffle')}<span>Shuffle</span><b>${ids.length}</b></button><button class="chip" data-act="sort">${ic('sort')}<span>${SORTS[S.settings.sort]}</span></button></div>` + listHTML('tracks', ids, {label: 'Tracks'}, az ? {az} : undefined);
 }
-function albumTile(a) { return `<button class="tile" data-album="${esc(a.key)}">${artHTML(a.artKey, a.name, 'cover')}<div class="tn ell">${esc(a.name)}</div><div class="ts ell">${esc(a.artist)}</div></button>`; }
-function albumsHTML() { const al = [...groups().albums.values()].sort((x, y) => cmp(x.name, y.name)); return `<div class="grid">${al.map(albumTile).join('')}</div>`; }
+function albumTile(a, az) { return `<button class="tile" data-album="${esc(a.key)}"${azAttr(az, a.name)}>${artHTML(a.artKey, a.name, 'cover')}<div class="tn ell">${esc(a.name)}</div><div class="ts ell">${esc(a.artist)}</div></button>`; }
+function albumsHTML() { const al = [...groups().albums.values()].sort((x, y) => cmp(x.name, y.name)), az = fsOn(); return `<div class="grid"${az ? ' data-az' : ''}>${al.map(a => albumTile(a, az)).join('')}</div>`; }
 function artistsHTML() {
-  const ar = [...groups().artists.values()].sort((x, y) => cmp(x.name, y.name));
-  return `<div class="card list">${ar.map(r => `<div class="row" role="button" tabindex="0" data-artist="${esc(r.key)}">${artHTML(r.artKey, r.name, 'thumb round')}<div class="meta"><div class="t">${esc(r.name)}</div><div class="s">${plural(r.albums.size, 'album')} · ${plural(r.ids.length, 'song')}</div></div>${ic('right', 'chev')}</div>`).join('')}</div>`;
+  const ar = [...groups().artists.values()].sort((x, y) => cmp(x.name, y.name)), az = fsOn();
+  return `<div class="card list"${az ? ' data-az' : ''}>${ar.map(r => `<div class="row" role="button" tabindex="0" data-artist="${esc(r.key)}"${azAttr(az, r.name)}>${artHTML(r.artKey, r.name, 'thumb round')}<div class="meta"><div class="t">${esc(r.name)}</div><div class="s">${plural(r.albums.size, 'album')} · ${plural(r.ids.length, 'song')}</div></div>${ic('right', 'chev')}</div>`).join('')}</div>`;
 }
-function folderRow(f, sub) {
+function folderRow(f, sub, az) {
   const meta = [f.kids.length ? plural(f.kids.length, 'folder') : '', plural(f.all.length, 'song')].filter(Boolean).join(' · ');
-  return `<div class="row" role="button" tabindex="0" data-folder="${esc(f.key)}"><div class="thumb ph fold${sub ? '' : ' root'}">${ic(f.key === '' ? 'note' : 'folder')}</div><div class="meta"><div class="t">${esc(f.name)}</div><div class="s">${esc(meta)}</div></div>${ic('right', 'chev')}</div>`;
+  return `<div class="row" role="button" tabindex="0" data-folder="${esc(f.key)}"${azAttr(az, f.name)}><div class="thumb ph fold${sub ? '' : ' root'}">${ic(f.key === '' ? 'note' : 'folder')}</div><div class="meta"><div class="t">${esc(f.name)}</div><div class="s">${esc(meta)}</div></div>${ic('right', 'chev')}</div>`;
 }
 const folderPickOK = () => !!NATIVE || ('webkitdirectory' in document.createElement('input'));
 function foldersHTML() {
-  const roots = groups().roots, n = roots.filter(r => r.key).length;
-  return `<div class="bar-row">${folderPickOK() ? `<button class="pill" data-act="pick-folder">${ic('plus')}<span>Add folder</span></button>` : '<span></span>'}<span class="chip">${plural(n, 'folder')}</span></div><div class="card list">${roots.map(r => folderRow(r, false)).join('')}</div>`;
+  const roots = groups().roots, n = roots.filter(r => r.key).length, az = fsOn();
+  return `<div class="bar-row">${folderPickOK() ? `<button class="pill" data-act="pick-folder">${ic('plus')}<span>Add folder</span></button>` : '<span></span>'}<span class="chip">${plural(n, 'folder')}</span></div><div class="card list"${az ? ' data-az' : ''}>${roots.map(r => folderRow(r, false, az)).join('')}</div>`;
 }
 function folderPageHTML(d) {
   const G = groups(), f = d.folder, segs = f.key ? f.key.split('/') : [];
@@ -3736,7 +3817,7 @@ function playlistsHTML() {
 }
 function resolveRoute(r) {
   const G = groups();
-  if (r.type === 'album') { const a = G.albums.get(r.key); if (!a) return null; return {kind: 'Album', title: a.name, sub: [a.artist, a.year].filter(Boolean).join(' · '), ids: a.ids, artKey: a.artKey, seed: a.name, num: true, ctx: {label: 'Album · ' + a.name}}; }
+  if (r.type === 'album') { const a = G.albums.get(r.key); if (!a) return null; return {kind: 'Album', title: a.name, artist: a.artist, sub: [a.artist, a.year].filter(Boolean).join(' · '), ids: a.ids, artKey: a.artKey, seed: a.name, num: true, ctx: {label: 'Album · ' + a.name}}; }
   if (r.type === 'artist') { const x = G.artists.get(r.key); if (!x) return null; return {kind: 'Artist', title: x.name, sub: plural(x.albums.size, 'album'), ids: x.ids, artKey: x.artKey, seed: x.name, round: true, albums: [...x.albums].map(k => G.albums.get(k)).filter(Boolean), ctx: {label: 'Artist · ' + x.name}}; }
   if (r.type === 'genre') { const g = G.genres.get(r.key); if (!g) return null; return {kind: 'Genre', title: g.name, sub: plural(g.albums.size, 'album'), ids: g.ids, mosaic: true, seed: g.name, albums: [...g.albums].map(k => G.albums.get(k)).filter(Boolean), ctx: {label: 'Genre · ' + g.name}}; }
   if (r.type === 'folder') { const f = G.folders.get(r.key); if (!f) return null; return {kind: 'Folder', folder: f, title: f.name, sub: '', ids: f.all, artKey: f.artKey, seed: f.name, ctx: {label: 'Folder · ' + f.name}}; }
@@ -3754,7 +3835,7 @@ function detailHTML(r) {
   const meta = [d.sub, d.ids.length ? plural(d.ids.length, 'song') : '', total > 0 ? fmtLong(total) : ''].filter(Boolean).join(' · ');
   let html = `<div class="dhead">${cover}<div class="dinfo"><div class="k">${d.kind}</div><h2>${esc(d.title)}</h2><p>${esc(meta)}</p></div></div>`;
   html += `<div class="dacts">${d.ids.length ? `<button class="btn primary" data-act="play-all">${ic('play')}Play</button><button class="btn tonal" data-act="shuffle-list">${ic('shuffle')}Shuffle</button>` : ''}<span class="grow"></span>${d.user ? `<button class="ib" data-act="rename-pl" aria-label="Rename playlist">${ic('edit')}</button><button class="ib" data-act="delete-pl" aria-label="Delete playlist">${ic('trash')}</button>` : ''}${d.ids.length ? `<button class="ib" data-act="detail-more" aria-label="More options">${ic('more')}</button>` : ''}</div>`;
-  if (d.albums && d.albums.length > 1) html += `<div class="sec-h"><span>Albums</span></div><div class="hscroll">${d.albums.sort((x, y) => cmp(x.year, y.year) || cmp(x.name, y.name)).map(albumTile).join('')}</div><div class="sec-h"><span>Songs</span></div>`;
+  if (d.albums && d.albums.length > 1) html += `<div class="sec-h"><span>Albums</span></div><div class="hscroll">${d.albums.sort((x, y) => cmp(x.year, y.year) || cmp(x.name, y.name)).map(a => albumTile(a)).join('')}</div><div class="sec-h"><span>Songs</span></div>`;
   html += d.ids.length ? listHTML('d', d.ids, d.ctx, d.num ? {num: true, sub: t => artistOf(t)} : (r.type === 'artist' ? {sub: t => albumLabel(t) || albumOf(t)} : undefined))
     : `<div class="card"><div class="hint">${r.key === '@fav' ? 'Tap the heart on any song to add it to your favourites.' : d.user ? "This playlist is empty. Use “Add to playlist” in any song's ⋮ menu." : 'Nothing here yet.'}</div></div>`;
   S.detail = d;
@@ -3771,7 +3852,7 @@ function searchHTML(q) {
   if (!tr.length && !al.length && !ar.length) return `<div class="hint">No results for “${esc(q)}”.</div>`;
   let h = '';
   if (ar.length) h += `<div class="sec-h"><span>Artists</span></div><div class="card list">${ar.map(r => `<div class="row" role="button" tabindex="0" data-artist="${esc(r.key)}">${artHTML(r.artKey, r.name, 'thumb round')}<div class="meta"><div class="t">${esc(r.name)}</div><div class="s">${plural(r.ids.length, 'song')}</div></div>${ic('right', 'chev')}</div>`).join('')}</div>`;
-  if (al.length) h += `<div class="sec-h"><span>Albums</span></div><div class="hscroll">${al.map(albumTile).join('')}</div>`;
+  if (al.length) h += `<div class="sec-h"><span>Albums</span></div><div class="hscroll">${al.map(a => albumTile(a)).join('')}</div>`;
   if (tr.length) h += `<div class="sec-h"><span>Songs</span><span>${tr.length}</span></div>` + listHTML('search', tr.slice(0, 300), {label: 'Search'});
   return h;
 }
@@ -3795,7 +3876,7 @@ function render() {
   else if (!S.tracks.size) html = emptyHTML();
   else html = ({tracks: tracksHTML, albums: albumsHTML, artists: artistsHTML, genres: genresHTML, folders: foldersHTML, playlists: playlistsHTML}[S.tab] || tracksHTML)();
   view.innerHTML = html;
-  updateChrome(); markPlaying(); onScroll();
+  updateChrome(); markPlaying(); onScroll(); fsSync();
 }
 let renderT = 0;
 const renderSoon = (ms = 250) => { clearTimeout(renderT); renderT = setTimeout(render, ms); };
@@ -3809,7 +3890,137 @@ function onScroll() {
   appbar.style.setProperty('--abt', clamp((y - h * .5) / (h * .3), 0, 1).toFixed(3));
 }
 window.addEventListener('scroll', () => requestAnimationFrame(onScroll), {passive: true});
-window.addEventListener('resize', () => { onScroll(); updateMarquee(); });
+window.addEventListener('resize', () => { onScroll(); updateMarquee(); fsSync(); });
+
+/* fast scroll (Settings → Layout → Fast scroll).
+   "Scrollbar": a handle on the right edge that shows while the page scrolls; drag it to move through a long
+   page, with the letter you're at in a bubble beside it. "A–Z": letters down the right edge of the
+   alphabetical library tabs; tap or slide along them to land on the first item starting with that letter.
+   Long pages that aren't in A–Z order (an album, a playlist, search) get the handle instead. */
+const fsEl = $('#fscroll'), fsRail = $('#fsRail'), fsThumb = $('#fsThumb'), fsBubble = $('#fsBubble'), fsMini = $('#mini'), fsHints = $('#keyHints');
+const FS_THUMB = 52, FS_SLOT = 24, FS_SLOT_MIN = 14;
+const FS = {kind: '', box: null, idx: [], pos: new Map(), top: -1, h: -1, slots: 0, mark: -1, drag: null, pick: -1, hideT: 0, jumpRaf: 0, raf: 0};
+const FS_MODES = [['off', 'Off'], ['bar', 'Scrollbar'], ['letters', 'A–Z']];
+const FS_NOTES = {
+  off: 'Long lists scroll the usual way.',
+  bar: 'A handle appears on the right edge while you scroll. Drag it to move through long lists quickly.',
+  letters: 'Letters run down the right edge of Albums, Artists, Genres, Folders, and Tracks sorted by title, artist or album. Tap or slide along them to jump to the first one starting with that letter. Other long pages get the scrollbar.',
+};
+function fsMode() { const m = S.settings.fastScroll; return m === 'bar' || m === 'letters' ? m : 'off'; }
+function fsOn() { return fsMode() !== 'off'; }
+const fsMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+const fsTabsShown = () => document.body.dataset.mode === 'tabs';
+const fsStickyH = () => appbar.offsetHeight + (fsTabsShown() ? $('#tabs').offsetHeight : 0); // header height once the hero has scrolled away
+function fsArea() { // the strip between the header (as it is right now) and the mini player
+  let top = appbar.getBoundingClientRect().bottom;
+  if (fsTabsShown()) top = Math.max(top, $('#tabs').getBoundingClientRect().bottom);
+  const mb = parseFloat(getComputedStyle(fsMini).bottom) || 12;
+  let bottom = window.innerHeight - mb - (document.body.classList.contains('has-mini') ? fsMini.offsetHeight : 0);
+  const kh = fsHints.getBoundingClientRect(); if (kh.height) bottom = Math.min(bottom, kh.top);
+  return {top: Math.round(top + 8), h: Math.max(0, Math.round(bottom - 10 - top - 8))};
+}
+function fsSync() { // after every render: find this page's A–Z list and pick handle, letters or nothing
+  const m = fsMode(), was = FS.kind;
+  FS.box = m !== 'off' && !S.booting ? view.querySelector('[data-az]') : null;
+  FS.idx = []; FS.pos = new Map();
+  if (FS.box && m === 'letters') for (const el of FS.box.querySelectorAll('[data-k]')) { const k = el.dataset.k; if (!FS.pos.has(k)) { FS.pos.set(k, FS.idx.length); FS.idx.push({k, el}); } }
+  const max = fsMax(), vh = window.innerHeight;
+  const kind = m === 'off' || S.booting ? '' : m === 'letters' && FS.idx.length >= 2 && max > vh * .5 ? 'letters' : max > vh * 1.5 ? 'bar' : '';
+  if (FS.drag && kind !== was) fsEndDrag();
+  FS.kind = kind; fsEl.hidden = !kind; fsEl.dataset.m = kind;
+  document.body.classList.toggle('fs-index', kind === 'letters');
+  FS.top = FS.h = -1; FS.slots = 0; FS.mark = -1; FS.pick = -1;
+  if (kind !== 'letters') fsRail.innerHTML = '';
+  if (!FS.drag) fsEl.classList.remove('show');
+  fsLayout();
+}
+function fsLayout() {
+  if (!FS.kind) return;
+  const a = fsArea();
+  if (a.top !== FS.top || a.h !== FS.h) { FS.top = a.top; FS.h = a.h; fsEl.style.top = a.top + 'px'; fsEl.style.height = a.h + 'px'; if (FS.kind === 'letters') fsBuildRail(); }
+  if (FS.kind === 'letters') { if (!FS.drag) fsMarkTop(); }
+  else if (FS.drag) { fsThumbAt(FS.drag.frac); const it = fsTopItem(); fsBubbleAt(it && it.dataset.k, FS.drag.frac * Math.max(0, FS.h - FS_THUMB) + FS_THUMB / 2); }
+  else fsThumbAt(null);
+}
+function fsBuildRail() { // one slot per letter; when they don't fit, every other slot is a dot and letters are sampled
+  const n = FS.idx.length, fit = Math.max(3, Math.floor(FS.h / FS_SLOT_MIN)), slots = Math.min(n, fit % 2 ? fit : fit - 1);
+  fsRail.style.height = Math.min(FS.h, slots * FS_SLOT) + 'px';
+  if (slots === FS.slots) return;
+  FS.slots = slots; FS.mark = -1;
+  let html = '';
+  for (let s = 0; s < slots; s++) {
+    const i = slots === n ? s : Math.round(s * (n - 1) / (slots - 1));
+    html += slots < n && s % 2 ? `<b class="dot" data-i="${i}">•</b>` : `<b data-i="${i}">${esc(FS.idx[i].k)}</b>`;
+  }
+  fsRail.innerHTML = html;
+}
+function fsMark(i) { // light up the slot for letter i (or the nearest one before it)
+  let best = null;
+  for (const b of fsRail.children) { if (+b.dataset.i <= i && !b.classList.contains('dot')) best = b; }
+  if (best === FS.mark) return;
+  if (FS.mark && FS.mark.classList) FS.mark.classList.remove('on');
+  FS.mark = best; if (best) best.classList.add('on');
+}
+function fsTopItem() { // the first A–Z item showing under the header
+  const box = FS.box; if (!box || !box.isConnected) return null;
+  const r = box.getBoundingClientRect(), x = r.left + Math.min(56, r.width / 2), y0 = Math.max(r.top, fsArea().top) + 6; // just below where fsJump puts an item
+  for (const dy of [0, 18, 42, 84]) { const el = document.elementFromPoint(x, y0 + dy), it = el && el.closest('[data-k]'); if (it && box.contains(it)) return it; }
+  return null;
+}
+function fsMarkTop() { const it = fsTopItem(); if (it && FS.pos.has(it.dataset.k)) fsMark(FS.pos.get(it.dataset.k)); }
+function fsThumbAt(frac) {
+  if (frac == null) { const m = fsMax(); frac = m ? clamp(window.scrollY / m, 0, 1) : 0; }
+  fsThumb.style.transform = `translateY(${Math.round(frac * Math.max(0, FS.h - FS_THUMB))}px)`;
+}
+function fsBubbleAt(text, y) { if (!text) { fsBubble.classList.remove('on'); return; } if (fsBubble.textContent !== text) fsBubble.textContent = text; fsBubble.style.top = Math.round(y) + 'px'; fsBubble.classList.add('on'); }
+function fsJump(el) { // put an item just under the header; corrected for a few frames while rows above it lay out
+  cancelAnimationFrame(FS.jumpRaf); let n = 0;
+  const step = () => {
+    if (!el.isConnected) return;
+    const y = Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY - fsStickyH() - 8));
+    if (Math.abs(y - window.scrollY) > 1) window.scrollTo(0, y);
+    if (++n < 4) FS.jumpRaf = requestAnimationFrame(step);
+  };
+  step();
+}
+function fsShowSoon() { // the handle shows while the page moves, then fades
+  if (FS.kind !== 'bar') return;
+  fsEl.classList.add('show'); clearTimeout(FS.hideT);
+  FS.hideT = setTimeout(() => { if (!FS.drag) fsEl.classList.remove('show'); }, 1600);
+}
+function fsPick(y) {
+  const n = FS.idx.length; if (!n) return;
+  const r = fsRail.getBoundingClientRect(), i = clamp(Math.floor((y - r.top) / Math.max(1, r.height) * n), 0, n - 1);
+  fsBubbleAt(FS.idx[i].k, clamp(y, r.top, r.bottom) - FS.top);
+  if (i === FS.pick) return;
+  FS.pick = i; fsMark(i); fsJump(FS.idx[i].el); sfx('hover');
+}
+function fsEndDrag() {
+  if (!FS.drag) return;
+  FS.drag = null; FS.pick = -1; fsEl.classList.remove('drag'); fsBubble.classList.remove('on'); fsShowSoon();
+}
+window.addEventListener('scroll', () => { if (!FS.kind || FS.raf) return; FS.raf = requestAnimationFrame(() => { FS.raf = 0; fsLayout(); if (!FS.drag) fsShowSoon(); }); }, {passive: true});
+fsRail.addEventListener('pointerdown', e => {
+  if (e.button > 0 || FS.kind !== 'letters') return; e.preventDefault();
+  try { fsRail.setPointerCapture(e.pointerId); } catch (er) {}
+  FS.drag = {id: e.pointerId}; FS.pick = -1; fsEl.classList.add('drag'); fsPick(e.clientY);
+});
+fsRail.addEventListener('pointermove', e => { if (FS.drag && e.pointerId === FS.drag.id) fsPick(e.clientY); });
+fsThumb.addEventListener('pointerdown', e => {
+  if (e.button > 0 || FS.kind !== 'bar') return; e.preventDefault();
+  try { fsThumb.setPointerCapture(e.pointerId); } catch (er) {}
+  const m = fsMax();
+  FS.drag = {id: e.pointerId, off: e.clientY - fsThumb.getBoundingClientRect().top, frac: m ? clamp(window.scrollY / m, 0, 1) : 0};
+  fsEl.classList.add('drag'); clearTimeout(FS.hideT); fsLayout();
+});
+fsThumb.addEventListener('pointermove', e => {
+  if (!FS.drag || e.pointerId !== FS.drag.id) return;
+  FS.drag.frac = clamp((e.clientY - FS.drag.off - FS.top) / Math.max(1, FS.h - FS_THUMB), 0, 1);
+  fsThumbAt(FS.drag.frac); window.scrollTo(0, Math.round(FS.drag.frac * fsMax()));
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => { fsRail.addEventListener(ev, fsEndDrag); fsThumb.addEventListener(ev, fsEndDrag); });
+fsThumb.addEventListener('pointerenter', () => { if (FS.kind === 'bar') clearTimeout(FS.hideT); });
+fsThumb.addEventListener('pointerleave', () => { if (!FS.drag) fsShowSoon(); });
 
 /* navigation */
 function setTab(tab) {
@@ -3844,6 +4055,18 @@ function goArtistOf(id) {
 }
 
 /* ───────────────────────── actions & menus ───────────────────────── */
+/* Open in Spotify: searches Spotify for a song, album or artist — in the Spotify app when it's installed
+   (Android), otherwise on open.spotify.com. Only the search words leave the device, and only when you tap. */
+const knownArtist = n => n && !/^(unknown artist|various artists)$/i.test(n) ? n : '';
+function openSpotify(q) {
+  q = String(q || '').replace(/\s+/g, ' ').trim(); if (!q) return;
+  sfx('pop');
+  try { if (NATIVE && NATIVE.openSpotify) { NATIVE.openSpotify(q); return; } } catch (e) {}
+  const a = document.createElement('a');
+  a.href = 'https://open.spotify.com/search/' + encodeURIComponent(q); a.target = '_blank'; a.rel = 'noopener noreferrer';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function spotifyTrack(id) { const t = T(id); if (t) openSpotify([t.title, knownArtist(artistsOf(t)[0])].filter(Boolean).join(' ')); }
 function toggleFav(id) {
   if (S.fav.has(id)) { S.fav.delete(id); sfx('uncomplete'); toast('Removed from favourites', 1400); } else { S.fav.add(id); sfx('complete'); toast('Added to favourites', 1400); doneFx(); }
   if (id === S.current) $('#npFav').classList.toggle('on', S.fav.has(id));
@@ -3863,6 +4086,7 @@ function trackMenu(id, listKey, idx) {
     ['person', artistsOf(t).length > 1 ? 'Go to artists' : 'Go to artist', () => goArtistOf(id)],
     ['folder', 'Show in folder', () => go({type: 'folder', key: t.path || ''})],
     ['info', 'Details', () => detailsSheet(id)],
+    ['open', 'Open in Spotify', () => spotifyTrack(id), {now: true}],
     pl ? ['close', 'Remove from this playlist', () => { const i = pl.ids.indexOf(id); if (i >= 0) pl.ids.splice(i, 1); persistSoon(); render(); sfx('delete'); toast('Removed from playlist', 1400); }] : null,
     ['trash', 'Remove from library', () => removeTracks([id]), {cls: 'danger'}],
   ]);
@@ -4032,13 +4256,15 @@ async function settingsSheet() {
   ${menuItem('buttons', 'Player buttons', 'npacts', {sub: npActOrder().filter(e => e[1]).map(e => NP_ACTS[e[0]].label).join(' · ') || 'None'})}
   ${menuItem('person', 'Artists', 'artists', {sub: splitCfg().on ? 'Songs with several singers count for each of them' : 'Artist names are kept as written'})}
   ${menuItem('disc', 'Albums', 'albums', {sub: {albums: 'Album artist shown on albums', everywhere: 'Album artist shown everywhere', off: 'Album artist hidden'}[aaMode()] + ' · ' + (S.settings.aaSplit === false ? 'grouped by title only' : 'separated by album artist')})}
+  <div class="lbl">Fast scroll</div><div class="seg" id="fsSeg">${FS_MODES.map(([k, l]) => `<button data-fs-k="${k}" class="${fsMode() === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+  <div class="accent-note" id="fsNote">${esc(FS_NOTES[fsMode()])}</div>
   ${bgRowHTML()}
   <div id="lookBox">${lookBoxHTML()}</div>
   <div class="lbl">Library</div>
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.7.2 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.8 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -4066,6 +4292,8 @@ async function settingsSheet() {
     const sx = e.target.closest('[data-sfx-k]');
     if (sx) { S.settings.sfx = sx.dataset.sfxK; persistSoon(); $$('#sfxSeg button', sheetEl).forEach(b => b.classList.toggle('on', b === sx)); $('#sfxMore', sheetEl).hidden = S.settings.sfx === 'off'; if (S.settings.sfx !== 'off') sfx('select', {force: true}); return; }
     const tst = e.target.closest('[data-sfx]'); if (tst) { sfx(tst.dataset.sfx, {force: true}); return; }
+    const fsk = e.target.closest('[data-fs-k]');
+    if (fsk) { S.settings.fastScroll = fsk.dataset.fsK; persistSoon(); $$('#fsSeg button', sheetEl).forEach(b => b.classList.toggle('on', b === fsk)); $('#fsNote', sheetEl).textContent = FS_NOTES[fsMode()]; render(); return; }
     const th = e.target.closest('[data-theme-k]'); if (th) { S.settings.theme = th.dataset.themeK; applyTheme(); persistSoon(); $$('#themeSeg button').forEach(b => b.classList.toggle('on', b === th)); return; }
     const mo = e.target.closest('[data-motion-k]'); if (mo) { S.settings.motion = mo.dataset.motionK; applyTheme(); persistSoon(); $$('#motionSeg button').forEach(b => b.classList.toggle('on', b === mo)); return; }
     if (e.target.closest('[data-mi="stars"]')) { S.settings.stars = S.settings.stars === false; starfield.sync(); persistSoon(); const lb = $('#lookBox', sheetEl); if (lb) lb.innerHTML = lookBoxHTML(); return; }
@@ -4076,7 +4304,7 @@ async function settingsSheet() {
     else if (k === 'tabs') tabsSheet(); else if (k === 'npacts') npActsSheet(); else if (k === 'artists') artistSplitSheet(); else if (k === 'albums') albumsSheet();
     else if (k === 'level') eqSheet('lv'); else if (k === 'eq') eqSheet();
     else if (k === 'background') requestBackground();
-    else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
+    else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
   }});
 }
 async function setPersist(on) {
@@ -4191,16 +4419,19 @@ function npMenu() {
     shown.has('album') ? null : ['disc', 'Go to album', () => goAlbumOf(id)],
     ['person', artistsOf(t).length > 1 ? 'Go to artists' : 'Go to artist', () => goArtistOf(id)],
     shown.has('info') ? null : ['info', 'Details', () => detailsSheet(id)],
+    shown.has('spotify') ? null : ['open', 'Open in Spotify', () => spotifyTrack(id), {now: true}],
     ['buttons', 'Customise buttons', () => npActsSheet()],
     ['close', 'Stop and clear queue', () => stopAll()],
   ]);
 }
 function detailMenu() {
   const d = S.detail; if (!d) return;
+  const sq = d.kind === 'Album' && d.title !== 'Unknown album' ? [d.title, knownArtist(d.artist)].filter(Boolean).join(' ') : d.kind === 'Artist' ? knownArtist(d.title) : '';
   menuSheet(sheetHead(d.title, plural(d.ids.length, 'song')), [
     ['playnext', 'Play next', () => playNext(d.ids)],
     ['queue', 'Add to queue', () => addToQueue(d.ids)],
     ['addpl', 'Add to playlist', () => addToPlaylist(d.ids)],
+    sq ? ['open', 'Open in Spotify', () => openSpotify(sq), {now: true}] : null,
     d.kind !== 'Playlist' && d.ids.length ? ['trash', d.folder ? 'Remove folder from library' : 'Remove from library', () => removeTracks(d.ids.slice()), {cls: 'danger', sub: d.folder ? 'The files on your device are not touched' : ''}] : null,
   ]);
 }
@@ -4270,6 +4501,7 @@ $('#actLyrics').addEventListener('click', toggleLyrics);
 $('#actAddpl').addEventListener('click', () => runNpAct('addpl'));
 $('#actAlbum').addEventListener('click', () => runNpAct('album'));
 $('#actInfo').addEventListener('click', () => runNpAct('info'));
+$('#actSpotify').addEventListener('click', () => runNpAct('spotify'));
 document.addEventListener('keydown', e => {
   if (e.target.matches('input,textarea') || e.ctrlKey || e.metaKey || e.altKey) { if (e.key === 'Escape' && e.target.id === 'searchInput') closeTop(); return; }
   if (e.key === 'Escape' && layers.length) { e.preventDefault(); closeTop(); }
