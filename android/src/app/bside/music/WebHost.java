@@ -62,6 +62,7 @@ final class WebHost {
     private int externalSeq;
     private JSONArray pendingOpen = new JSONArray();
     private boolean pendingOpenPlayer;
+    private String pendingSpotify;
 
     private WebHost(Context app) {
         this.app = app;
@@ -226,6 +227,10 @@ final class WebHost {
             pendingOpenPlayer = false;
             js("window.bsideOpenPlayer&&bsideOpenPlayer()");
         }
+        if (pendingSpotify != null) {
+            js("window.bsideSpotifyCallback&&bsideSpotifyCallback(" + org.json.JSONObject.quote(pendingSpotify) + ")");
+            pendingSpotify = null;
+        }
     }
 
     // ───────────────────────── JS bridge ─────────────────────────
@@ -354,6 +359,41 @@ final class WebHost {
                         } catch (Exception ignored) {
                         }
                     }
+                }
+            });
+        }
+
+        /** Opens a web page in the browser: Spotify sign-in, or the Spotify developer dashboard. */
+        @JavascriptInterface
+        public void openUrl(final String url) {
+            if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) return;
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    Context c = activity != null ? activity : app;
+                    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    if (activity == null) i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        c.startActivity(i);
+                    } catch (Exception ignored) {
+                    }
+                }
+            });
+        }
+
+        /** Waits for Spotify's sign-in to come back to 127.0.0.1, then passes the code to the page. */
+        @JavascriptInterface
+        public boolean spotifyListen() {
+            return LoopbackLogin.start(new LoopbackLogin.Listener() {
+                @Override
+                public void onCallback(final String query) {
+                    MAIN.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            pendingSpotify = query;
+                            flushPending();
+                        }
+                    });
                 }
             });
         }

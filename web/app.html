@@ -171,6 +171,7 @@ body.is-playing .bars i{animation-play-state:running}
 .btn.primary{background:var(--accent);color:var(--on-accent)}
 .btn.tonal{background:var(--accent-soft);color:var(--accent)}
 .dacts .grow{flex:1}
+@media (max-width:420px){.dacts{gap:6px}.dacts .btn{padding:0 15px 0 12px}.dacts .ib{width:40px}}
 
 /* empty */
 .empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 20px 40px}
@@ -487,6 +488,18 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 body.np-open .fscroll{visibility:hidden}
 @media (max-width:1119px){body.fs-index .view{padding-right:40px}}
 
+/* import from Spotify */
+.sp-steps{margin:2px 18px 10px 40px;color:var(--text-2);font-size:14px;line-height:1.5}
+.sp-steps li{margin:0 0 10px;padding-left:2px}
+.sp-steps b{color:var(--text);font-weight:600}
+.sp-link{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.sp-code{display:flex;align-items:center;gap:6px;margin:6px 0;padding:4px 4px 4px 12px;border-radius:12px;background:var(--surface-2);color:var(--text)}
+.sp-code span{flex:1;min-width:0;font:600 13px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all;-webkit-user-select:all;user-select:all}
+.sp-code .txt-btn,.mi .txt-btn{flex:none;height:34px;padding:0 12px;font-size:14px}
+.sec-acts{display:flex;gap:2px}
+.mi.dim{opacity:.55}
+.sp-ph{color:var(--text-3)}
+
 /*@SKINS@*/
 </style>
 </head>
@@ -536,6 +549,7 @@ body.np-open .fscroll{visibility:hidden}
   <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3.5" y="7" width="15" height="10" rx="2"/><path d="M20.5 10.5v3"/><path d="M10.5 9l-2 3h4l-2 3"/></symbol>
   <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M13.5 4.5h6v6M19.5 4.5l-8.5 8.5"/><path d="M18 14v3.5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2H10"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 4.5v10.5M7.5 10.5L12 15l4.5-4.5"/><path d="M5 15v2.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V15"/></symbol>
   <symbol id="i-az" viewBox="0 0 24 24"><path d="M3.5 11l3-7.5 3 7.5M4.6 8.4h3.8M3.8 13.5h5.4l-5.4 7h5.4"/><path d="M17 4v16M13.5 16.5L17 20l3.5-3.5"/></symbol>
 </svg>
 
@@ -633,6 +647,7 @@ body.np-open .fscroll{visibility:hidden}
 <div id="drop" class="drop"><div><svg class="ico"><use href="#i-note"/></svg>Drop music to add it</div></div>
 <input type="file" id="filePick" class="vh" multiple accept="audio/*,.mp3,.m4a,.aac,.flac,.ogg,.oga,.opus,.wav,.weba,.webm,.lrc" tabindex="-1" aria-hidden="true">
 <input type="file" id="folderPick" class="vh" multiple webkitdirectory tabindex="-1" aria-hidden="true">
+<input type="file" id="dataPick" class="vh" multiple accept=".zip,.json,.csv,application/zip,application/json,text/csv" tabindex="-1" aria-hidden="true">
 
 <script>
 'use strict';
@@ -681,14 +696,16 @@ const S = {
 };
 let saveT = 0;
 function persist() {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      fav: [...S.fav], playlists: S.playlists, plays: S.plays, recent: S.recent, settings: S.settings,
-      shuffle: S.shuffle, repeat: S.repeat, tab: S.tab, ctx: S.ctx,
-      queue: S.queue.length > 5000 ? [] : S.queue, base: S.base.length > 5000 ? [] : S.base, qi: S.qi,
-      pos: audio && isFinite(audio.currentTime) ? audio.currentTime : 0,
-    }));
-  } catch (e) {}
+  const data = {
+    fav: [...S.fav], playlists: S.playlists, plays: S.plays, recent: S.recent, settings: S.settings,
+    shuffle: S.shuffle, repeat: S.repeat, tab: S.tab, ctx: S.ctx,
+    queue: S.queue.length > 5000 ? [] : S.queue, base: S.base.length > 5000 ? [] : S.base, qi: S.qi,
+    pos: audio && isFinite(audio.currentTime) ? audio.currentTime : 0,
+  };
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+  catch (e) { // storage full: keep everything except the lists of Spotify songs that aren't on this device
+    try { data.playlists = S.playlists.map(p => p.src ? Object.assign({}, p, {src: Object.assign({}, p.src, {missing: [], more: (p.src.more || 0) + (p.src.missing || []).length})}) : p); localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch (e2) {}
+  }
 }
 const persistSoon = () => { clearTimeout(saveT); saveT = setTimeout(persist, 600); };
 
@@ -2019,7 +2036,7 @@ function mosaicHTML(ids, seed, cls) {
 function playlistsHTML() {
   const autos = Object.entries(AUTO_PL).map(([k, p]) => { const n = p.ids().length; return `<button class="auto" data-pl="${k}"><div class="ab" style="background:linear-gradient(135deg,hsl(${p.hue},75%,62%),hsl(${(p.hue + 30) % 360},72%,48%))">${ic(p.icon)}</div><div><b>${p.name}</b><span>${plural(n, 'song')}</span></div></button>`; }).join('');
   const mine = S.playlists.map(p => `<div class="row" role="button" tabindex="0" data-pl="${esc(p.id)}">${mosaicHTML(p.ids, p.name, 'thumb')}<div class="meta"><div class="t">${esc(p.name)}</div><div class="s">${plural(p.ids.filter(id => S.tracks.has(id)).length, 'song')}</div></div>${ic('right', 'chev')}</div>`).join('');
-  return `<div class="autos">${autos}</div><div class="sec-h"><span>My playlists</span><button class="txt-btn" data-act="new-pl">${ic('plus')}New</button></div>${mine ? `<div class="card list">${mine}</div>` : `<div class="card"><div class="hint">No playlists yet. Create one, then add songs from any song's ⋮ menu.</div></div>`}`;
+  return `<div class="autos">${autos}</div><div class="sec-h"><span>My playlists</span><span class="sec-acts"><button class="txt-btn" data-act="spotify-import">${ic('import')}Spotify</button><button class="txt-btn" data-act="new-pl">${ic('plus')}New</button></span></div>${mine ? `<div class="card list">${mine}</div>` : `<div class="card"><div class="hint">No playlists yet. Create one and add songs from any song's ⋮ menu, or bring your playlists over from Spotify.</div></div>`}`;
 }
 function resolveRoute(r) {
   const G = groups();
@@ -2029,7 +2046,7 @@ function resolveRoute(r) {
   if (r.type === 'folder') { const f = G.folders.get(r.key); if (!f) return null; return {kind: 'Folder', folder: f, title: f.name, sub: '', ids: f.all, artKey: f.artKey, seed: f.name, ctx: {label: 'Folder · ' + f.name}}; }
   if (r.type === 'playlist') {
     if (AUTO_PL[r.key]) { const p = AUTO_PL[r.key]; const ids = p.ids(); return {kind: 'Playlist', title: p.name, sub: '', ids, mosaic: true, seed: p.name, ctx: {label: p.name}}; }
-    const p = userPl(r.key); if (!p) return null; return {kind: 'Playlist', title: p.name, sub: '', ids: p.ids.filter(id => S.tracks.has(id)), mosaic: true, seed: p.name, user: p, ctx: {label: 'Playlist · ' + p.name}};
+    const p = userPl(r.key); if (!p) return null; return {kind: 'Playlist', title: p.name, sub: p.src ? 'From Spotify' + ((p.src.total - p.src.found) ? ` · ${p.src.total - p.src.found} not on this device` : '') : '', ids: p.ids.filter(id => S.tracks.has(id)), mosaic: true, seed: p.name, user: p, ctx: {label: 'Playlist · ' + p.name}};
   }
   return null;
 }
@@ -2040,10 +2057,11 @@ function detailHTML(r) {
   const cover = d.mosaic ? mosaicHTML(d.ids, d.seed, 'dcover') : artHTML(d.artKey, d.seed, 'dcover' + (d.round ? ' round' : ''), true);
   const meta = [d.sub, d.ids.length ? plural(d.ids.length, 'song') : '', total > 0 ? fmtLong(total) : ''].filter(Boolean).join(' · ');
   let html = `<div class="dhead">${cover}<div class="dinfo"><div class="k">${d.kind}</div><h2>${esc(d.title)}</h2><p>${esc(meta)}</p></div></div>`;
-  html += `<div class="dacts">${d.ids.length ? `<button class="btn primary" data-act="play-all">${ic('play')}Play</button><button class="btn tonal" data-act="shuffle-list">${ic('shuffle')}Shuffle</button>` : ''}<span class="grow"></span>${d.user ? `<button class="ib" data-act="rename-pl" aria-label="Rename playlist">${ic('edit')}</button><button class="ib" data-act="delete-pl" aria-label="Delete playlist">${ic('trash')}</button>` : ''}${d.ids.length ? `<button class="ib" data-act="detail-more" aria-label="More options">${ic('more')}</button>` : ''}</div>`;
+  html += `<div class="dacts">${d.ids.length ? `<button class="btn primary" data-act="play-all">${ic('play')}Play</button><button class="btn tonal" data-act="shuffle-list">${ic('shuffle')}Shuffle</button>` : ''}<span class="grow"></span>${d.user ? `<button class="ib" data-act="rename-pl" aria-label="Rename playlist">${ic('edit')}</button><button class="ib" data-act="delete-pl" aria-label="Delete playlist">${ic('trash')}</button>` : ''}${d.ids.length || (d.user && d.user.src) ? `<button class="ib" data-act="detail-more" aria-label="More options">${ic('more')}</button>` : ''}</div>`;
   if (d.albums && d.albums.length > 1) html += `<div class="sec-h"><span>Albums</span></div><div class="hscroll">${d.albums.sort((x, y) => cmp(x.year, y.year) || cmp(x.name, y.name)).map(a => albumTile(a)).join('')}</div><div class="sec-h"><span>Songs</span></div>`;
   html += d.ids.length ? listHTML('d', d.ids, d.ctx, d.num ? {num: true, sub: t => artistOf(t)} : (r.type === 'artist' ? {sub: t => albumLabel(t) || albumOf(t)} : undefined))
-    : `<div class="card"><div class="hint">${r.key === '@fav' ? 'Tap the heart on any song to add it to your favourites.' : d.user ? "This playlist is empty. Use “Add to playlist” in any song's ⋮ menu." : 'Nothing here yet.'}</div></div>`;
+    : `<div class="card"><div class="hint">${r.key === '@fav' ? 'Tap the heart on any song to add it to your favourites.' : d.user && d.user.src ? 'None of these songs are in your B-Side library yet.' : d.user ? "This playlist is empty. Use “Add to playlist” in any song's ⋮ menu." : 'Nothing here yet.'}</div></div>`;
+  if (d.user && d.user.src) html += spMissingHTML(d.user);
   S.detail = d;
   return html;
 }
@@ -2273,6 +2291,346 @@ function openSpotify(q) {
   document.body.appendChild(a); a.click(); a.remove();
 }
 function spotifyTrack(id) { const t = T(id); if (t) openSpotify([t.title, knownArtist(artistsOf(t)[0])].filter(Boolean).join(' ')); }
+/* ───────────────────────── import from Spotify ─────────────────────────
+   B-Side plays files on your device, so it can't stream from Spotify. Importing turns Spotify playlists and Liked
+   Songs into B-Side playlists made of the matching songs you've added, and keeps a list of the ones you don't have.
+   Two ways in:
+   • Connect your account: Spotify's Web API, signed in with PKCE (no secret). Spotify's rules: the developer app's
+     owner needs Premium, up to 5 people can use one app, and apps can read only playlists you own or collaborate on.
+     Sign-in returns to 127.0.0.1 on Android (the app listens there for a moment) or to this page on the web.
+   • A data file: my_spotify_data.zip from Spotify's "Download your data" (any account, nothing goes online), its
+     Playlist1.json / YourLibrary.json, or a CSV from Exportify or TuneMyMusic. */
+const SP_KEY = 'bside:spotify', SP_AUTH = 'bside:spotify-auth', SP_API = 'https://api.spotify.com/v1';
+const SP_SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read';
+const SP_LOOPBACK = 'http://127.0.0.1:43821/callback', SP_MISSING_MAX = 600;
+const SP_RETURN = /[?&]state=/.test(location.search) && /[?&](code|error)=/.test(location.search) ? location.search.slice(1) : '';
+if (SP_RETURN) { try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {} }
+const spLoad = () => { try { return JSON.parse(localStorage.getItem(SP_KEY)) || {}; } catch (e) { return {}; } };
+const spSave = o => { try { localStorage.setItem(SP_KEY, JSON.stringify(o)); } catch (e) {} };
+let SPC = null, spBusy = false; // SPC: this session's view of the account {me, lists} | {loading} | {error}
+function spRedirect() {
+  if (NATIVE && NATIVE.spotifyListen) return SP_LOOPBACK;
+  const l = location;
+  if (l.protocol === 'https:' || (l.protocol === 'http:' && /^(127\.0\.0\.1|\[::1\])$/.test(l.hostname))) return l.origin + l.pathname;
+  return ''; // a page opened from a file can't be returned to
+}
+function openExternal(url) {
+  try { if (NATIVE && NATIVE.openUrl) { NATIVE.openUrl(url); return; } } catch (e) {}
+  const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function spCopy(text) {
+  const done = () => { sfx('pop'); toast('Copied'); };
+  const fallback = () => { const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} t.remove(); if (ok) done(); else toast(text, 8000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+}
+
+/* sign-in (Authorization Code with PKCE) */
+const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+async function spConnect() {
+  const st = spLoad(), redirect = spRedirect();
+  if (!st.clientId || !redirect) return;
+  if (!(window.crypto && crypto.subtle)) { sfx('error'); toast('This browser can’t sign in to Spotify'); return; }
+  try { if (NATIVE && NATIVE.spotifyListen && !NATIVE.spotifyListen()) { sfx('error'); toast('Couldn’t start Spotify sign-in. Restart B-Side and try again'); return; } } catch (e) {}
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(48))), state = b64url(crypto.getRandomValues(new Uint8Array(16)));
+  const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  try { localStorage.setItem(SP_AUTH, JSON.stringify({verifier, state, redirect, at: Date.now()})); } catch (e) {}
+  const url = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({client_id: st.clientId, response_type: 'code', redirect_uri: redirect, code_challenge_method: 'S256', code_challenge: challenge, state, scope: SP_SCOPES});
+  if (NATIVE && NATIVE.openUrl) { NATIVE.openUrl(url); toast('Log in to Spotify in your browser, then come back', 5000); }
+  else location.assign(url);
+}
+async function spCallback(query) {
+  const q = new URLSearchParams(query); let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SP_AUTH)); localStorage.removeItem(SP_AUTH); } catch (e) {}
+  if (!saved || !q.get('state') || q.get('state') !== saved.state) { toast('That Spotify sign-in has expired. Try again'); return; }
+  if (q.get('error')) { toast(q.get('error') === 'access_denied' ? 'Spotify sign-in cancelled' : 'Spotify sign-in failed: ' + q.get('error')); return; }
+  try {
+    spKeep(await spToken({grant_type: 'authorization_code', code: q.get('code') || '', redirect_uri: saved.redirect, client_id: spLoad().clientId, code_verifier: saved.verifier}));
+    const me = await spGet('/me'), st = spLoad(); st.user = me.display_name || me.id || ''; st.uid = me.id || ''; spSave(st);
+    SPC = null; sfx('complete'); toast('Connected to Spotify' + (st.user ? ' as ' + st.user : ''));
+    await closeOverlays(); spotifySheet();
+  } catch (e) { sfx('error'); toast(e && e.msg && e.code !== 'api' ? 'Spotify: ' + e.msg : spErrText(e), 7000); }
+}
+window.bsideSpotifyCallback = q => { spCallback(String(q || '')); };
+async function spToken(params) {
+  let r; try { r = await fetch('https://accounts.spotify.com/api/token', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams(params)}); }
+  catch (e) { throw {status: 0, code: 'offline'}; }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw {status: r.status, code: j.error || 'token', msg: j.error_description || j.error || ''};
+  return j;
+}
+function spKeep(j) { const st = spLoad(); st.access = j.access_token; st.exp = Date.now() + ((j.expires_in || 3600) - 60) * 1000; if (j.refresh_token) st.refresh = j.refresh_token; spSave(st); }
+function spForget(clientToo) { const st = spLoad(); ['access', 'refresh', 'exp', 'user', 'uid'].forEach(k => delete st[k]); if (clientToo) delete st.clientId; spSave(st); SPC = null; }
+async function spAccess(force) {
+  const st = spLoad();
+  if (!force && st.access && Date.now() < st.exp) return st.access;
+  if (!st.refresh) throw {status: 401, code: 'signed_out'};
+  try { const j = await spToken({grant_type: 'refresh_token', refresh_token: st.refresh, client_id: st.clientId}); spKeep(j); return j.access_token; }
+  catch (e) { if (e.code === 'invalid_grant' || e.code === 'invalid_client') { spForget(false); e.code = 'signed_out'; } throw e; }
+}
+async function spGet(path, o = {auth: 0, wait: 0}) {
+  const tok = await spAccess(o.auth > 0);
+  let r; try { r = await fetch(path.startsWith('https://') ? path : SP_API + path, {headers: {Authorization: 'Bearer ' + tok}}); }
+  catch (e) { throw {status: 0, code: 'offline'}; }
+  if (r.status === 401 && !o.auth) return spGet(path, {auth: 1, wait: o.wait});
+  if ((r.status === 429 || r.status >= 500) && o.wait < 3) { await sleepMs(1000 * Math.min(20, +r.headers.get('Retry-After') || 2 * (o.wait + 1))); return spGet(path, {auth: o.auth, wait: o.wait + 1}); }
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw {status: r.status, code: 'api', msg: (j.error && j.error.message) || ''}; }
+  return r.json();
+}
+async function spPages(path, cap = 20000) { const out = []; let next = path; while (next && out.length < cap) { const j = await spGet(next); out.push(...(j.items || [])); next = j.next; } return out; }
+function spErrText(e) {
+  if (!e || typeof e !== 'object') return 'Something went wrong with Spotify';
+  if (e.code === 'offline') return 'Couldn’t reach Spotify. Check your internet connection';
+  if (e.code === 'signed_out') return 'Spotify signed you out. Connect again';
+  if (e.code === 'invalid_client') return 'Spotify doesn’t recognise that Client ID, or the Redirect URI in your Spotify app doesn’t match';
+  if (e.status === 403) return 'Spotify refused. It needs the developer app’s owner to have Premium, and your account added under User Management in that app';
+  if (e.status === 429) return 'Spotify is busy. Try again in a minute';
+  return 'Spotify error' + (e.status ? ' ' + e.status : '') + (e.msg ? ': ' + e.msg : '');
+}
+
+/* reading the account */
+const spEntry = e => { const t = e && (e.item || e.track); if (!t || t.type === 'episode' || !t.name) return null; return {t: t.name, a: (t.artists || []).map(x => x && x.name).filter(Boolean), al: (t.album && t.album.name) || '', ms: t.duration_ms || 0}; };
+async function spPlaylistItems(id) {
+  try { return await spPages(`/playlists/${encodeURIComponent(id)}/items?limit=50`); }
+  catch (e) { if (e && e.status === 404) return spPages(`/playlists/${encodeURIComponent(id)}/tracks?limit=50`); throw e; } // older API name
+}
+async function spLoadAccount() {
+  SPC = {loading: true}; spRefreshSheet();
+  try {
+    const [me, pls] = await Promise.all([spGet('/me'), spPages('/me/playlists?limit=50', 2000)]);
+    const uid = me.id || spLoad().uid, count = p => (p.items && p.items.total) || (p.tracks && p.tracks.total) || 0;
+    SPC = {me, lists: pls.filter(p => p && p.id).map(p => ({key: 'api:' + p.id, id: p.id, name: p.name || 'Untitled playlist', total: count(p), owner: (p.owner && (p.owner.display_name || p.owner.id)) || 'someone else', mine: (p.owner && p.owner.id === uid) || !!p.collaborative}))};
+  } catch (e) { SPC = {error: spErrText(e)}; }
+  spRefreshSheet();
+}
+async function spRunImport(keys) {
+  if (spBusy) { toast('Still importing…'); return; }
+  spBusy = true;
+  try {
+    const jobs = keys.map(k => k === 'liked' ? {key: k, name: 'Liked Songs', load: () => spPages('/me/tracks?limit=50')}
+      : (L => L && {key: k, name: L.name, load: () => spPlaylistItems(L.id)})(SPC && SPC.lists && SPC.lists.find(x => x.key === k))).filter(Boolean);
+    const lists = [], failed = [];
+    for (let i = 0; i < jobs.length; i++) {
+      const j = jobs[i]; toast(jobs.length > 1 ? `Reading from Spotify… ${i + 1} of ${jobs.length}` : `Reading “${j.name}” from Spotify…`, 0);
+      try { lists.push({key: j.key, name: j.name, items: (await j.load()).map(spEntry).filter(Boolean)}); }
+      catch (e) { failed.push([j.name, e]); if (!e || (e.status !== 403 && e.status !== 404)) break; }
+    }
+    let msg = lists.length ? await spImportLists(lists) : '';
+    if (failed.length) {
+      const [n, e] = failed[0], denied = e && (e.status === 403 || e.status === 404);
+      msg = (msg ? msg + '. ' : '') + (!denied ? spErrText(e) : n === 'Liked Songs' && failed.length === 1 ? 'Spotify didn’t share your Liked Songs. Import them from a Spotify data file instead' : `Spotify wouldn’t share “${n}”${failed.length > 1 ? ` and ${failed.length - 1} more` : ''}`);
+      sfx('error'); toast(msg, 7000);
+    } else if (msg) { sfx('goal'); toast(msg, 5000); }
+  } finally { spBusy = false; spRefreshSheet(); }
+}
+
+/* reading a data file: Spotify's export (zip or JSON), or a CSV */
+function spUnzip(buf, want) { // the JSON and CSV files inside a zip, as [name, text]
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength), out = [];
+  let end = -1; for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { end = i; break; }
+  if (end < 0) return Promise.resolve(out);
+  const n = dv.getUint16(end + 10, true); let p = dv.getUint32(end + 16, true);
+  const jobs = [];
+  for (let k = 0; k < n && p + 46 <= buf.length && dv.getUint32(p, true) === 0x02014b50; k++) {
+    const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), at = dv.getUint32(p + 42, true);
+    const name = TD8.decode(buf.subarray(p + 46, p + 46 + nl));
+    p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+    if (!want(name) || at + 30 > buf.length) continue;
+    const from = at + 30 + dv.getUint16(at + 26, true) + dv.getUint16(at + 28, true), raw = buf.subarray(from, from + size);
+    if (method === 0) jobs.push(Promise.resolve([name, TD8.decode(raw)]));
+    else if (method === 8 && typeof DecompressionStream === 'function') jobs.push(new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer().then(b => [name, TD8.decode(new Uint8Array(b))], () => null));
+  }
+  return Promise.all(jobs).then(r => r.filter(Boolean));
+}
+function spFromLocalUri(u) { // spotify:local:Artist:Album:Title:Seconds
+  const p = String(u || '').split(':').map(x => { try { return decodeURIComponent(x.replace(/\+/g, ' ')); } catch (e) { return x; } });
+  return p.length >= 6 && p[4] ? {t: p[4], a: p[2] ? [p[2]] : [], al: p[3] || '', ms: (+p[5] || 0) * 1000} : null;
+}
+function spParseJSON(j, out) {
+  if (j && Array.isArray(j.playlists)) for (const pl of j.playlists) {
+    if (!pl) continue;
+    const items = (pl.items || []).map(it => { const t = it && it.track; if (t && t.trackName) return {t: t.trackName, a: t.artistName ? [t.artistName] : [], al: t.albumName || '', ms: 0}; return it && it.localTrack ? spFromLocalUri(it.localTrack.uri) : null; }).filter(Boolean);
+    out.push({key: 'file:' + spWords(pl.name || 'playlist'), name: pl.name || 'Spotify playlist', items});
+  }
+  const lib = j && Array.isArray(j.tracks) ? j.tracks : null; // YourLibrary.json: your Liked Songs
+  if (lib && lib.some(t => t && t.track)) out.push({key: 'liked', name: 'Liked Songs', items: lib.map(t => t && t.track ? {t: t.track, a: t.artist ? [t.artist] : [], al: t.album || '', ms: 0} : null).filter(Boolean)});
+}
+function spCSV(text) { // quoted fields, doubled quotes; comma, semicolon or tab
+  const first = text.slice(0, (text.indexOf('\n') + 1) || text.length), delim = [',', ';', '\t'].sort((a, b) => first.split(b).length - first.split(a).length)[0];
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.some(x => x !== '')) rows.push(row); row = []; }
+    else f += c;
+  }
+  row.push(f); if (row.some(x => x !== '')) rows.push(row);
+  return rows;
+}
+function spParseCSV(fileName, text, out) {
+  const rows = spCSV(text); if (rows.length < 2) return;
+  const h = rows[0].map(x => x.trim().toLowerCase());
+  const col = (...res) => { for (const re of res) { const i = h.findIndex(x => re.test(x)); if (i >= 0) return i; } return -1; };
+  const ti = col(/^track ?name$/, /^(title|song|song ?name|name|track)$/), ai = col(/^artist ?name/, /^artists?$/, /artist/), li = col(/^album ?name$/, /^album$/), di = col(/duration/), pi = col(/^playlist ?name$/, /^playlist$/);
+  if (ti < 0) return;
+  const base = fileName.replace(/^.*[\/\\]/, '').replace(/\.csv$/i, '').replace(/_+/g, ' ').trim() || 'Spotify playlist', groups = new Map();
+  for (const r of rows.slice(1)) {
+    const t = (r[ti] || '').trim(); if (!t) continue;
+    const pl = (pi >= 0 && (r[pi] || '').trim()) || base, d = di >= 0 ? +r[di] || 0 : 0;
+    if (!groups.has(pl)) groups.set(pl, []);
+    groups.get(pl).push({t, a: ai >= 0 ? (r[ai] || '').split(/\s*[,;]\s*/).filter(Boolean) : [], al: li >= 0 ? (r[li] || '').trim() : '', ms: d > 20000 ? d : d * 1000});
+  }
+  for (const [pl, items] of groups) out.push({key: 'file:' + spWords(pl), name: pl, items});
+}
+function spParseText(name, text, out) {
+  const s = String(text || '').replace(/^﻿/, '').trimStart();
+  if (s[0] === '{' || s[0] === '[') { try { spParseJSON(JSON.parse(s), out); } catch (e) {} }
+  else if (s) spParseCSV(name, s, out);
+}
+const dataPick = $('#dataPick');
+function pickSpotifyFile() { try { NATIVE && NATIVE.setPickMode && NATIVE.setPickMode('data'); } catch (e) {} dataPick.value = ''; dataPick.click(); }
+dataPick.addEventListener('change', () => { const f = Array.from(dataPick.files || []); if (f.length) setTimeout(() => spImportFiles(f), 30); });
+async function spImportFiles(files) {
+  if (spBusy) { toast('Still importing…'); return; }
+  spBusy = true; toast('Reading the Spotify file…', 0);
+  try {
+    const lists = [];
+    for (const f of files) {
+      try {
+        const buf = new Uint8Array(await f.arrayBuffer());
+        if (buf[0] === 0x50 && buf[1] === 0x4b) { for (const [n, text] of await spUnzip(buf, n => /(^|\/)(playlist\d*|yourlibrary)\.json$/i.test(n) || /\.csv$/i.test(n))) spParseText(n, text, lists); }
+        else spParseText(f.name, TD8.decode(buf), lists);
+      } catch (e) { console.warn(e); }
+    }
+    const usable = lists.filter(L => L.items.length);
+    if (!usable.length) { sfx('error'); toast('No playlists found. Choose my_spotify_data.zip from Spotify’s “Account data”, or a Playlist1.json, YourLibrary.json or CSV file', 7000); return; }
+    sfx('goal'); toast(await spImportLists(usable), 5000);
+  } finally { spBusy = false; spRefreshSheet(); }
+}
+
+/* matching Spotify songs to your files: same title (ignoring "(feat. …)", "- Remastered" and the like), then the
+   artist, album or length has to agree, unless the file has no artist. Untagged files are found by file name. */
+const spWords = s => String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+const spTitleKey = s => spWords(String(s || '').replace(/\s*[(\[][^)\]]*[)\]]/g, ' ').replace(/\s+-\s+.*$/, '').replace(/\s+(feat|ft)\.?\s.*$/i, '')) || spWords(s);
+function spIndex() {
+  const byTitle = new Map(), all = [];
+  for (const t of S.tracks.values()) {
+    const x = {t, arts: new Set([...artistsOf(t), t.artist, t.albumArtist].filter(Boolean).map(spWords).filter(a => a && a !== 'unknown artist')), al: spWords(t.album), hay: ' ' + spWords([t.title, t.artist, t.name].join(' ')) + ' '};
+    const k = spTitleKey(t.title); if (k) { if (!byTitle.has(k)) byTitle.set(k, []); byTitle.get(k).push(x); }
+    all.push(x);
+  }
+  return {byTitle, all};
+}
+function spMatch(ix, s) {
+  const key = spTitleKey(s.t), sa = s.a.map(spWords).filter(Boolean), sal = spWords(s.al);
+  const artistHit = x => sa.some(a => [...x.arts].some(b => b === a || (a.length > 3 && b.includes(a)) || (b.length > 3 && a.includes(b))));
+  const near = x => s.ms && x.t.duration && Math.abs(x.t.duration - s.ms / 1000) <= 3;
+  let best = null, top = -1;
+  const cands = ix.byTitle.get(key) || [];
+  for (const x of cands) { // same artist; or a file with no artist and the album or length agrees; or a differently written artist with the same album and length
+    const art = artistHit(x), alb = !!sal && x.al === sal, len = !!near(x);
+    const ok = art || (!x.arts.size && (alb || len || cands.length === 1)) || (alb && len);
+    const n = ok ? (art ? 4 : 0) + (alb ? 2 : 0) + (len ? 2 : 0) + 1 : -1;
+    if (n > top) { top = n; best = x; }
+  }
+  if (best && top > 0) return best.t.id;
+  if (key.length >= 3 && sa[0]) { // untagged files: "Artist - Title.mp3"
+    const k = ' ' + key + ' ', a = ' ' + sa[0] + ' ';
+    const hit = ix.all.filter(x => x.hay.includes(k) && x.hay.includes(a));
+    if (hit.length) return (hit.find(near) || hit[0]).t.id;
+  }
+  return null;
+}
+async function spImportLists(lists) { // → a one-line summary
+  const ix = spIndex(); let found = 0, total = 0, n = 0;
+  for (const L of lists) {
+    const ids = [], missing = [];
+    for (let i = 0; i < L.items.length; i++) {
+      const s = L.items[i], id = spMatch(ix, s);
+      if (id) ids.push(id); else missing.push([s.t, s.a.join(', ')]);
+      if (i % 200 === 199) await sleepMs(0);
+    }
+    let p = S.playlists.find(x => x.src && x.src.key === L.key) || S.playlists.find(x => x.src && x.name.toLowerCase() === L.name.toLowerCase()); // the same list from the account or a file
+    if (!p) { p = {id: 'p' + Date.now().toString(36) + (n++).toString(36), name: L.name, ids: [], created: Date.now()}; S.playlists.push(p); }
+    p.ids = [...new Set(ids)];
+    p.src = {from: 'spotify', key: L.key, total: L.items.length, found: ids.length, missing: missing.slice(0, SP_MISSING_MAX), more: Math.max(0, missing.length - SP_MISSING_MAX), at: Date.now()};
+    found += ids.length; total += L.items.length;
+  }
+  persistSoon(); renderSoon(10);
+  const tail = S.tracks.size ? ' found on this device' : ' found. Add your music to B-Side, then import again';
+  return (lists.length === 1 ? `“${lists[0].name}”: ` : `${plural(lists.length, 'playlist')}: `) + `${found} of ${plural(total, 'song')}` + tail;
+}
+const spImported = key => S.playlists.find(p => p.src && p.src.key === key);
+function spMissingHTML(p) {
+  const s = p && p.src; if (!s || !s.missing || !(s.missing.length || s.more)) return '';
+  return `<div class="sec-h"><span>Not on this device</span><span>${s.missing.length + (s.more || 0)}</span></div><div class="accent-note" style="padding:0 8px 12px">Add these songs’ files to B-Side, then import the playlist again to fill it in. Tap a song to find it on Spotify.</div>` +
+    (s.missing.length ? `<div class="card list">${s.missing.map((m, i) => `<div class="row sp-miss" role="button" tabindex="0" data-spm="${i}"><div class="thumb ph sp-ph">${ic('note')}</div><div class="meta"><div class="t">${esc(m[0])}</div><div class="s">${esc(m[1] || 'Unknown artist')}</div></div>${ic('open', 'chev')}</div>`).join('')}${s.more ? `<div class="hint" style="padding:14px">and ${s.more} more</div>` : ''}</div>` : `<div class="card"><div class="hint">${s.more} songs</div></div>`);
+}
+
+/* the Import from Spotify sheet */
+const spSteps = redirect => `<ol class="sp-steps">
+  <li>Open <button class="sp-link" data-sp="dash">developer.spotify.com/dashboard</button> and log in. Spotify only allows this for accounts with <b>Premium</b>.</li>
+  <li>Tap <b>Create app</b>. Any name and description will do. Under <b>Redirect URIs</b> add exactly:<span class="sp-code"><span>${esc(redirect)}</span><button class="txt-btn" data-sp="copy">Copy</button></span>Tick <b>Web API</b>, agree to the terms and <b>Save</b>.</li>
+  <li>Copy the app’s <b>Client ID</b> and paste it here.</li></ol>`;
+function spSheetBody() {
+  const st = spLoad(), redirect = spRedirect();
+  let h = `<div class="accent-note">B-Side plays files on your device, so it can’t stream from Spotify. Importing makes B-Side playlists out of the matching songs you’ve added here, and lists the ones you don’t have.</div><div class="lbl">Your Spotify account</div>`;
+  if (st.refresh) {
+    h += `<div class="mi static">${ic('person')}<span class="mt">${esc(st.user ? 'Connected as ' + st.user : 'Connected')}<span class="sub">Tap a playlist to import it. Import again any time to update it.</span></span><button class="txt-btn" data-sp="disconnect">Disconnect</button></div>`;
+    if (!SPC || SPC.loading) h += `<div class="hint" style="padding:18px">Loading your playlists…</div>`;
+    else if (SPC.error) h += `<div class="accent-note">${esc(SPC.error)}</div>` + menuItem('sort', 'Try again', 'sp:reload');
+    else {
+      const mine = SPC.lists.filter(L => L.mine);
+      if (mine.length) h += menuItem('import', `Import all (${mine.length + 1})`, 'sp:all', {cls: 'sel', sub: 'Liked Songs and every playlist you made'});
+      h += [{key: 'liked', name: 'Liked Songs', liked: true, mine: true}, ...SPC.lists].map(L => {
+        const p = spImported(L.key);
+        const sub = !L.mine ? `By ${L.owner}. Spotify only shares playlists you own or collaborate on` : [L.liked ? 'Your saved songs' : plural(L.total, 'song'), p ? `imported, ${p.src.found} of ${p.src.total} found` : ''].filter(Boolean).join(' · ');
+        return menuItem(L.liked ? 'heart' : 'playlist', L.name, 'sp:get:' + L.key, {sub, cls: L.mine ? '' : 'dim', extra: p ? ic('check') : ''});
+      }).join('');
+    }
+  } else if (!redirect) h += `<div class="accent-note">To connect your account, use the B-Side Android app or open B-Side from a web address (https). You can still import a Spotify data file below.</div>`;
+  else if (st.clientId) h += menuItem('open', 'Connect to Spotify', 'sp:connect', {cls: 'sel', sub: 'Log in to Spotify and allow B-Side to read your playlists'}) + menuItem('edit', 'Change Client ID', 'sp:cid', {sub: st.clientId}) +
+    `<div class="accent-note">The Redirect URI in your Spotify app must be exactly:<span class="sp-code"><span>${esc(redirect)}</span><button class="txt-btn" data-sp="copy">Copy</button></span></div>`;
+  else h += `<div class="accent-note">Connecting needs a free Spotify developer app, made once:</div>` + spSteps(redirect) + menuItem('edit', 'Enter Client ID', 'sp:cid', {cls: 'sel'});
+  h += `<div class="lbl">Or import a Spotify data file</div>` + menuItem('upload', 'Choose a file', 'sp:file', {sub: 'Works with any account, even free, and nothing goes online. On spotify.com open Account › Privacy settings › Download your data and request Account data. When Spotify emails it (it can take a few days), choose my_spotify_data.zip here. CSV files from Exportify or TuneMyMusic work too.'});
+  return h;
+}
+function spRefreshSheet() { if (!sheetEl._sp || topLayer() !== 'sheet') return; const b = $('.sheet-body', sheetEl); if (b) { const y = b.scrollTop; b.innerHTML = spSheetBody(); b.scrollTop = y; } }
+function spotifySheet() {
+  if (spLoad().refresh && !SPC) spLoadAccount();
+  openSheet({head: sheetHead('Import from Spotify', 'Playlists and Liked Songs'), body: spSheetBody(),
+    onMount: el => { el._sp = true; el._cleanup = () => { el._sp = false; }; },
+    onClick: async e => {
+      const sp = e.target.closest('[data-sp]');
+      if (sp) {
+        const k = sp.dataset.sp;
+        if (k === 'dash') openExternal('https://developer.spotify.com/dashboard');
+        else if (k === 'copy') spCopy(spRedirect());
+        else if (k === 'disconnect') { const ok = await dialog({title: 'Disconnect Spotify?', text: 'Playlists you imported stay in B-Side.', ok: 'Disconnect'}); if (ok) { spForget(false); sfx('delete'); spRefreshSheet(); } }
+        return;
+      }
+      const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
+      if (k === 'sp:cid') {
+        const v = await dialog({title: 'Spotify Client ID', text: 'Paste the Client ID of your app from the Spotify developer dashboard.', input: {value: spLoad().clientId || '', placeholder: '32 letters and numbers'}, ok: 'Save'});
+        if (v == null) return;
+        const id = v.replace(/\s+/g, '');
+        if (id && !/^[0-9a-f]{32}$/i.test(id)) { sfx('error'); toast('A Client ID is 32 letters and numbers'); return; }
+        if (id !== (spLoad().clientId || '')) spForget(false);
+        const st = spLoad(); if (id) st.clientId = id; else delete st.clientId; spSave(st); spRefreshSheet(); return;
+      }
+      if (k === 'sp:connect') spConnect();
+      else if (k === 'sp:reload') spLoadAccount();
+      else if (k === 'sp:file') { await closeTop(); pickSpotifyFile(); }
+      else if (k === 'sp:all' && SPC && SPC.lists) spRunImport(['liked', ...SPC.lists.filter(L => L.mine).map(L => L.key)]);
+      else if (k.startsWith('sp:get:')) {
+        const key = k.slice(7), L = SPC && SPC.lists && SPC.lists.find(x => x.key === key);
+        if (L && !L.mine) { sfx('error'); toast('Spotify only lets apps read playlists you own or collaborate on'); return; }
+        spRunImport([key]);
+      }
+    }});
+}
 function toggleFav(id) {
   if (S.fav.has(id)) { S.fav.delete(id); sfx('uncomplete'); toast('Removed from favourites', 1400); } else { S.fav.add(id); sfx('complete'); toast('Added to favourites', 1400); doneFx(); }
   if (id === S.current) $('#npFav').classList.toggle('on', S.fav.has(id));
@@ -2468,9 +2826,10 @@ async function settingsSheet() {
   <div id="lookBox">${lookBoxHTML()}</div>
   <div class="lbl">Library</div>
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
+  ${menuItem('import', 'Import from Spotify', 'spotify', {sub: spLoad().refresh ? 'Connected' + (spLoad().user ? ' as ' + spLoad().user : '') + ' · playlists and Liked Songs' : 'Your playlists and Liked Songs, matched to your music'})}
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.8 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.9 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -2507,10 +2866,11 @@ async function settingsSheet() {
     if (k === 'persist') { if (!S.dbOk) { toast('Storage is not available here'); return; } await setPersist(!S.settings.persist); b.querySelector('.switch').classList.toggle('on', S.settings.persist); b.querySelector('.sub').textContent = S.settings.persist ? 'Your library is still here next time' : 'Library is cleared when you close the app'; return; }
     await closeTop();
     if (k === 'files') pickFiles(); else if (k === 'folder') pickFolder(); else if (k === 'clear') clearLibrary();
+    else if (k === 'spotify') spotifySheet();
     else if (k === 'tabs') tabsSheet(); else if (k === 'npacts') npActsSheet(); else if (k === 'artists') artistSplitSheet(); else if (k === 'albums') albumsSheet();
     else if (k === 'level') eqSheet('lv'); else if (k === 'eq') eqSheet();
     else if (k === 'background') requestBackground();
-    else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
+    else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Importing from a connected Spotify account reads your playlists from Spotify only when you ask; a Spotify data file is read on your device. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
   }});
 }
 async function setPersist(on) {
@@ -2638,6 +2998,8 @@ function detailMenu() {
     ['queue', 'Add to queue', () => addToQueue(d.ids)],
     ['addpl', 'Add to playlist', () => addToPlaylist(d.ids)],
     sq ? ['open', 'Open in Spotify', () => openSpotify(sq), {now: true}] : null,
+    d.user && d.user.src && /^(api:|liked$)/.test(d.user.src.key) && spLoad().refresh ? ['import', 'Update from Spotify', async () => { if (!SPC || !SPC.lists) await spLoadAccount(); spRunImport([d.user.src.key]); }] : null,
+    d.user && d.user.src && /^(file:|liked$)/.test(d.user.src.key) ? ['import', 'Update from a Spotify file', () => pickSpotifyFile()] : null,
     d.kind !== 'Playlist' && d.ids.length ? ['trash', d.folder ? 'Remove folder from library' : 'Remove from library', () => removeTracks(d.ids.slice()), {cls: 'danger', sub: d.folder ? 'The files on your device are not touched' : ''}] : null,
   ]);
 }
@@ -2646,12 +3008,14 @@ const ACTIONS = {
   'shuffle-all': () => { const ids = sortedIds(); playList(ids, -1, {label: 'Tracks'}, true); },
   'play-all': () => { const d = S.detail; if (d) playList(d.ids, 0, d.ctx, false); },
   'shuffle-list': () => { const d = S.detail; if (d) playList(d.ids, -1, d.ctx, true); },
-  'detail-more': detailMenu,
+  'detail-more': detailMenu, 'spotify-import': () => spotifySheet(),
   'new-pl': async () => { const name = await dialog({title: 'New playlist', input: {value: `Playlist ${S.playlists.length + 1}`, placeholder: 'Playlist name'}, ok: 'Create'}); if (!name) return; S.playlists.push({id: 'p' + Date.now().toString(36), name, ids: [], created: Date.now()}); persistSoon(); render(); sfx('add'); toast(`Created “${name}”`); },
   'rename-pl': async () => { const p = S.detail && S.detail.user; if (!p) return; const name = await dialog({title: 'Rename playlist', input: {value: p.name}, ok: 'Rename'}); if (!name) return; p.name = name; persistSoon(); render(); },
   'delete-pl': async () => { const p = S.detail && S.detail.user; if (!p) return; const ok = await dialog({title: `Delete “${p.name}”?`, text: 'The songs stay in your library.', ok: 'Delete', danger: true}); if (!ok) return; S.playlists = S.playlists.filter(x => x !== p); persistSoon(); closeTop(); sfx('delete'); toast('Playlist deleted'); },
 };
 view.addEventListener('click', e => {
+  const spm = e.target.closest('[data-spm]');
+  if (spm) { const pl = S.detail && S.detail.user, m = pl && pl.src && pl.src.missing[+spm.dataset.spm]; if (m) openSpotify(m[0] + ' ' + (m[1] || '').split(',')[0]); return; }
   const more = e.target.closest('[data-more]');
   if (more) { e.stopPropagation(); const row = more.closest('.row'), list = row && row.closest('[data-list]'); trackMenu(more.dataset.more, list ? list.dataset.list : null, row ? +row.dataset.i : -1); return; }
   const act = e.target.closest('[data-act]'); if (act && ACTIONS[act.dataset.act]) { ACTIONS[act.dataset.act](act); return; }
@@ -2933,6 +3297,7 @@ async function boot() {
     updateNow();
   }
   render(); bootDone(); pageFx();
+  if (SP_RETURN) spCallback(SP_RETURN);
   probeDurations([...S.tracks.keys()].slice(0, 200));
 }
 boot();

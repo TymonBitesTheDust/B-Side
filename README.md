@@ -32,6 +32,9 @@ keeps going after you close the app, a media notification, lock-screen and heads
 - **Albums your way.** Choose where the album artist appears: *On albums* (under album names), *Everywhere* (also on songs, in the player and the notification, as "Album artist – Album" when it differs from the singer) or *Nowhere* (albums show their singers instead). Switch off *Separate albums by album artist* to keep every song with the same album title in one album. With it on, songs missing an album-artist tag still join their album when it's in the same folder. Find both in *Settings → Albums*.
 - **Fast scroll, your choice.** *Settings → Fast scroll* keeps lists as they are (*Off*), adds a **Scrollbar** handle on the right edge that you drag through long lists (a bubble shows the letter you're at), or adds an **A–Z** index: tap or slide along the letters to land on the first song, album, artist, genre or folder starting with that letter. Accented names file under their plain letter (*Élan* under E), numbers and symbols under #, Korean under its first consonant, and other scripts by their first character. Pages that aren't in A–Z order, like an album or a playlist, get the scrollbar instead.
 - **Smart playlists** (Favourites, Recently added, Most played, Recently played) alongside your own playlists.
+- **Import your Spotify playlists and Liked Songs.** B-Side can't stream from Spotify, so each Spotify playlist becomes a B-Side playlist made of the matching songs you've added, in Spotify's order, with a *Not on this device* list of the rest (tap one to find it on Spotify). Matching ignores "(feat. …)", "- Remastered" and accents, checks the artist, album or length, and finds untagged files by name. Import again any time to update a playlist. Two ways in, from *Playlists → Spotify* or *Settings → Import from Spotify*:
+  - **Connect your account.** Spotify only lets apps read accounts through a developer app, so you make one once at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard). Its owner needs **Spotify Premium** (Spotify's rule since February 2026), and up to five people can use it. B-Side shows the steps and the exact Redirect URI to add: `http://127.0.0.1:43821/callback` in the Android app, or the page's own address on the web (it must be https). Spotify only shares playlists you own or collaborate on, plus your Liked Songs.
+  - **Import a data file.** Works with any account, including free, and nothing goes online: on spotify.com open *Account → Privacy settings → Download your data*, request *Account data*, and pick the `my_spotify_data.zip` Spotify emails you. Its `Playlist1.json` and `YourLibrary.json`, and CSV files from Exportify or TuneMyMusic, work too.
 - **Reads everything from the files:** title, artist, album, album artist, track and disc numbers, year, genre, cover art and lyrics. It also picks up `cover.jpg` / `folder.jpg` and matching `.lrc` lyric files in a folder.
 
 ### Player
@@ -84,8 +87,10 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 - Draws edge to edge and follows the system's dark mode.
 
 ### Private by design
-No accounts, no ads, no analytics and no network requests. The one way out is *Open in Spotify*: when you tap it, the
-song, album or artist name is handed to Spotify as a search, and nothing else. Songs you add are copied into B-Side's own storage on your
+No accounts, no ads, no analytics and no network requests. The only ways out are the Spotify features, and only when
+you use them: *Open in Spotify* hands the song, album or artist name to Spotify as a search, and *Import from Spotify*
+with a connected account reads your playlists from Spotify's API (the sign-in is kept on your device). Importing a
+Spotify data file is read on your device. Songs you add are copied into B-Side's own storage on your
 device so your library is still there next time. You can switch that off in *Settings → Library*. Removing a song from
 B-Side never touches the original file.
 
@@ -122,6 +127,7 @@ the `docs` folder of your main branch.
 | Choose the player buttons | Long-press the button row in Now Playing, or ⋮ → *Customise buttons* |
 | Jump through a long list | *Settings → Fast scroll* → *Scrollbar* or *A–Z*, then drag the handle or tap a letter on the right |
 | Find a song on Spotify | Its **⋮** → *Open in Spotify* (also on album and artist pages, and in Now Playing) |
+| Bring your Spotify playlists over | *Playlists* → **Spotify**, then connect your account or choose your Spotify data file |
 | Fix how an artist is split | *Settings → Artists*: switch separators on or off, or add the name to *Never split* |
 | Even out loud and quiet songs | Now Playing → Sound button → *Volume levelling* |
 | Stop an album splitting in two | *Settings → Albums* → switch off *Separate albums by album artist* |
@@ -190,7 +196,7 @@ equaliser and volume levelling. To measure a song without loudness tags, B-Side 
 by one gain node. Tags are parsed in JavaScript. Your library and the copied song files live in IndexedDB, and settings in
 `localStorage`.
 
-The Android app is a small native shell, about 1,100 lines of Java:
+The Android app is a small native shell, about 1,400 lines of Java:
 
 ```mermaid
 flowchart LR
@@ -208,6 +214,8 @@ flowchart LR
   notification, holds a wake lock while music plays so the next song starts on time with the screen off, and pauses
   when headphones are unplugged. After a pause it stays in the foreground for 45 minutes before letting Android
   reclaim the app.
+- **`LoopbackLogin`** listens on `127.0.0.1:43821` only while a Spotify sign-in is waiting, the loopback redirect
+  Spotify allows for apps, and passes the sign-in code to the page.
 - **`MainActivity`** serves the page from the app's assets at `https://appassets.androidplatform.net/`. It handles the
   Storage Access Framework pickers, keeping read access to picked songs, and "Open with". It switches the home-screen
   icon by enabling one of 16 `<activity-alias>` entries, and only while the app is in the background and not playing.
@@ -228,7 +236,8 @@ b-side/
 │   ├── src/app/bside/music/
 │   │   ├── MainActivity.java
 │   │   ├── WebHost.java
-│   │   └── MusicService.java
+│   │   ├── MusicService.java
+│   │   └── LoopbackLogin.java
 │   ├── res/              hand-made resources (strings, theme, notification icons)
 │   ├── res-gen/          launcher icons generated by gen_icons.py
 │   ├── gen_icons.py

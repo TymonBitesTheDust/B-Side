@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * edge-to-edge drawing and the home-screen icon switch. Closing it never stops the music.
  */
 public class MainActivity extends Activity {
-    private static final int REQ_FILES = 11, REQ_TREE = 12;
+    private static final int REQ_FILES = 11, REQ_TREE = 12, REQ_DATA = 13;
     private static final Pattern AUDIO_NAME = Pattern.compile(".*\\.(mp3|m4a|m4b|mp4|aac|flac|ogg|oga|opus|wav|wave|wma|webm|weba|mka|aif|aiff|amr|3gp)$");
     private static final Pattern SIDE_NAME = Pattern.compile("(.*\\.lrc)|((cover|folder|front|album[^/]*)\\.(jpe?g|png|webp))");
 
@@ -122,6 +122,12 @@ public class MainActivity extends Activity {
         try {
             if ("folder".equals(mode)) {
                 startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQ_TREE);
+            } else if ("data".equals(mode)) { // a Spotify data file: .zip, .json or .csv, whatever type Android gives it
+                Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                i.addCategory(Intent.CATEGORY_OPENABLE);
+                i.setType("*/*");
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                startActivityForResult(i, REQ_DATA);
             } else {
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -145,7 +151,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQ_FILES) {
+        if (requestCode == REQ_FILES || requestCode == REQ_DATA) {
             Uri[] out = null;
             if (resultCode == RESULT_OK && data != null) {
                 List<Uri> list = new ArrayList<>();
@@ -155,7 +161,7 @@ public class MainActivity extends Activity {
                 } else if (data.getData() != null) {
                     list.add(data.getData());
                 }
-                for (int k = 0; k < list.size() && k < 300; k++) keepAccess(list.get(k));
+                if (requestCode == REQ_FILES) for (int k = 0; k < list.size() && k < 300; k++) keepAccess(list.get(k));
                 out = list.toArray(new Uri[0]);
             }
             host.deliver(out);
@@ -265,7 +271,7 @@ public class MainActivity extends Activity {
         List<Uri> uris = new ArrayList<>();
         try {
             if (Intent.ACTION_VIEW.equals(act) && i.getData() != null) {
-                uris.add(i.getData());
+                if (!"bside".equals(i.getData().getScheme())) uris.add(i.getData()); // bside://spotify just brings B-Side back after Spotify sign-in
             } else if (Intent.ACTION_SEND.equals(act)) {
                 Uri u = i.getParcelableExtra(Intent.EXTRA_STREAM);
                 if (u != null) uris.add(u);
