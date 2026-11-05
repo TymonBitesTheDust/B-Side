@@ -84,6 +84,7 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 - **Keeps playing after you close the app**, whether you press Home or Back or swipe it out of Recents. Controls stay in the notification, on the lock screen, and on headsets and Bluetooth devices.
 - **Built for long listening sessions.** After a pause, B-Side stays in the foreground for 45 minutes so Android doesn't close it between songs. *Settings → Background playback* shows whether Android's battery optimisation might close it, and lets you exempt B-Side in one tap. On Samsung phones it also points you to *Background usage limits*.
 - Pauses automatically when headphones are unplugged.
+- **Play from your car or headphones, even when B-Side is closed.** Press Play on a car stereo, Bluetooth headset or speaker and B-Side starts again and picks up your last song where you left off, as long as B-Side was the last music app you played.
 - Uses the system **file and folder pickers**, and shows up as **"Play with B-Side"** when you open or share audio from a file manager.
 - Draws edge to edge and follows the system's dark mode.
 
@@ -200,7 +201,7 @@ equaliser and volume levelling. To measure a song without loudness tags, B-Side 
 by one gain node. Tags are parsed in JavaScript. Your library and the copied song files live in IndexedDB, and settings in
 `localStorage`.
 
-The Android app is a small native shell, about 1,400 lines of Java:
+The Android app is a small native shell, about 1,500 lines of Java:
 
 ```mermaid
 flowchart LR
@@ -220,6 +221,8 @@ flowchart LR
   reclaim the app.
 - **`LoopbackLogin`** listens on `127.0.0.1:43821` only while a Spotify sign-in is waiting, the loopback redirect
   Spotify allows for apps, and passes the sign-in code to the page.
+- **`MediaButtonReceiver`** is registered with the media session, so Android remembers B-Side for Play buttons on
+  cars and headsets after it's closed; it wakes the player without a screen and resumes the last song.
 - **`MainActivity`** serves the page from the app's assets at `https://appassets.androidplatform.net/`. It handles the
   Storage Access Framework pickers, keeping read access to picked songs, and "Open with". It switches the home-screen
   icon by enabling one of 16 `<activity-alias>` entries, and only while the app is in the background and not playing.
