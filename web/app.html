@@ -2303,6 +2303,7 @@ function spotifyTrack(id) { const t = T(id); if (t) openSpotify([t.title, knownA
 const SP_KEY = 'bside:spotify', SP_AUTH = 'bside:spotify-auth', SP_API = 'https://api.spotify.com/v1';
 const SP_SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read';
 const SP_LOOPBACK = 'http://127.0.0.1:43821/callback', SP_MISSING_MAX = 600;
+const SP_ONLINE = 'https://tymonbitesthedust.github.io/B-Side/'; // the GitHub Pages copy, for connecting on a computer
 const SP_RETURN = /[?&]state=/.test(location.search) && /[?&](code|error)=/.test(location.search) ? location.search.slice(1) : '';
 if (SP_RETURN) { try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {} }
 const spLoad = () => { try { return JSON.parse(localStorage.getItem(SP_KEY)) || {}; } catch (e) { return {}; } };
@@ -2311,7 +2312,7 @@ let SPC = null, spBusy = false; // SPC: this session's view of the account {me, 
 function spRedirect() {
   if (NATIVE && NATIVE.spotifyListen) return SP_LOOPBACK;
   const l = location;
-  if (l.protocol === 'https:' || (l.protocol === 'http:' && /^(127\.0\.0\.1|\[::1\])$/.test(l.hostname))) return l.origin + l.pathname;
+  if (l.protocol === 'https:' || (l.protocol === 'http:' && /^(127\.0\.0\.1|\[::1\])$/.test(l.hostname))) return l.origin + l.pathname.replace(/\/index\.html?$/i, '/'); // ".../B-Side/" and ".../B-Side/index.html" are one address
   return ''; // a page opened from a file can't be returned to
 }
 function openExternal(url) {
@@ -2590,7 +2591,7 @@ function spSheetBody() {
         return menuItem(L.liked ? 'heart' : 'playlist', L.name, 'sp:get:' + L.key, {sub, cls: L.mine ? '' : 'dim', extra: p ? ic('check') : ''});
       }).join('');
     }
-  } else if (!redirect) h += `<div class="accent-note">To connect your account, use the B-Side Android app or open B-Side from a web address (https). You can still import a Spotify data file below.</div>`;
+  } else if (!redirect) h += `<div class="accent-note">B-Side is open from a file on this computer, and Spotify can only send you back to a web address. To connect your account here, open the online B-Side (your music still stays on this computer), or use the Android app. You can also import a Spotify data file below, which works right here.</div>` + menuItem('open', 'Open the online B-Side', 'sp:online', {cls: 'sel', sub: SP_ONLINE.replace(/^https:\/\//, '')});
   else if (st.clientId) h += menuItem('open', 'Connect to Spotify', 'sp:connect', {cls: 'sel', sub: 'Log in to Spotify and allow B-Side to read your playlists'}) + menuItem('edit', 'Change Client ID', 'sp:cid', {sub: st.clientId}) +
     `<div class="accent-note">The Redirect URI in your Spotify app must be exactly:<span class="sp-code"><span>${esc(redirect)}</span><button class="txt-btn" data-sp="copy">Copy</button></span></div>`;
   else h += `<div class="accent-note">Connecting needs a free Spotify developer app, made once:</div>` + spSteps(redirect) + menuItem('edit', 'Enter Client ID', 'sp:cid', {cls: 'sel'});
@@ -2620,6 +2621,7 @@ function spotifySheet() {
         if (id !== (spLoad().clientId || '')) spForget(false);
         const st = spLoad(); if (id) st.clientId = id; else delete st.clientId; spSave(st); spRefreshSheet(); return;
       }
+      if (k === 'sp:online') { openExternal(SP_ONLINE); return; }
       if (k === 'sp:connect') spConnect();
       else if (k === 'sp:reload') spLoadAccount();
       else if (k === 'sp:file') { await closeTop(); pickSpotifyFile(); }
@@ -2829,7 +2831,7 @@ async function settingsSheet() {
   ${menuItem('import', 'Import from Spotify', 'spotify', {sub: spLoad().refresh ? 'Connected' + (spLoad().user ? ' as ' + spLoad().user : '') + ' · playlists and Liked Songs' : 'Your playlists and Liked Songs, matched to your music'})}
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.9 · plays your files locally'})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.9.1 · plays your files locally'})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
