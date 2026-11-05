@@ -33,8 +33,10 @@ keeps going after you close the app, a media notification, lock-screen and heads
 - **Fast scroll, your choice.** *Settings → Fast scroll* keeps lists as they are (*Off*), adds a **Scrollbar** handle on the right edge that you drag through long lists (a bubble shows the letter you're at), or adds an **A–Z** index: tap or slide along the letters to land on the first song, album, artist, genre or folder starting with that letter. Accented names file under their plain letter (*Élan* under E), numbers and symbols under #, Korean under its first consonant, and other scripts by their first character. Pages that aren't in A–Z order, like an album or a playlist, get the scrollbar instead.
 - **Smart playlists** (Favourites, Recently added, Most played, Recently played) alongside your own playlists.
 - **Import your Spotify playlists and Liked Songs.** B-Side can't stream from Spotify, so each Spotify playlist becomes a B-Side playlist made of the matching songs you've added, in Spotify's order, with a *Not on this device* list of the rest (tap one to find it on Spotify). Matching ignores "(feat. …)", "- Remastered" and accents, checks the artist, album or length, and finds untagged files by name. Import again any time to update a playlist. Two ways in, from *Playlists → Spotify* or *Settings → Import from Spotify*:
-  - **Connect your account.** Spotify only lets apps read accounts through a developer app, so you make one once at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard). Its owner needs **Spotify Premium** (Spotify's rule since February 2026), and up to five people can use it. B-Side shows the steps and the exact Redirect URI to add: `http://127.0.0.1:43821/callback` in the Android app, or the page's own address on the web, such as
-`https://tymonbitesthedust.github.io/B-Side/` (a page opened from a file can't connect; one Spotify app can list both). Spotify only shares playlists you own or collaborate on, plus your Liked Songs.
+  - **Connect your account.** Spotify only lets apps read accounts through a developer app, so you make one once at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard). Its owner needs **Spotify Premium** (Spotify's rule since February 2026), and up to five people can use it. B-Side shows the steps and the one Redirect URI to add, the same on every device: `http://127.0.0.1:43821/callback`.
+The Android app picks the sign-in up by itself. On a computer, Spotify opens in a new tab and ends on a page your
+browser says it can't reach; copy that page's address and paste it into B-Side (*Paste the address*). This works in
+`B-Side.html` opened from your computer, so no website is needed. Spotify only shares playlists you own or collaborate on, plus your Liked Songs.
   - **Import a data file.** Works with any account, including free, and nothing goes online: on spotify.com open *Account → Privacy settings → Download your data*, request *Account data*, and pick the `my_spotify_data.zip` Spotify emails you. Its `Playlist1.json` and `YourLibrary.json`, and CSV files from Exportify or TuneMyMusic, work too.
 - **Reads everything from the files:** title, artist, album, album artist, track and disc numbers, year, genre, cover art and lyrics. It also picks up `cover.jpg` / `folder.jpg` and matching `.lrc` lyric files in a folder.
 
@@ -116,9 +118,8 @@ Open **`web/index.html`** in Chrome, Edge, Firefox or Safari. There's nothing to
 
 **Online copy (GitHub Pages).** `web/build.py` also writes `docs/index.html`. Set *Settings → Pages* to deploy from the
 `docs` folder of the `main` branch and B-Side is online at **https://tymonbitesthedust.github.io/B-Side/**. Your
-music still never leaves your computer: the page only reads the files you pick. Use this address on a computer to
-connect a Spotify account, since Spotify can't send you back to a page opened from a file. The online copy keeps its
-own library, so add your music there once.
+music still never leaves your computer: the page only reads the files you pick. The online copy keeps its own
+library, so add your music there once. It's also where the Android app gets its updates.
 
 > Picking a whole folder needs a desktop browser or the Android app. On desktop you can also drag files and folders onto the window.
 
