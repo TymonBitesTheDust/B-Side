@@ -84,6 +84,7 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 - **Keeps playing after you close the app**, whether you press Home or Back or swipe it out of Recents. Controls stay in the notification, on the lock screen, and on headsets and Bluetooth devices.
 - **Built for long listening sessions.** After a pause, B-Side stays in the foreground for 45 minutes so Android doesn't close it between songs. *Settings → Background playback* shows whether Android's battery optimisation might close it, and lets you exempt B-Side in one tap. On Samsung phones it also points you to *Background usage limits*.
 - Pauses automatically when headphones are unplugged.
+- **Updates itself from the B-Side website.** When you open B-Side it checks https://tymonbitesthedust.github.io/B-Side/ and downloads a newer player in the background; it's used from the next start, or straight away with *Settings → Restart to use …*. Your library, playlists and settings stay. B-Side never installs an older version or one that needs a newer app, falls back to the built-in player if a downloaded one fails to start, and works offline with the last version it has. Changes to the Android part itself still come as a new APK. Switch it off in *Settings → Update automatically*.
 - **Play from your car or headphones, even when B-Side is closed.** Press Play on a car stereo, Bluetooth headset or speaker and B-Side starts again and picks up your last song where you left off, as long as B-Side was the last music app you played.
 - Uses the system **file and folder pickers**, and shows up as **"Play with B-Side"** when you open or share audio from a file manager.
 - Draws edge to edge and follows the system's dark mode.
@@ -92,7 +93,9 @@ chosen item looks, motion, sounds and app icon. Every page and feature stays the
 No accounts, no ads, no analytics and no network requests. The only ways out are the Spotify features, and only when
 you use them: *Open in Spotify* hands the song, album or artist name to Spotify as a search, and *Import from Spotify*
 with a connected account reads your playlists from Spotify's API (the sign-in is kept on your device). Importing a
-Spotify data file is read on your device. Songs you add are copied into B-Side's own storage on your
+Spotify data file is read on your device. The Android app also checks the B-Side website for a newer version when you
+open it (*Settings → Update automatically*, on by default); that request carries nothing about you or your music.
+Songs you add are copied into B-Side's own storage on your
 device so your library is still there next time. You can switch that off in *Settings → Library*. Removing a song from
 B-Side never touches the original file.
 
@@ -191,6 +194,20 @@ The first build creates a signing key at `android/bside-release.jks` if there is
 back it up.** It is excluded by `.gitignore`, and every update must be signed with the same key to install over an
 existing copy of B-Side.
 
+### Releasing
+The version lives in three `<meta>` tags at the top of `web/app.html`:
+
+| Tag | What it means | When to change it |
+|---|---|---|
+| `bside-version` | The version shown in *Settings → About* | Every release |
+| `bside-build` | A number that goes up with every release | Every release; installed apps update to a page with a higher build |
+| `bside-native` | The oldest app `versionCode` this page works with | When the page needs something new from the Android part |
+
+For a change to the player only, raise `bside-version` and `bside-build`, run `python3 web/build.py`, and merge to
+`main`: GitHub Pages publishes `docs/index.html` and phones pick it up the next time B-Side opens. When the Android
+part changes too, also raise `versionCode`/`versionName` in `android/AndroidManifest.xml` and `android/build.sh`, set
+`bside-native` to the new `versionCode`, and publish a new APK.
+
 ---
 
 ## How it works
@@ -201,7 +218,7 @@ equaliser and volume levelling. To measure a song without loudness tags, B-Side 
 by one gain node. Tags are parsed in JavaScript. Your library and the copied song files live in IndexedDB, and settings in
 `localStorage`.
 
-The Android app is a small native shell, about 1,500 lines of Java:
+The Android app is a small native shell, about 1,800 lines of Java:
 
 ```mermaid
 flowchart LR
@@ -221,6 +238,8 @@ flowchart LR
   reclaim the app.
 - **`LoopbackLogin`** listens on `127.0.0.1:43821` only while a Spotify sign-in is waiting, the loopback redirect
   Spotify allows for apps, and passes the sign-in code to the page.
+- **`WebUpdater`** checks the website for a newer player page when the page asks (at most every half hour), keeps
+  it in the app's files and serves it from the same app address on the next start, so stored data carries over.
 - **`MediaButtonReceiver`** is registered with the media session, so Android remembers B-Side for Play buttons on
   cars and headsets after it's closed; it wakes the player without a screen and resumes the last song.
 - **`MainActivity`** serves the page from the app's assets at `https://appassets.androidplatform.net/`. It handles the
@@ -243,6 +262,7 @@ b-side/
 │   ├── src/app/bside/music/
 │   │   ├── MainActivity.java
 │   │   ├── WebHost.java
+│   │   ├── WebUpdater.java
 │   │   ├── MusicService.java
 │   │   └── LoopbackLogin.java
 │   ├── res/              hand-made resources (strings, theme, notification icons)

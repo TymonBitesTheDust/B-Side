@@ -17,7 +17,7 @@ echo "▸ compiling resources"
 "$TOOLS/aapt2" compile --dir "$HERE/res-gen" -o "$OUT/res-gen.zip"
 "$TOOLS/aapt2" link -o "$OUT/base.apk" -I "$TOOLS/android.jar" \
   --manifest "$HERE/AndroidManifest.xml" -A "$OUT/assets" --java "$OUT/gen" \
-  --min-sdk-version 24 --target-sdk-version 34 --version-code 14 --version-name 1.9.2 \
+  --min-sdk-version 24 --target-sdk-version 34 --version-code 15 --version-name 1.9.3 \
   "$OUT/res.zip" "$OUT/res-gen.zip"
 
 echo "▸ compiling java"

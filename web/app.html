@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f3f3f6">
+<!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
+     itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
+<meta name="bside-version" content="1.9.3">
+<meta name="bside-build" content="15">
+<meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
 <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236e8dff'/%3E%3Cstop offset='.55' stop-color='%233d5cf5'/%3E%3Cstop offset='1' stop-color='%237a4cf2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M26 44V20l18-4v24' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='21' cy='44' r='6' fill='%23fff'/%3E%3Ccircle cx='39' cy='40' r='6' fill='%23fff'/%3E%3C/svg%3E">
@@ -654,6 +659,8 @@ body.np-open .fscroll{visibility:hidden}
 (() => {
 /* ───────────────────────── basics ───────────────────────── */
 const NATIVE = window.BSideNative || null;
+const metaOf = n => { const m = document.querySelector(`meta[name="bside-${n}"]`); return m ? m.content : ''; };
+const APP_VERSION = metaOf('version'), APP_BUILD = +metaOf('build') || 0;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -684,7 +691,7 @@ const gradFor = seed => { const h = hueOf(seed); return `background:linear-gradi
 const LS_KEY = 'bside:v1';
 const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } })();
 const DEFAULT_SETTINGS = {motion: 'system', stars: true, tabs: null, npActs: null, split: null, bgAsked: false, accent: 'cobalt', matchIcon: true, skin: 'bside', sfx: 'all', sfxVol: .6, theme: 'system', persist: true, speed: 1, sort: 'title', eqOn: false, eqPreset: 'Normal', eqGains: [0, 0, 0, 0, 0, 0, 0], volume: 1,
-  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off'};
+  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off', autoUpdate: true};
 const S = {
   tracks: new Map(), files: new Map(), arts: new Map(),
   fav: new Set(saved.fav || []), playlists: Array.isArray(saved.playlists) ? saved.playlists : [],
@@ -2833,7 +2840,8 @@ async function settingsSheet() {
   ${menuItem('import', 'Import from Spotify', 'spotify', {sub: spLoad().refresh ? 'Connected' + (spLoad().user ? ' as ' + spLoad().user : '') + ' · playlists and Liked Songs' : 'Your playlists and Liked Songs, matched to your music'})}
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.9.2 · plays your files locally'})}`;
+  ${NATIVE && NATIVE.checkUpdate ? `<div class="lbl">Updates</div><div id="updBox">${updBoxHTML()}</div>` : ''}
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: `Version ${APP_VERSION} · plays your files locally`})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -2867,6 +2875,8 @@ async function settingsSheet() {
     const mo = e.target.closest('[data-motion-k]'); if (mo) { S.settings.motion = mo.dataset.motionK; applyTheme(); persistSoon(); $$('#motionSeg button').forEach(b => b.classList.toggle('on', b === mo)); return; }
     if (e.target.closest('[data-mi="stars"]')) { S.settings.stars = S.settings.stars === false; starfield.sync(); persistSoon(); const lb = $('#lookBox', sheetEl); if (lb) lb.innerHTML = lookBoxHTML(); return; }
     const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
+    if (k === 'autoupd') { S.settings.autoUpdate = S.settings.autoUpdate === false; persistSoon(); if (S.settings.autoUpdate) checkUpdate(true); const u = $('#updBox', sheetEl); if (u) u.innerHTML = updBoxHTML(); return; }
+    if (k === 'applyupd') { persist(); try { NATIVE.applyUpdate(); } catch (e) {} return; }
     if (k === 'persist') { if (!S.dbOk) { toast('Storage is not available here'); return; } await setPersist(!S.settings.persist); b.querySelector('.switch').classList.toggle('on', S.settings.persist); b.querySelector('.sub').textContent = S.settings.persist ? 'Your library is still here next time' : 'Library is cleared when you close the app'; return; }
     await closeTop();
     if (k === 'files') pickFiles(); else if (k === 'folder') pickFolder(); else if (k === 'clear') clearLibrary();
@@ -2877,6 +2887,17 @@ async function settingsSheet() {
     else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Importing from a connected Spotify account reads your playlists from Spotify only when you ask; a Spotify data file is read on your device. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
   }});
 }
+/* Updates (Android): the app checks the B-Side website for a newer player when it opens, downloads it and uses it
+   from the next start (see WebUpdater.java). Your library stays, since the page runs from the same app address. */
+const updReady = () => { try { return (NATIVE && NATIVE.updateReady && NATIVE.updateReady(APP_BUILD)) || ''; } catch (e) { return ''; } };
+function updBoxHTML() {
+  const on = S.settings.autoUpdate !== false, ready = updReady();
+  const sub = ready ? `B-Side ${ready} is downloaded and starts next time you open B-Side, or restart it now.` : on ? 'Checks tymonbitesthedust.github.io for a newer B-Side when you open it. Your music never leaves your phone.' : 'Off. B-Side only changes when you install a new APK.';
+  return `<button class="mi" data-mi="autoupd" role="switch" aria-checked="${on}">${ic('import')}<span class="mt">Update automatically<span class="sub">${esc(sub)}</span></span><span class="switch ${on ? 'on' : ''}"></span></button>` +
+    (ready ? menuItem('sort', `Restart to use ${ready}`, 'applyupd', {cls: 'sel', sub: audio.paused ? 'Takes a second' : 'The music stops for a moment'}) : '');
+}
+function checkUpdate(now) { if (!(NATIVE && NATIVE.checkUpdate) || S.settings.autoUpdate === false) return; setTimeout(() => { try { NATIVE.checkUpdate(); } catch (e) {} }, now ? 0 : 4000); }
+window.bsideUpdateReady = v => { toast(`B-Side ${v} is ready. It starts next time you open B-Side`, 4500); const u = $('#updBox'); if (u) u.innerHTML = updBoxHTML(); };
 async function setPersist(on) {
   S.settings.persist = on; persistSoon();
   if (!S.dbOk) return;
@@ -3301,6 +3322,8 @@ async function boot() {
     updateNow();
   }
   render(); bootDone(); pageFx();
+  try { if (NATIVE && NATIVE.pageStarted) NATIVE.pageStarted(APP_BUILD); } catch (e) {}
+  checkUpdate();
   if (SP_RETURN) spCallback(SP_RETURN);
   probeDurations([...S.tracks.keys()].slice(0, 200));
 }
