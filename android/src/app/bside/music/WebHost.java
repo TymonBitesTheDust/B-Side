@@ -63,6 +63,7 @@ final class WebHost {
     private JSONArray pendingOpen = new JSONArray();
     private boolean pendingOpenPlayer;
     private String pendingSpotify;
+    private String pendingRemote;
 
     private WebHost(Context app) {
         this.app = app;
@@ -170,6 +171,22 @@ final class WebHost {
         if (h != null) h.js("window.bsideRemote&&bsideRemote('" + action + "'," + value + ")");
     }
 
+    /**
+     * Play, next or previous from outside the app. If the player isn't running (B-Side was closed and a car or
+     * headset pressed Play), it is started without a screen and gets the command once the page is ready.
+     * Main thread only.
+     */
+    static void command(Context c, String action) {
+        if (!"play".equals(action) && !"next".equals(action) && !"prev".equals(action)) return;
+        WebHost h = get(c);
+        if (h.web != null && h.pageReady) {
+            remote(action, 0);
+            return;
+        }
+        h.pendingRemote = action;
+        if (h.web == null) h.create(h.activity != null ? h.activity : h.app);
+    }
+
     void setInsets(int top, int bottom) {
         insetTop = top;
         insetBottom = bottom;
@@ -226,6 +243,10 @@ final class WebHost {
         if (pendingOpenPlayer) {
             pendingOpenPlayer = false;
             js("window.bsideOpenPlayer&&bsideOpenPlayer()");
+        }
+        if (pendingRemote != null) {
+            js("window.bsideRemote&&bsideRemote('" + pendingRemote + "',0)");
+            pendingRemote = null;
         }
         if (pendingSpotify != null) {
             js("window.bsideSpotifyCallback&&bsideSpotifyCallback(" + org.json.JSONObject.quote(pendingSpotify) + ")");

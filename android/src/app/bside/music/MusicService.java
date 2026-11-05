@@ -6,9 +6,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -42,6 +44,9 @@ public class MusicService extends Service {
     private static final String A_NEXT = "app.bside.music.NEXT";
     private static final String A_PREV = "app.bside.music.PREV";
     private static final String A_STOP = "app.bside.music.STOP";
+    private static final String A_RESUME = "app.bside.music.RESUME";
+    private static final String PREFS = "playback";
+    private static String savedTitle;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static MusicService inst;
@@ -89,6 +94,7 @@ public class MusicService extends Service {
                     return;
                 }
                 state = s;
+                remember(ctx, s);
                 String key = s.optString("artKey", "");
                 if (s.has("art")) {
                     try {
@@ -125,6 +131,57 @@ public class MusicService extends Service {
         return state != null && state.optBoolean("playing");
     }
 
+    /**
+     * A car, headset or speaker pressed Play (or skip) while B-Side wasn't running; see MediaButtonReceiver.
+     * Starts the service in the foreground, which then wakes the player and resumes the last song.
+     */
+    static void resume(Context ctx, String cmd) {
+        WebHost h = WebHost.peek();
+        if (inst != null && h != null && h.web != null) {
+            WebHost.command(ctx, cmd);
+            return;
+        }
+        if (lastSong(ctx) == null) return; // nothing has been played yet, or the queue was cleared
+        Intent i = new Intent(ctx, MusicService.class).setAction(A_RESUME).putExtra("cmd", cmd);
+        try {
+            if (Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(i);
+            else ctx.startService(i);
+        } catch (Exception ignored) {
+            // Android didn't allow a start from the background this time.
+        }
+    }
+
+    /** Remembers the last song (title and artist only) so a Play button can bring it back after B-Side is closed. */
+    private static void remember(Context ctx, JSONObject s) {
+        try {
+            SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            if (!s.optBoolean("hasTrack")) {
+                if (!"".equals(savedTitle)) p.edit().remove("last").apply();
+                savedTitle = "";
+                return;
+            }
+            String t = s.optString("title");
+            if (t.equals(savedTitle)) return;
+            JSONObject o = new JSONObject();
+            o.put("title", t);
+            o.put("artist", s.optString("artist"));
+            o.put("album", s.optString("album"));
+            o.put("color", s.optString("color"));
+            p.edit().putString("last", o.toString()).apply();
+            savedTitle = t;
+        } catch (Exception ignored) {
+        }
+    }
+
+    static JSONObject lastSong(Context ctx) {
+        try {
+            String v = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("last", null);
+            return v == null ? null : new JSONObject(v);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     static void stop(Context ctx) {
         if (inst != null) inst.shutdown();
     }
@@ -144,10 +201,18 @@ public class MusicService extends Service {
         session = new MediaSession(this, "B-Side");
         session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
         session.setSessionActivity(openAppIntent());
+        // So Android sends Play from a car or headset to B-Side even after B-Side has closed (MediaButtonReceiver).
+        ComponentName buttons = new ComponentName(this, MediaButtonReceiver.class);
+        if (Build.VERSION.SDK_INT >= 33) {
+            session.setMediaButtonBroadcastReceiver(buttons);
+        } else {
+            Intent mb = new Intent(Intent.ACTION_MEDIA_BUTTON).setComponent(buttons);
+            session.setMediaButtonReceiver(PendingIntent.getBroadcast(this, 0, mb, Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0));
+        }
         session.setCallback(new MediaSession.Callback() {
             @Override
             public void onPlay() {
-                WebHost.remote("play", 0);
+                WebHost.command(MusicService.this, "play");
             }
 
             @Override
@@ -157,12 +222,12 @@ public class MusicService extends Service {
 
             @Override
             public void onSkipToNext() {
-                WebHost.remote("next", 0);
+                WebHost.command(MusicService.this, "next");
             }
 
             @Override
             public void onSkipToPrevious() {
-                WebHost.remote("prev", 0);
+                WebHost.command(MusicService.this, "prev");
             }
 
             @Override
@@ -183,14 +248,33 @@ public class MusicService extends Service {
         if (A_UPDATE.equals(a)) {
             if (!foreground && state != null) startFg(build(state.optBoolean("playing")));
             apply();
+        } else if (A_RESUME.equals(a)) {
+            // Play from a car or headset while B-Side was closed: show the last song while the player starts.
+            if (state == null) {
+                JSONObject last = lastSong(this);
+                if (last != null) {
+                    try {
+                        last.put("hasTrack", true);
+                        last.put("playing", false);
+                    } catch (Exception ignored) {
+                    }
+                    state = last;
+                }
+            }
+            startFg(build(false)); // required promptly after startForegroundService, even if there's nothing to play
+            if (state != null) {
+                apply();
+                String cmd = intent.getStringExtra("cmd");
+                WebHost.command(this, cmd == null ? "play" : cmd);
+            }
         } else if (A_PLAY.equals(a)) {
-            WebHost.remote("play", 0);
+            WebHost.command(this, "play");
         } else if (A_PAUSE.equals(a)) {
             WebHost.remote("pause", 0);
         } else if (A_NEXT.equals(a)) {
-            WebHost.remote("next", 0);
+            WebHost.command(this, "next");
         } else if (A_PREV.equals(a)) {
-            WebHost.remote("prev", 0);
+            WebHost.command(this, "prev");
         } else if (A_STOP.equals(a)) {
             // The paused notification was dismissed: stop the service and, if the app isn't open, free the player.
             WebHost.remote("pause", 0);
