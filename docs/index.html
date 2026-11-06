@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#f3f3f6">
 <!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
      itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
-<meta name="bside-version" content="1.9.5">
-<meta name="bside-build" content="17">
+<meta name="bside-version" content="1.9.6">
+<meta name="bside-build" content="18">
 <meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
@@ -523,6 +523,7 @@ body.np-open .fscroll{visibility:hidden}
 .sec-acts{display:flex;gap:2px}
 .mi.dim{opacity:.55}
 .sp-ph{color:var(--text-3)}
+.sp-err{color:var(--danger);font-weight:600}
 
 /* ==========================================================================
    NieR: Automata (id "archive"): a YoRHa menu. Beige paper on a fine grid,
@@ -4132,6 +4133,7 @@ const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).repl
 async function spConnect() {
   const st = spLoad(), redirect = spRedirect();
   if (!st.clientId) return;
+  spNote = '';
   if (!(window.crypto && crypto.subtle)) { sfx('error'); toast('This browser can’t sign in to Spotify'); return; }
   try { if (NATIVE && NATIVE.spotifyListen && !NATIVE.spotifyListen()) { sfx('error'); toast('Couldn’t start Spotify sign-in. Restart B-Side and try again'); return; } } catch (e) {}
   const verifier = b64url(crypto.getRandomValues(new Uint8Array(48))), state = b64url(crypto.getRandomValues(new Uint8Array(16)));
@@ -4142,19 +4144,31 @@ async function spConnect() {
   if (spAuto()) toast('Log in to Spotify in your browser, then come back', 5000);
   else { toast('Log in to Spotify in the new tab, then copy the address it ends on', 5000); spRefreshSheet(); }
 }
+let spNote = ''; // the last sign-in problem, kept in the Spotify panel until the next try
+function spSignInText(e) { // why a sign-in failed, in plain words, with what to do
+  const m = (e && e.msg) || '';
+  if (e && e.code === 'invalid_grant' && /redirect/i.test(m)) return 'Spotify says the Redirect URI doesn’t match. In your Spotify app’s settings it must be exactly http://127.0.0.1:43821/callback, then connect again.';
+  if (e && e.code === 'invalid_grant') return 'That sign-in had already been used or had run out (they last 10 minutes). Tap “Connect to Spotify” and paste the new address straight away.';
+  if (e && e.code === 'invalid_client') return 'Spotify doesn’t recognise the Client ID. Check it matches your Spotify app (Change Client ID), then connect again.';
+  if (e && e.status === 403) return 'Spotify refused' + (m ? ` (“${m}”)` : '') + '. Spotify needs the developer app’s owner to have Premium, and your account added under User Management in that app’s settings.';
+  return spErrText(e) + '.';
+}
 async function spCallback(query, pasted) {
   const q = new URLSearchParams(query); let saved = null;
   try { saved = JSON.parse(localStorage.getItem(SP_AUTH)); } catch (e) {}
+  const fail = (msg, keepWaiting) => { spNote = msg; if (!keepWaiting) { try { localStorage.removeItem(SP_AUTH); } catch (e) {} } sfx('error'); toast(msg, 8000); spRefreshSheet(); };
   if (pasted && saved && !q.get('state')) q.set('state', saved.state); // just the code was pasted
-  if (!saved || !q.get('state') || q.get('state') !== saved.state) { sfx('error'); toast(pasted && saved ? 'That address is from an earlier sign-in. Tap “Open Spotify again” and use the new address' : 'That Spotify sign-in has expired. Try again', 6000); return; }
+  if (!saved || !q.get('state') || q.get('state') !== saved.state) return fail(pasted && saved ? 'That address is from an earlier sign-in. Tap “Open Spotify again” and paste the new address.' : 'That Spotify sign-in has run out. Tap “Connect to Spotify” to try again.', pasted && saved);
+  if (q.get('error')) return fail(q.get('error') === 'access_denied' ? 'Spotify’s page was cancelled, so B-Side isn’t connected. Tap “Connect to Spotify” and choose Agree.' : `Spotify sign-in failed (${q.get('error')}).`);
+  spNote = ''; toast('Connecting to Spotify…', 0);
+  try { spKeep(await spToken({grant_type: 'authorization_code', code: q.get('code') || '', redirect_uri: saved.redirect, client_id: spLoad().clientId, code_verifier: saved.verifier})); }
+  catch (e) { return fail(spSignInText(e), e && e.code === 'offline'); } // offline: the code still works, so it can be pasted again
   try { localStorage.removeItem(SP_AUTH); } catch (e) {}
-  if (q.get('error')) { toast(q.get('error') === 'access_denied' ? 'Spotify sign-in cancelled' : 'Spotify sign-in failed: ' + q.get('error')); return; }
   try {
-    spKeep(await spToken({grant_type: 'authorization_code', code: q.get('code') || '', redirect_uri: saved.redirect, client_id: spLoad().clientId, code_verifier: saved.verifier}));
     const me = await spGet('/me'), st = spLoad(); st.user = me.display_name || me.id || ''; st.uid = me.id || ''; spSave(st);
-    SPC = null; sfx('complete'); toast('Connected to Spotify' + (st.user ? ' as ' + st.user : ''));
+    SPC = null; sfx('complete'); toast(`Connected${st.user ? ' as ' + st.user : ''}. Tap a playlist to import it`, 5000);
     await closeOverlays(); spotifySheet();
-  } catch (e) { sfx('error'); toast(e && e.msg && e.code !== 'api' ? 'Spotify: ' + e.msg : spErrText(e), 7000); }
+  } catch (e) { spForget(false); fail(spSignInText(e)); }
 }
 window.bsideSpotifyCallback = q => { spCallback(String(q || '')); };
 async function spToken(params) {
@@ -4382,6 +4396,7 @@ const spSteps = redirect => `<ol class="sp-steps">
 function spSheetBody() {
   const st = spLoad(), redirect = spRedirect();
   let h = `<div class="accent-note">B-Side plays files on your device, so it can’t stream from Spotify. Importing makes B-Side playlists out of the matching songs you’ve added here, and lists the ones you don’t have.</div><div class="lbl">Your Spotify account</div>`;
+  if (spNote && !st.refresh) h += `<div class="accent-note sp-err" role="alert">${esc(spNote)}</div>`;
   if (st.refresh) {
     h += `<div class="mi static">${ic('person')}<span class="mt">${esc(st.user ? 'Connected as ' + st.user : 'Connected')}<span class="sub">Tap a playlist to import it. Import again any time to update it.</span></span><button class="txt-btn" data-sp="disconnect">Disconnect</button></div>`;
     if (!SPC || SPC.loading) h += `<div class="hint" style="padding:18px">Loading your playlists…</div>`;
