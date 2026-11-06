@@ -1,259 +1,178 @@
 <h1 align="center">B-Side</h1>
 
 <p align="center">
-  <b>A local music player for the songs you already own.</b><br>
-  Pick files or whole folders, and B-Side plays them on your device: six distinct looks, sound effects to match,<br>
-  and not a single byte uploaded anywhere.
+  <b>A music player for the songs you already own.</b><br>
+  Pick songs or whole folders and B-Side plays them on your phone or computer, in six distinct looks with sound effects to match.<br>
+  Your music is never uploaded anywhere.
 </p>
 
 <p align="center">
   <img alt="Android 7.0+" src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white">
-  <img alt="Single HTML file" src="https://img.shields.io/badge/web-one%20HTML%20file-2f6bff">
-  <img alt="No tracking" src="https://img.shields.io/badge/network-none-555">
+  <img alt="Windows, Mac and Linux" src="https://img.shields.io/badge/computer-any%20browser-2f6bff">
+  <img alt="No accounts, no ads" src="https://img.shields.io/badge/no%20accounts-no%20ads-555">
 </p>
 
 <p align="center">
   <img src="docs/screenshots/overview.png" alt="B-Side: song library, Now Playing, folder explorer and the style picker" width="100%">
 </p>
 
-B-Side comes in two forms built from the same code: a **single HTML file** (about 900 KB, fonts included) that runs in any modern
-browser, and an **Android app** (about 1 MB) that wraps it with the things a phone music player needs: playback that
-keeps going after you close the app, a media notification, lock-screen and headset controls, and the system file pickers.
+---
+
+## Get B-Side
+
+### On your Android phone
+1. Download **`B-Side.apk`** from the [latest release](../../releases/latest).
+2. Open it and allow *Install unknown apps* when your phone asks. Play Protect may warn you because B-Side isn't from the Play Store; choose *Install anyway*.
+
+Needs Android 7.0 or newer. To update, install the new `B-Side.apk` over the old one: your songs and playlists stay. Most updates also arrive by themselves the next time you open B-Side (*Settings → Update automatically*).
+
+### On your computer
+- **Download `B-Side.html`** from the [latest release](../../releases/latest) and double-click it. It opens in Chrome, Edge, Firefox or Safari, works offline, and there's nothing to install.
+- **Or use it online** at **https://tymonbitesthedust.github.io/B-Side/**. Your music still stays on your computer: the page only plays the files you pick.
+
+On a computer you can also drag songs and folders straight onto the window.
+
+### First steps
+1. Tap **+** and choose *Select music files* or *Select a folder*.
+2. Tap a song to play it. Tap the mini player at the bottom to open **Now Playing**.
+3. Tap **⋮** in the top-right corner, then **Settings**, to pick a style, colour, sound effects and more.
 
 ---
 
-## Features
+## What B-Side does
 
-### Library
-- **Tracks, Albums, Artists, Genres, Folders and Playlists** tabs, with search and sorting by title, artist, album, date added or duration. **Choose which tabs appear and drag them into any order.** Long-press the tab bar, or go to *Settings → Library tabs*.
-- **Songs with several singers count for each of them.** "Freddie Mercury & Michael Jackson" appears under both artists, and *Go to artist* lets you pick which one. B-Side reads multi-artist tags (ID3v2.4 lists, `ARTISTS`, repeated Vorbis `ARTIST` fields) and can split names on `&`, commas, `feat.`/`ft.`, `;`, `/`, `x`, `and`, `with`, `vs.` and `+`, each of which you can switch on or off. A never-split list keeps names like *AC/DC*, *Simon & Garfunkel* and *Earth, Wind & Fire* whole, and "& The …" backing bands stay together.
-- **Genres** are split the same way, so a song tagged "Pop/Rock" appears under both Pop and Rock.
-- **Folders work like a file explorer.** Only the folders you added sit at the top level; tap through to subfolders and songs, with a breadcrumb path to jump back up. Playing or shuffling a folder plays everything inside it.
-- **Albums your way.** Choose where the album artist appears: *On albums* (under album names), *Everywhere* (also on songs, in the player and the notification, as "Album artist – Album" when it differs from the singer) or *Nowhere* (albums show their singers instead). Switch off *Separate albums by album artist* to keep every song with the same album title in one album. With it on, songs missing an album-artist tag still join their album when it's in the same folder. Find both in *Settings → Albums*.
-- **Fast scroll, your choice.** *Settings → Fast scroll* keeps lists as they are (*Off*), adds a **Scrollbar** handle on the right edge that you drag through long lists (a bubble shows the letter you're at), or adds an **A–Z** index: tap or slide along the letters to land on the first song, album, artist, genre or folder starting with that letter. Accented names file under their plain letter (*Élan* under E), numbers and symbols under #, Korean under its first consonant, and other scripts by their first character. Pages that aren't in A–Z order, like an album or a playlist, get the scrollbar instead.
-- **Smart playlists** (Favourites, Recently added, Most played, Recently played) alongside your own playlists.
-- **Import your Spotify playlists and Liked Songs.** B-Side can't stream from Spotify, so each Spotify playlist becomes a B-Side playlist made of the matching songs you've added, in Spotify's order, with a *Not on this device* list of the rest (tap one to find it on Spotify). Matching ignores "(feat. …)", "- Remastered" and accents, checks the artist, album or length, and finds untagged files by name. Import again any time to update a playlist. Two ways in, from *Playlists → Spotify* or *Settings → Import from Spotify*:
-  - **Connect your account.** Spotify only lets apps read accounts through a developer app, so you make one once at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard). Its owner needs **Spotify Premium** (Spotify's rule since February 2026), and up to five people can use it. B-Side shows the steps and the exact Redirect URI to add: `http://127.0.0.1:43821/callback` in the Android app, or the page's own address on the web, such as
-`https://tymonbitesthedust.github.io/B-Side/` (a page opened from a file can't connect; one Spotify app can list both). Spotify only shares playlists you own or collaborate on, plus your Liked Songs.
-  - **Import a data file.** Works with any account, including free, and nothing goes online: on spotify.com open *Account → Privacy settings → Download your data*, request *Account data*, and pick the `my_spotify_data.zip` Spotify emails you. Its `Playlist1.json` and `YourLibrary.json`, and CSV files from Exportify or TuneMyMusic, work too.
-- **Reads everything from the files:** title, artist, album, album artist, track and disc numbers, year, genre, cover art and lyrics. It also picks up `cover.jpg` / `folder.jpg` and matching `.lrc` lyric files in a folder.
+### Your library
+- **Tracks, Albums, Artists, Genres, Folders and Playlists**, with search, and sorting by title, artist, album, date added or length. Choose which tabs show and drag them into any order: long-press the tab bar, or *Settings → Library tabs*.
+- **Songs with several singers count for each of them.** "Freddie Mercury & Michael Jackson" shows under both artists. Bands like *AC/DC* and *Simon & Garfunkel* stay whole, and you can fine-tune this in *Settings → Artists*.
+- **Genres** like "Pop/Rock" show under both Pop and Rock.
+- **Folders work like a file explorer**, with a path at the top to jump back up. Playing a folder plays everything inside it.
+- **Albums your way**: choose where the album artist shows, and whether albums with the same name but different artists stay apart (*Settings → Albums*).
+- **Fast scroll** for long lists (*Settings → Fast scroll*): a **Scrollbar** you drag on the right edge, or **A–Z** letters you tap or slide along to jump to the first song, album or artist starting with that letter.
+- **Smart playlists**: Favourites, Recently added, Most played and Recently played, next to your own playlists.
+- **Everything comes from your files**: titles, artists, albums, cover art and lyrics, including `cover.jpg` / `folder.jpg` pictures and `.lrc` lyric files in the same folder.
 
-### Player
-- A mini player and a full **Now Playing** screen tinted from the album art. Swipe the cover to skip and drag down to close.
-- **Playing queue** with drag to reorder, plus *Play next* and *Add to queue* from any song, album, artist, folder or playlist.
+### The player
+- A mini player and a full **Now Playing** screen tinted by the album art. Swipe the cover to skip, drag down to close.
+- **Playing queue**: drag to reorder, and *Play next* or *Add to queue* from any song, album, artist, folder or playlist.
 - Shuffle, repeat all and repeat one.
-- **Volume levelling** plays every song at about the same loudness, so a quiet song after a loud one doesn't need the volume turned up. Level *Each song* (best for playlists and shuffle) or by *Album* (keeps a quiet intro quiet), at *Quieter*, *Normal* or *Louder*. B-Side uses ReplayGain and Opus R128 tags when your files have them. It measures other songs on the device, the EBU R128 way, just before they first play, and saves the result. It never raises a song so far that its peaks distort. Turn it on from the Sound button in Now Playing or *Settings → Volume levelling*.
-- **7-band equaliser** (60 Hz – 15 kHz) with 10 presets: Normal, Pop, Rock, Jazz, Classical, Dance, Bass boost, Treble boost, Vocal and Acoustic.
-- **Sleep timer** (15 min to 1 h 30 min, or at the end of the current song) that fades the music out.
+- **Volume levelling** plays every song at about the same loudness, so you don't reach for the volume between a quiet song and a loud one.
+- **7-band equaliser** with 10 presets (Pop, Rock, Jazz, Bass boost, Vocal and more).
+- **Sleep timer** from 15 minutes to 1 hour 30, or at the end of the song. The music fades out.
 - **Playback speed** from 0.5× to 2×.
-- **Lyrics view** for plain lyrics and time-synced `.lrc` lyrics. Synced lines highlight as the song plays; tap a line to jump to it.
-- **Open in Spotify** from any song's ⋮ menu, Now Playing, or an album or artist page. On Android it opens a search in the Spotify app when it's installed; otherwise it opens the search on open.spotify.com.
-- **Choose your player buttons.** Pick which buttons sit under the controls and drag them into order: Lyrics, Playing queue, Sound (equaliser and volume levelling), Sleep timer, Playback speed, Add to playlist, Go to album, Details and Open in Spotify. Long-press the row, or use *Settings → Player buttons*. Hidden ones stay one tap away in the ⋮ menu.
+- **Lyrics**, including time-synced lyrics that follow the song; tap a line to jump to it.
+- **Open in Spotify** from any song, album or artist, to find it on Spotify.
+- **Choose your player buttons**: long-press the button row in Now Playing, or *Settings → Player buttons*.
 
 <p align="center"><img src="docs/screenshots/customise.png" alt="Genres tab, choosing between a duet's two artists, customising the library tabs and the player buttons" width="92%"></p>
 
-### Styles, sound and colour
+### Six styles
 <p align="center"><img src="docs/screenshots/styles.png" alt="The six styles: B-Side, NieR: Automata, Persona 5, Persona 3 Reload, Red Dead Redemption 2 and Cyberpunk 2077" width="100%"></p>
 
-Each style is a whole design language borrowed from a game's menus, not a colour swap: its own type, shapes, the way a
-chosen item looks, motion, sounds and app icon. Every page and feature stays the same. The styles follow the
-[game UI theme guide](docs/STYLES.md#the-method) from [Checkmate](https://github.com/TymonBitesTheDust/Checkmate), and
-[docs/STYLES.md](docs/STYLES.md) has the style sheet for each one.
+Each style changes the whole look and feel, not just the colours: the type, shapes, motion, sound effects and app icon. Choose one in *Settings*.
 
-| Style | Look | Chosen item | Light / dark |
-|---|---|---|---|
-| **B-Side** | Soft, rounded and calm, in your choice of theme colour | Accent underline | Light and dark |
-| **NieR: Automata** | YoRHa menus: beige paper on a fine grid, light-brown plates with square markers, scanlines | The plate fills dark from the left while thin lines slide out above and below | Paper and Ink |
-| **Persona 5** | The calling card: blood red, a field of pulsing star ripples, cut-out ransom letters, jagged black plates with white edges | A red and cyan highlight wiggling behind it | Always dark |
-| **Persona 3 Reload** | The pause menu under water: drifting caustics and light rays, a tilted stack of italic command words, the page name on a white ribbon on wide screens | White, on a red and white triangle cursor | Surface and Depths |
-| **Red Dead Redemption 2** | Native menus: every option on its own ink box, titles in a black brush banner, a "2 of 6" counter | A rough red brush frame | Journal (paper) and Campfire (night) |
-| **Cyberpunk 2077** | Settings menus: salmon red on near-black, cut corners, tick marks, bracketed counts, ‹ ON › switches | A cyan cut-corner frame | Neon (dark) and Yellow (street poster) |
+| Style | Look | Light / dark |
+|---|---|---|
+| **B-Side** | Soft, rounded and calm, in your choice of 11 colours or any colour code | Light and dark |
+| **NieR: Automata** | Beige paper on a fine grid, light-brown plates, scanlines | Paper and Ink |
+| **Persona 5** | Blood red with pulsing stars, cut-out ransom letters, jagged black plates | Always dark |
+| **Persona 3 Reload** | The pause menu under water, with drifting light and tilted italic words | Surface and Depths |
+| **Red Dead Redemption 2** | Ink boxes, black brush banners and a rough red frame | Journal and Campfire |
+| **Cyberpunk 2077** | Salmon red on black, cut corners and cyan highlights | Neon and Yellow |
 
-- **Every style moves its own way** when you change page: Persona 5 sweeps a red wipe and shakes the screen, Persona 3 ripples rings out, Red Dead sweeps an ink brush across, Cyberpunk slices and flickers, and NieR's titles glitch into place.
-- **Liking a song is a moment.** Add a song to your favourites and Persona 5 stamps *Stolen!* across the screen, Persona 3 breaks glass with *FAVOURITE*, Red Dead stamps a red *KEEPER*, Cyberpunk flickers in *TRACK SAVED*, and NieR's square locks on.
-- **Persona 5 has its own settings**: it's always dark, so *Settings* swaps the light/dark choice for *Animations* (Match device, Full or Reduced) and *Show the star field*. Every style respects your device's reduced-motion setting.
-- **Sound effects** synthesized live, with a different bank for each style: Persona 5's square-wave blips, whoosh and kick; Persona 3's glassy bells and bubbles; NieR's terminal blips; Red Dead's plucked guitar, register bell and rubber stamp; Cyberpunk's digital blips, saw zaps and sub drops. Choose *Off*, *Actions* or *Everything* (adds a soft tick as you move through menus) and set the volume. The effects never pass through the music equaliser.
-- **Theme colour** for the B-Side style: 11 colours or any colour code. Colours are adjusted for readable text in light and dark mode.
-- **The app icon follows the style and colour**: the browser tab icon on the web, and the home-screen icon on Android. Each game style has its own icon drawn from its game: a YoRHa record under a lock-on reticle (NieR), a big white note slashed across red and black (Persona 5), a brush-ink pocket music player under water (Persona 3), a brass lawman's star in the rough red frame (Red Dead) and a glitching note on street-poster yellow (Cyberpunk).
+- **Every style moves its own way** when you change page, and **liking a song is a moment**: Persona 5 stamps *Stolen!*, Persona 3 breaks glass, Red Dead stamps *KEEPER*, Cyberpunk flickers *TRACK SAVED*, and NieR's square locks on.
+- **Sound effects** made for each style. Choose *Off*, *Actions* or *Everything* and set the volume in *Settings*.
+- **The app icon follows your style**, on the home screen and in the browser tab.
+- Persona 5 has its own *Animations* setting, and every style follows your device's reduced-motion setting.
 
 <p align="center"><img src="docs/screenshots/favourite-moments.png" alt="Adding a song to favourites in each game style: Stolen!, FAVOURITE, KEEPER, TRACK SAVED and ARCHIVED" width="88%"></p>
 <p align="center"><img src="docs/screenshots/now-playing-styles.png" alt="Now Playing in Persona 5, Persona 3 Reload (Depths), Red Dead Redemption 2 (Campfire), Cyberpunk 2077 (Yellow) and NieR: Automata (Ink)" width="88%"></p>
-<p align="center"><img src="docs/screenshots/icons.png" alt="The 16 app icons: 11 colours of the B-Side icon and one for each of the other five styles" width="88%"></p>
 
 ### On Android
-- **Keeps playing after you close the app**, whether you press Home or Back or swipe it out of Recents. Controls stay in the notification, on the lock screen, and on headsets and Bluetooth devices.
-- **Built for long listening sessions.** After a pause, B-Side stays in the foreground for 45 minutes so Android doesn't close it between songs. *Settings → Background playback* shows whether Android's battery optimisation might close it, and lets you exempt B-Side in one tap. On Samsung phones it also points you to *Background usage limits*.
-- Pauses automatically when headphones are unplugged.
-- **Play from your car or headphones, even when B-Side is closed.** Press Play on a car stereo, Bluetooth headset or speaker and B-Side starts again and picks up your last song where you left off, as long as B-Side was the last music app you played.
-- Uses the system **file and folder pickers**, and shows up as **"Play with B-Side"** when you open or share audio from a file manager.
-- Draws edge to edge and follows the system's dark mode.
-
-### Private by design
-No accounts, no ads, no analytics and no network requests. The only ways out are the Spotify features, and only when
-you use them: *Open in Spotify* hands the song, album or artist name to Spotify as a search, and *Import from Spotify*
-with a connected account reads your playlists from Spotify's API (the sign-in is kept on your device). Importing a
-Spotify data file is read on your device. Songs you add are copied into B-Side's own storage on your
-device so your library is still there next time. You can switch that off in *Settings → Library*. Removing a song from
-B-Side never touches the original file.
+- **Keeps playing after you close the app**, with controls in the notification, on the lock screen, and on headphones and Bluetooth devices.
+- **Play from your car or headphones even when B-Side is closed.** Press Play and B-Side picks up your last song where you left off.
+- **Pauses when headphones are unplugged.**
+- **Updates itself.** New versions download in the background and start the next time you open B-Side.
+- Shows up as **"Play with B-Side"** when you open a song from a file manager.
 
 <p align="center"><img src="docs/screenshots/features.png" alt="Playing queue, equaliser, album grid and the first-run screen" width="92%"></p>
 
 ---
 
-## Get B-Side
+## Bring your Spotify playlists over
 
-### Android
-1. Download **`B-Side.apk`** from the [latest release](../../releases/latest).
-2. Open it on your phone and allow *Install unknown apps* when asked. Play Protect may warn you because the app isn't from the Play Store.
+B-Side can't play songs from Spotify. Instead it turns your Spotify playlists and Liked Songs into B-Side playlists made of the **matching songs you've added to B-Side**, in Spotify's order. Songs you don't have are listed under *Not on this device*; tap one to find it on Spotify. Import again any time to update a playlist.
 
-Needs Android 7.0 or newer.
+Open it from the **Playlists** tab → **Spotify**, or *Settings → Import from Spotify*. There are two ways:
 
-### Web
-Open **`web/index.html`** in Chrome, Edge, Firefox or Safari. There's nothing to install, and it works offline.
+### Way 1: Spotify data file (any account, even free)
+1. On spotify.com, open **Account → Privacy settings → Download your data**, and request **Account data**.
+2. Spotify emails you a file called `my_spotify_data.zip`. It can take a few days.
+3. In B-Side, choose **Choose a file** and pick that zip. Your playlists and Liked Songs appear in the Playlists tab.
 
-**Online copy (GitHub Pages).** `web/build.py` also writes `docs/index.html`. Set *Settings → Pages* to deploy from the
-`docs` folder of the `main` branch and B-Side is online at **https://tymonbitesthedust.github.io/B-Side/**. Your
-music still never leaves your computer: the page only reads the files you pick. Use this address on a computer to
-connect a Spotify account, since Spotify can't send you back to a page opened from a file. The online copy keeps its
-own library, so add your music there once.
+CSV files from Exportify or TuneMyMusic work too. Nothing goes online with this way.
 
-> Picking a whole folder needs a desktop browser or the Android app. On desktop you can also drag files and folders onto the window.
+### Way 2: Connect your Spotify account (needs Premium)
+Spotify only lets apps read your account through a free "developer app" that you make once. Spotify requires its owner to have **Spotify Premium**.
+
+**Set up once:**
+1. Go to **[developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)** and log in.
+2. Choose **Create app**. Any name and description will do.
+3. Under **Redirect URIs**, add exactly `http://127.0.0.1:43821/callback`, then tap **Add**.
+4. Tick **Web API**, agree to the terms and **Save**.
+5. Open the app's **Settings**. Copy the **Client ID**, and under **User Management** add your own name and Spotify email.
+6. In B-Side, tap **Enter Client ID** and paste it.
+
+**Connect on your phone:** tap **Connect to Spotify**, log in and tap **Agree**, then tap **Back to B-Side**. B-Side picks the sign-in up by itself.
+
+**Connect on your computer:**
+1. Tap **Connect to Spotify**. Spotify opens in a new tab: log in and tap **Agree**.
+2. The tab then shows **"This site can't be reached"**. That's expected: the sign-in code is in the address bar.
+3. Click the address bar once, and press **Ctrl + C** (Mac: Cmd + C) to copy the whole address. It starts with `http://127.0.0.1:43821/callback?code=`.
+4. Back in B-Side, tap **Paste the address**, press **Ctrl + V**, then **Connect**. Do this within 10 minutes.
+
+When it says **"Connected as [your name]"**, tap **Import all**, or one playlist.
+
+| If B-Side says… | Do this |
+|---|---|
+| Spotify doesn't recognise the Client ID | Check the Client ID matches your Spotify app (*Change Client ID*) |
+| The Redirect URI doesn't match | In your Spotify app's settings it must be exactly `http://127.0.0.1:43821/callback` |
+| Spotify refused | The app's owner needs Premium, and your account must be under *User Management* |
+| That sign-in had already been used or had run out | Tap *Connect to Spotify* again and paste the new address straight away |
+| A playlist is greyed out | Spotify only shares playlists you made or collaborate on, not ones like Discover Weekly |
 
 ---
 
-## Using B-Side
+## How do I…
 
 | To… | Do this |
 |---|---|
 | Add music | Tap **+** → *Select music files* or *Select a folder* |
-| Open a song's options | Tap its **⋮**, or right-click / long-press the song |
-| Change style, colour, sounds or theme | **⋮** in the top-right corner → *Settings* |
-| Show, hide or reorder tabs | Long-press the tab bar (right-click on desktop) |
-| Choose the player buttons | Long-press the button row in Now Playing, or ⋮ → *Customise buttons* |
-| Jump through a long list | *Settings → Fast scroll* → *Scrollbar* or *A–Z*, then drag the handle or tap a letter on the right |
-| Find a song on Spotify | Its **⋮** → *Open in Spotify* (also on album and artist pages, and in Now Playing) |
-| Bring your Spotify playlists over | *Playlists* → **Spotify**, then connect your account or choose your Spotify data file |
-| Fix how an artist is split | *Settings → Artists*: switch separators on or off, or add the name to *Never split* |
+| Open a song's options | Tap its **⋮**, or long-press / right-click the song |
+| Change style, colour, sounds or light/dark | **⋮** in the top-right corner → *Settings* |
+| Show, hide or reorder tabs | Long-press the tab bar (right-click on a computer) |
+| Choose the player buttons | Long-press the button row in Now Playing |
+| Jump through a long list | *Settings → Fast scroll* → *Scrollbar* or *A–Z* |
 | Even out loud and quiet songs | Now Playing → Sound button → *Volume levelling* |
+| Fix how an artist is split | *Settings → Artists* |
 | Stop an album splitting in two | *Settings → Albums* → switch off *Separate albums by album artist* |
 | Skip from Now Playing | Swipe the album cover left or right |
 | Reorder the queue | Now Playing → queue button → drag the handle |
+| Find a song on Spotify | Its **⋮** → *Open in Spotify* |
 
-**Keyboard shortcuts** (web)
-
-| Key | Action |
-|---|---|
-| <kbd>Space</kbd> | Play / pause |
-| <kbd>←</kbd> / <kbd>→</kbd> | Seek 5 seconds |
-| <kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Previous / next song |
-| <kbd>/</kbd> | Search |
-| <kbd>Esc</kbd> | Close or go back |
-
-### Supported formats
-MP3, M4A/AAC, FLAC, Ogg Vorbis, Opus and WAV (plus WebM audio). Whether a format plays depends on the browser or
-Android's built-in browser engine. Android plays all of these, but some Linux browser builds can't decode AAC.
-
-Tags are read by B-Side's own parser, with no third-party libraries: ID3v1 and ID3v2.2–2.4 (including embedded art and
-lyrics), Vorbis comments in FLAC, Ogg and Opus files, MP4/M4A metadata, and RIFF INFO in WAV files. Loudness comes
-from `REPLAYGAIN_*` tags (ID3 `TXXX`, Vorbis comments, MP4 freeform atoms), Opus `R128_*_GAIN`, or iTunes Sound Check
-(`iTunNORM`) as a fallback.
+**Keyboard shortcuts** on a computer: <kbd>Space</kbd> play / pause · <kbd>←</kbd> <kbd>→</kbd> seek 5 seconds · <kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd> previous / next song · <kbd>/</kbd> search · <kbd>Esc</kbd> close or go back.
 
 ---
 
-## Build from source
+## Tips and fixes
 
-### Web
-```bash
-python3 web/build.py        # web/app.html + fonts.css + skins/ + skins.js + icons.js → web/index.html
-```
-Edit `web/app.html` (the player), `web/skins/*.css` and `web/skins.js` (the game styles), `web/icons.js` (the app icons)
-or `web/fonts.css` (style fonts), then rebuild.
+- **The car or headphone Play button opens another music app.** Your phone sends Play to the music app you used last, so play something in B-Side once.
+- **B-Side stops in the background** (common on Samsung). In B-Side, go to *Settings → Background playback*. On Samsung phones also open *Settings → Battery → Background usage limits* and keep B-Side out of *Sleeping apps* and *Deep sleeping apps*.
+- **A newer version is ready.** *Settings → Restart to use …* switches straight away, or it starts the next time you open B-Side.
+- **A song won't play.** B-Side plays MP3, M4A/AAC, FLAC, Ogg, Opus and WAV. Android plays all of them; a few Linux browsers can't play AAC.
+- **Your library is kept on the device**, so it's still there next time. Removing a song from B-Side never deletes the original file.
 
-### Android
-B-Side builds **without Gradle or Android Studio**. You need:
-
-- **JDK 17** or newer, and **Python 3**
-- A folder of tools (set `TOOLS` to its path):
-  - `aapt2`, `lib/d8.jar` → `d8.jar` and `lib/apksigner.jar` → `apksigner.jar` from Android SDK **build-tools 34**
-  - `android.jar` from the Android SDK **platforms/android-34**
-  - `ecj.jar`: the Eclipse Java compiler (`org.eclipse.jdt:ecj` on Maven Central)
-- For regenerating launcher icons only: **Playwright** with Chromium, and **Pillow**
-
-```bash
-python3 web/build.py                 # 1. build the player
-python3 android/gen_icons.py         # 2. only after changing web/icons.js (generated icons are committed)
-export TOOLS=/path/to/tools
-export KS_PASS='your-key-password'
-android/build.sh                     # 3. → android/build/B-Side.apk
-```
-
-The first build creates a signing key at `android/bside-release.jks` if there isn't one. **Keep that key private and
-back it up.** It is excluded by `.gitignore`, and every update must be signed with the same key to install over an
-existing copy of B-Side.
-
----
-
-## How it works
-
-The whole player is one web page. Audio plays through an HTML `<audio>` element, routed through Web Audio for the
-equaliser and volume levelling. To measure a song without loudness tags, B-Side decodes it once with an
-`OfflineAudioContext` and applies the ITU-R BS.1770 K-weighting with 400 ms gated blocks. Each song's level is then set
-by one gain node. Tags are parsed in JavaScript. Your library and the copied song files live in IndexedDB, and settings in
-`localStorage`.
-
-The Android app is a small native shell, about 1,500 lines of Java:
-
-```mermaid
-flowchart LR
-    A["MainActivity<br/>screen · file pickers · Open with<br/>home-screen icon"] -- shows --> W
-    W["WebHost<br/>owns the WebView that plays the music<br/>(lives as long as the app process)"]
-    S["MusicService<br/>foreground media service · notification<br/>lock screen · headset · wake lock"]
-    W -- now playing --> S
-    S -- play / pause / skip / seek --> W
-```
-
-- **`WebHost`** owns the WebView at process level rather than inside the screen. Closing B-Side, swiping it away or
-  Android recycling the screen only detaches the view, so a song that's playing keeps playing. Reopening the app
-  reattaches the same player, mid-song. When nothing is playing and no screen is open, the player is freed.
-- **`MusicService`** is a `mediaPlayback` foreground service. It mirrors the player into a `MediaSession` and
-  notification, holds a wake lock while music plays so the next song starts on time with the screen off, and pauses
-  when headphones are unplugged. After a pause it stays in the foreground for 45 minutes before letting Android
-  reclaim the app.
-- **`LoopbackLogin`** listens on `127.0.0.1:43821` only while a Spotify sign-in is waiting, the loopback redirect
-  Spotify allows for apps, and passes the sign-in code to the page.
-- **`MediaButtonReceiver`** is registered with the media session, so Android remembers B-Side for Play buttons on
-  cars and headsets after it's closed; it wakes the player without a screen and resumes the last song.
-- **`MainActivity`** serves the page from the app's assets at `https://appassets.androidplatform.net/`. It handles the
-  Storage Access Framework pickers, keeping read access to picked songs, and "Open with". It switches the home-screen
-  icon by enabling one of 16 `<activity-alias>` entries, and only while the app is in the background and not playing.
-
-### Project structure
-```
-b-side/
-├── web/
-│   ├── app.html          the player: markup, base styles and code
-│   ├── skins/            one CSS file per game style, every rule scoped to [data-skin="…"]
-│   ├── skins.js          style-only pieces: cut-out letters, star field, ribbon, page changes
-│   ├── icons.js          app icon generator (tab icon, settings previews, launcher icons)
-│   ├── fonts.css         display fonts for the styles (embedded, works offline)
-│   ├── build.py          builds the single-file player
-│   └── index.html        built player, ready to open or ship
-├── android/
-│   ├── AndroidManifest.xml
-│   ├── src/app/bside/music/
-│   │   ├── MainActivity.java
-│   │   ├── WebHost.java
-│   │   ├── MusicService.java
-│   │   └── LoopbackLogin.java
-│   ├── res/              hand-made resources (strings, theme, notification icons)
-│   ├── res-gen/          launcher icons generated by gen_icons.py
-│   ├── gen_icons.py
-│   ├── zipalign.py
-│   └── build.sh
-└── docs/
-    ├── STYLES.md         the style sheet for each game style
-    └── screenshots/
-```
+## Privacy
+No accounts, no ads and no tracking. Your music is never uploaded. B-Side only goes online when you use a Spotify feature, and when the Android app checks for a newer version (you can switch that off in *Settings → Update automatically*).
 
 ---
 
@@ -263,9 +182,10 @@ b-side/
   2077), all under the [SIL Open Font License 1.1](https://openfontlicense.org), via
   [Fontsource](https://fontsource.org) and Google Fonts.
 - The style designs follow the game UI theme guide written for
-  [Checkmate](https://github.com/TymonBitesTheDust/Checkmate) (MIT), and reuse its drawn textures, brush shapes and
-  sound recipes. No game logos, art, sound files or commercial fonts are used: every texture is CSS or inline SVG,
-  and every sound is synthesized.
+  [Checkmate](https://github.com/TymonBitesTheDust/Checkmate) (MIT). No game logos, art, sound files or commercial
+  fonts are used: every texture is drawn in code and every sound is synthesized.
 - The NieR: Automata, Persona 5, Persona 3, Red Dead Redemption 2 and Cyberpunk 2077 styles are fan-made tributes.
   B-Side is not affiliated with or endorsed by those games' publishers, and the names are trademarks of their
   respective owners.
+
+<sub>Building B-Side yourself? See [docs/DEVELOPING.md](docs/DEVELOPING.md).</sub>

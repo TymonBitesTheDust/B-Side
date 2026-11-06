@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f3f3f6">
+<!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
+     itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
+<meta name="bside-version" content="1.9.6">
+<meta name="bside-build" content="18">
+<meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
 <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236e8dff'/%3E%3Cstop offset='.55' stop-color='%233d5cf5'/%3E%3Cstop offset='1' stop-color='%237a4cf2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M26 44V20l18-4v24' fill='none' stroke='%23fff' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='21' cy='44' r='6' fill='%23fff'/%3E%3Ccircle cx='39' cy='40' r='6' fill='%23fff'/%3E%3C/svg%3E">
@@ -499,6 +504,7 @@ body.np-open .fscroll{visibility:hidden}
 .sec-acts{display:flex;gap:2px}
 .mi.dim{opacity:.55}
 .sp-ph{color:var(--text-3)}
+.sp-err{color:var(--danger);font-weight:600}
 
 /*@SKINS@*/
 </style>
@@ -654,6 +660,8 @@ body.np-open .fscroll{visibility:hidden}
 (() => {
 /* ───────────────────────── basics ───────────────────────── */
 const NATIVE = window.BSideNative || null;
+const metaOf = n => { const m = document.querySelector(`meta[name="bside-${n}"]`); return m ? m.content : ''; };
+const APP_VERSION = metaOf('version'), APP_BUILD = +metaOf('build') || 0;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -684,7 +692,7 @@ const gradFor = seed => { const h = hueOf(seed); return `background:linear-gradi
 const LS_KEY = 'bside:v1';
 const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } })();
 const DEFAULT_SETTINGS = {motion: 'system', stars: true, tabs: null, npActs: null, split: null, bgAsked: false, accent: 'cobalt', matchIcon: true, skin: 'bside', sfx: 'all', sfxVol: .6, theme: 'system', persist: true, speed: 1, sort: 'title', eqOn: false, eqPreset: 'Normal', eqGains: [0, 0, 0, 0, 0, 0, 0], volume: 1,
-  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off'};
+  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off', autoUpdate: true};
 const S = {
   tracks: new Map(), files: new Map(), arts: new Map(),
   fav: new Set(saved.fav || []), playlists: Array.isArray(saved.playlists) ? saved.playlists : [],
@@ -1343,7 +1351,7 @@ function toast(msg, ms = 2600) { const el = $('#toast'); if (!msg) { el.classLis
 function dialog({title, text = '', input = null, ok = 'OK', cancel = 'Cancel', danger = false}) {
   return new Promise(res => {
     const el = $('#dialog'); let result = null;
-    el.innerHTML = `<div class="dlg"><h3>${esc(title)}</h3>${text ? `<p>${esc(text)}</p>` : ''}${input ? `<input class="field" maxlength="80" value="${esc(input.value || '')}" placeholder="${esc(input.placeholder || '')}">` : ''}<div class="dlg-btns">${cancel ? `<button class="txt-btn" data-r="0">${esc(cancel)}</button>` : ''}<button class="txt-btn ${danger ? 'danger' : ''}" data-r="1">${esc(ok)}</button></div></div>`;
+    el.innerHTML = `<div class="dlg"><h3>${esc(title)}</h3>${text ? `<p>${esc(text)}</p>` : ''}${input ? `<input class="field" maxlength="${input.max || 80}" value="${esc(input.value || '')}" placeholder="${esc(input.placeholder || '')}">` : ''}<div class="dlg-btns">${cancel ? `<button class="txt-btn" data-r="0">${esc(cancel)}</button>` : ''}<button class="txt-btn ${danger ? 'danger' : ''}" data-r="1">${esc(ok)}</button></div></div>`;
     const field = $('input', el);
     const finish = v => { result = v; closeTop(); };
     el.onclick = e => { const b = e.target.closest('[data-r]'); if (b) finish(b.dataset.r === '1' ? (field ? field.value.trim() : true) : null); else if (e.target === el) finish(null); };
@@ -2299,23 +2307,21 @@ function spotifyTrack(id) { const t = T(id); if (t) openSpotify([t.title, knownA
    Two ways in:
    • Connect your account: Spotify's Web API, signed in with PKCE (no secret). Spotify's rules: the developer app's
      owner needs Premium, up to 5 people can use one app, and apps can read only playlists you own or collaborate on.
-     Sign-in returns to 127.0.0.1 on Android (the app listens there for a moment) or to this page on the web.
+     Every copy uses the same Redirect URI, http://127.0.0.1:43821/callback: the Android app listens there for a
+     moment and picks the sign-in up by itself; in a browser nothing listens, so you paste that page's address back.
    • A data file: my_spotify_data.zip from Spotify's "Download your data" (any account, nothing goes online), its
      Playlist1.json / YourLibrary.json, or a CSV from Exportify or TuneMyMusic. */
 const SP_KEY = 'bside:spotify', SP_AUTH = 'bside:spotify-auth', SP_API = 'https://api.spotify.com/v1';
 const SP_SCOPES = 'playlist-read-private playlist-read-collaborative user-library-read';
 const SP_LOOPBACK = 'http://127.0.0.1:43821/callback', SP_MISSING_MAX = 600;
-const SP_ONLINE = 'https://tymonbitesthedust.github.io/B-Side/'; // the GitHub Pages copy, for connecting on a computer
-const SP_RETURN = /[?&]state=/.test(location.search) && /[?&](code|error)=/.test(location.search) ? location.search.slice(1) : '';
-if (SP_RETURN) { try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {} }
 const spLoad = () => { try { return JSON.parse(localStorage.getItem(SP_KEY)) || {}; } catch (e) { return {}; } };
 const spSave = o => { try { localStorage.setItem(SP_KEY, JSON.stringify(o)); } catch (e) {} };
 let SPC = null, spBusy = false; // SPC: this session's view of the account {me, lists} | {loading} | {error}
-function spRedirect() {
-  if (NATIVE && NATIVE.spotifyListen) return SP_LOOPBACK;
-  const l = location;
-  if (l.protocol === 'https:' || (l.protocol === 'http:' && /^(127\.0\.0\.1|\[::1\])$/.test(l.hostname))) return l.origin + l.pathname.replace(/\/index\.html?$/i, '/'); // ".../B-Side/" and ".../B-Side/index.html" are one address
-  return ''; // a page opened from a file can't be returned to
+const spRedirect = () => SP_LOOPBACK;
+const spAuto = () => !!(NATIVE && NATIVE.spotifyListen); // the Android app catches the sign-in by itself
+function spWaiting() { // in a browser: a sign-in was started and is waiting for its address to be pasted
+  if (spAuto()) return null;
+  try { const a = JSON.parse(localStorage.getItem(SP_AUTH)); return a && Date.now() - a.at < 30 * 60 * 1000 ? a : null; } catch (e) { return null; }
 }
 function openExternal(url) {
   try { if (NATIVE && NATIVE.openUrl) { NATIVE.openUrl(url); return; } } catch (e) {}
@@ -2332,27 +2338,43 @@ function spCopy(text) {
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 async function spConnect() {
   const st = spLoad(), redirect = spRedirect();
-  if (!st.clientId || !redirect) return;
+  if (!st.clientId) return;
+  spNote = '';
   if (!(window.crypto && crypto.subtle)) { sfx('error'); toast('This browser can’t sign in to Spotify'); return; }
   try { if (NATIVE && NATIVE.spotifyListen && !NATIVE.spotifyListen()) { sfx('error'); toast('Couldn’t start Spotify sign-in. Restart B-Side and try again'); return; } } catch (e) {}
   const verifier = b64url(crypto.getRandomValues(new Uint8Array(48))), state = b64url(crypto.getRandomValues(new Uint8Array(16)));
   const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
   try { localStorage.setItem(SP_AUTH, JSON.stringify({verifier, state, redirect, at: Date.now()})); } catch (e) {}
   const url = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({client_id: st.clientId, response_type: 'code', redirect_uri: redirect, code_challenge_method: 'S256', code_challenge: challenge, state, scope: SP_SCOPES});
-  if (NATIVE && NATIVE.openUrl) { NATIVE.openUrl(url); toast('Log in to Spotify in your browser, then come back', 5000); }
-  else location.assign(url);
+  openExternal(url);
+  if (spAuto()) toast('Log in to Spotify in your browser, then come back', 5000);
+  else { toast('Log in to Spotify in the new tab, then copy the address it ends on', 5000); spRefreshSheet(); }
 }
-async function spCallback(query) {
+let spNote = ''; // the last sign-in problem, kept in the Spotify panel until the next try
+function spSignInText(e) { // why a sign-in failed, in plain words, with what to do
+  const m = (e && e.msg) || '';
+  if (e && e.code === 'invalid_grant' && /redirect/i.test(m)) return 'Spotify says the Redirect URI doesn’t match. In your Spotify app’s settings it must be exactly http://127.0.0.1:43821/callback, then connect again.';
+  if (e && e.code === 'invalid_grant') return 'That sign-in had already been used or had run out (they last 10 minutes). Tap “Connect to Spotify” and paste the new address straight away.';
+  if (e && e.code === 'invalid_client') return 'Spotify doesn’t recognise the Client ID. Check it matches your Spotify app (Change Client ID), then connect again.';
+  if (e && e.status === 403) return 'Spotify refused' + (m ? ` (“${m}”)` : '') + '. Spotify needs the developer app’s owner to have Premium, and your account added under User Management in that app’s settings.';
+  return spErrText(e) + '.';
+}
+async function spCallback(query, pasted) {
   const q = new URLSearchParams(query); let saved = null;
-  try { saved = JSON.parse(localStorage.getItem(SP_AUTH)); localStorage.removeItem(SP_AUTH); } catch (e) {}
-  if (!saved || !q.get('state') || q.get('state') !== saved.state) { toast('That Spotify sign-in has expired. Try again'); return; }
-  if (q.get('error')) { toast(q.get('error') === 'access_denied' ? 'Spotify sign-in cancelled' : 'Spotify sign-in failed: ' + q.get('error')); return; }
+  try { saved = JSON.parse(localStorage.getItem(SP_AUTH)); } catch (e) {}
+  const fail = (msg, keepWaiting) => { spNote = msg; if (!keepWaiting) { try { localStorage.removeItem(SP_AUTH); } catch (e) {} } sfx('error'); toast(msg, 8000); spRefreshSheet(); };
+  if (pasted && saved && !q.get('state')) q.set('state', saved.state); // just the code was pasted
+  if (!saved || !q.get('state') || q.get('state') !== saved.state) return fail(pasted && saved ? 'That address is from an earlier sign-in. Tap “Open Spotify again” and paste the new address.' : 'That Spotify sign-in has run out. Tap “Connect to Spotify” to try again.', pasted && saved);
+  if (q.get('error')) return fail(q.get('error') === 'access_denied' ? 'Spotify’s page was cancelled, so B-Side isn’t connected. Tap “Connect to Spotify” and choose Agree.' : `Spotify sign-in failed (${q.get('error')}).`);
+  spNote = ''; toast('Connecting to Spotify…', 0);
+  try { spKeep(await spToken({grant_type: 'authorization_code', code: q.get('code') || '', redirect_uri: saved.redirect, client_id: spLoad().clientId, code_verifier: saved.verifier})); }
+  catch (e) { return fail(spSignInText(e), e && e.code === 'offline'); } // offline: the code still works, so it can be pasted again
+  try { localStorage.removeItem(SP_AUTH); } catch (e) {}
   try {
-    spKeep(await spToken({grant_type: 'authorization_code', code: q.get('code') || '', redirect_uri: saved.redirect, client_id: spLoad().clientId, code_verifier: saved.verifier}));
     const me = await spGet('/me'), st = spLoad(); st.user = me.display_name || me.id || ''; st.uid = me.id || ''; spSave(st);
-    SPC = null; sfx('complete'); toast('Connected to Spotify' + (st.user ? ' as ' + st.user : ''));
+    SPC = null; sfx('complete'); toast(`Connected${st.user ? ' as ' + st.user : ''}. Tap a playlist to import it`, 5000);
     await closeOverlays(); spotifySheet();
-  } catch (e) { sfx('error'); toast(e && e.msg && e.code !== 'api' ? 'Spotify: ' + e.msg : spErrText(e), 7000); }
+  } catch (e) { spForget(false); fail(spSignInText(e)); }
 }
 window.bsideSpotifyCallback = q => { spCallback(String(q || '')); };
 async function spToken(params) {
@@ -2580,6 +2602,7 @@ const spSteps = redirect => `<ol class="sp-steps">
 function spSheetBody() {
   const st = spLoad(), redirect = spRedirect();
   let h = `<div class="accent-note">B-Side plays files on your device, so it can’t stream from Spotify. Importing makes B-Side playlists out of the matching songs you’ve added here, and lists the ones you don’t have.</div><div class="lbl">Your Spotify account</div>`;
+  if (spNote && !st.refresh) h += `<div class="accent-note sp-err" role="alert">${esc(spNote)}</div>`;
   if (st.refresh) {
     h += `<div class="mi static">${ic('person')}<span class="mt">${esc(st.user ? 'Connected as ' + st.user : 'Connected')}<span class="sub">Tap a playlist to import it. Import again any time to update it.</span></span><button class="txt-btn" data-sp="disconnect">Disconnect</button></div>`;
     if (!SPC || SPC.loading) h += `<div class="hint" style="padding:18px">Loading your playlists…</div>`;
@@ -2593,7 +2616,8 @@ function spSheetBody() {
         return menuItem(L.liked ? 'heart' : 'playlist', L.name, 'sp:get:' + L.key, {sub, cls: L.mine ? '' : 'dim', extra: p ? ic('check') : ''});
       }).join('');
     }
-  } else if (!redirect) h += `<div class="accent-note">B-Side is open from a file on this computer, and Spotify can only send you back to a web address. To connect your account here, open the online B-Side (your music still stays on this computer), or use the Android app. You can also import a Spotify data file below, which works right here.</div>` + menuItem('open', 'Open the online B-Side', 'sp:online', {cls: 'sel', sub: SP_ONLINE.replace(/^https:\/\//, '')});
+  } else if (st.clientId && spWaiting()) h += `<div class="accent-note">In the Spotify tab, log in and tap <b>Agree</b>. Your browser then shows a page saying it can’t be reached. That’s expected: copy the whole address from the address bar (it starts with <b>http://127.0.0.1:43821/callback?code=</b>) and paste it here.</div>` +
+    menuItem('import', 'Paste the address', 'sp:paste', {cls: 'sel'}) + menuItem('open', 'Open Spotify again', 'sp:connect', {sub: 'If you closed the tab, or it’s been a while'});
   else if (st.clientId) h += menuItem('open', 'Connect to Spotify', 'sp:connect', {cls: 'sel', sub: 'Log in to Spotify and allow B-Side to read your playlists'}) + menuItem('edit', 'Change Client ID', 'sp:cid', {sub: st.clientId}) +
     `<div class="accent-note">The Redirect URI in your Spotify app must be exactly:<span class="sp-code"><span>${esc(redirect)}</span><button class="txt-btn" data-sp="copy">Copy</button></span></div>`;
   else h += `<div class="accent-note">Connecting needs a free Spotify developer app, made once:</div>` + spSteps(redirect) + menuItem('edit', 'Enter Client ID', 'sp:cid', {cls: 'sel'});
@@ -2623,7 +2647,13 @@ function spotifySheet() {
         if (id !== (spLoad().clientId || '')) spForget(false);
         const st = spLoad(); if (id) st.clientId = id; else delete st.clientId; spSave(st); spRefreshSheet(); return;
       }
-      if (k === 'sp:online') { openExternal(SP_ONLINE); return; }
+      if (k === 'sp:paste') {
+        const v = await dialog({title: 'Paste the address', text: 'The address of the page your browser opened after you tapped Agree. It starts with http://127.0.0.1:43821/callback?code=', input: {value: '', placeholder: 'http://127.0.0.1:43821/callback?code=…', max: 4000}, ok: 'Connect'});
+        if (!v) return;
+        const i = v.indexOf('?'), query = (i >= 0 ? v.slice(i + 1) : v).split('#')[0].trim();
+        if (!/(^|&)(code|error)=/.test(query)) { sfx('error'); toast('That isn’t the address Spotify sent you to. Copy the whole address from the address bar', 6000); return; }
+        spCallback(query, true); return;
+      }
       if (k === 'sp:connect') spConnect();
       else if (k === 'sp:reload') spLoadAccount();
       else if (k === 'sp:file') { await closeTop(); pickSpotifyFile(); }
@@ -2833,7 +2863,8 @@ async function settingsSheet() {
   ${menuItem('import', 'Import from Spotify', 'spotify', {sub: spLoad().refresh ? 'Connected' + (spLoad().user ? ' as ' + spLoad().user : '') + ' · playlists and Liked Songs' : 'Your playlists and Liked Songs, matched to your music'})}
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: 'Version 1.9.2 · plays your files locally'})}`;
+  ${NATIVE && NATIVE.checkUpdate ? `<div class="lbl">Updates</div><div id="updBox">${updBoxHTML()}</div>` : ''}
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: `Version ${APP_VERSION} · plays your files locally`})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -2867,6 +2898,8 @@ async function settingsSheet() {
     const mo = e.target.closest('[data-motion-k]'); if (mo) { S.settings.motion = mo.dataset.motionK; applyTheme(); persistSoon(); $$('#motionSeg button').forEach(b => b.classList.toggle('on', b === mo)); return; }
     if (e.target.closest('[data-mi="stars"]')) { S.settings.stars = S.settings.stars === false; starfield.sync(); persistSoon(); const lb = $('#lookBox', sheetEl); if (lb) lb.innerHTML = lookBoxHTML(); return; }
     const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
+    if (k === 'autoupd') { S.settings.autoUpdate = S.settings.autoUpdate === false; persistSoon(); if (S.settings.autoUpdate) checkUpdate(true); const u = $('#updBox', sheetEl); if (u) u.innerHTML = updBoxHTML(); return; }
+    if (k === 'applyupd') { persist(); try { NATIVE.applyUpdate(); } catch (e) {} return; }
     if (k === 'persist') { if (!S.dbOk) { toast('Storage is not available here'); return; } await setPersist(!S.settings.persist); b.querySelector('.switch').classList.toggle('on', S.settings.persist); b.querySelector('.sub').textContent = S.settings.persist ? 'Your library is still here next time' : 'Library is cleared when you close the app'; return; }
     await closeTop();
     if (k === 'files') pickFiles(); else if (k === 'folder') pickFolder(); else if (k === 'clear') clearLibrary();
@@ -2877,6 +2910,17 @@ async function settingsSheet() {
     else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Importing from a connected Spotify account reads your playlists from Spotify only when you ask; a Spotify data file is read on your device. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
   }});
 }
+/* Updates (Android): the app checks the B-Side website for a newer player when it opens, downloads it and uses it
+   from the next start (see WebUpdater.java). Your library stays, since the page runs from the same app address. */
+const updReady = () => { try { return (NATIVE && NATIVE.updateReady && NATIVE.updateReady(APP_BUILD)) || ''; } catch (e) { return ''; } };
+function updBoxHTML() {
+  const on = S.settings.autoUpdate !== false, ready = updReady();
+  const sub = ready ? `B-Side ${ready} is downloaded and starts next time you open B-Side, or restart it now.` : on ? 'Checks tymonbitesthedust.github.io for a newer B-Side when you open it. Your music never leaves your phone.' : 'Off. B-Side only changes when you install a new APK.';
+  return `<button class="mi" data-mi="autoupd" role="switch" aria-checked="${on}">${ic('import')}<span class="mt">Update automatically<span class="sub">${esc(sub)}</span></span><span class="switch ${on ? 'on' : ''}"></span></button>` +
+    (ready ? menuItem('sort', `Restart to use ${ready}`, 'applyupd', {cls: 'sel', sub: audio.paused ? 'Takes a second' : 'The music stops for a moment'}) : '');
+}
+function checkUpdate(now) { if (!(NATIVE && NATIVE.checkUpdate) || S.settings.autoUpdate === false) return; setTimeout(() => { try { NATIVE.checkUpdate(); } catch (e) {} }, now ? 0 : 4000); }
+window.bsideUpdateReady = v => { toast(`B-Side ${v} is ready. It starts next time you open B-Side`, 4500); const u = $('#updBox'); if (u) u.innerHTML = updBoxHTML(); };
 async function setPersist(on) {
   S.settings.persist = on; persistSoon();
   if (!S.dbOk) return;
@@ -3301,7 +3345,8 @@ async function boot() {
     updateNow();
   }
   render(); bootDone(); pageFx();
-  if (SP_RETURN) spCallback(SP_RETURN);
+  try { if (NATIVE && NATIVE.pageStarted) NATIVE.pageStarted(APP_BUILD); } catch (e) {}
+  checkUpdate();
   probeDurations([...S.tracks.keys()].slice(0, 200));
 }
 boot();

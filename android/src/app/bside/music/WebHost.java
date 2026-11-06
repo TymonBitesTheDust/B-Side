@@ -419,6 +419,43 @@ final class WebHost {
             });
         }
 
+        /** The page finished starting (so a downloaded page is known to work). */
+        @JavascriptInterface
+        public void pageStarted(int build) {
+            WebUpdater.started(app, build);
+        }
+
+        /** Looks for a newer B-Side page on the website; tells the page when one is ready for the next start. */
+        @JavascriptInterface
+        public void checkUpdate() {
+            WebUpdater.check(app, new WebUpdater.Ready() {
+                @Override
+                public void onReady(String version) {
+                    js("window.bsideUpdateReady&&bsideUpdateReady(" + org.json.JSONObject.quote(version) + ")");
+                }
+            });
+        }
+
+        /** The version of a downloaded page that is newer than the running one, or "". */
+        @JavascriptInterface
+        public String updateReady(int runningBuild) {
+            return WebUpdater.readyVersion(app, runningBuild);
+        }
+
+        /** Restarts the page now, so a downloaded update takes over. */
+        @JavascriptInterface
+        public void applyUpdate() {
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (web != null) {
+                        pageReady = false;
+                        web.reload();
+                    }
+                }
+            });
+        }
+
         @JavascriptInterface
         public String insets() {
             float dn = app.getResources().getDisplayMetrics().density;
@@ -462,7 +499,8 @@ final class WebHost {
                 }
                 String asset = path.substring(1);
                 if (asset.contains("..")) return notFound();
-                WebResourceResponse r = new WebResourceResponse(mimeFor(asset), "utf-8", app.getAssets().open(asset));
+                InputStream body = "index.html".equals(asset) ? WebUpdater.open(app) : app.getAssets().open(asset); // a newer page from the website, if one was downloaded
+                WebResourceResponse r = new WebResourceResponse(mimeFor(asset), "utf-8", body);
                 Map<String, String> h = new HashMap<>();
                 h.put("Cache-Control", "no-cache");
                 r.setResponseHeaders(h);
