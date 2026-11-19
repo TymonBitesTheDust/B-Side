@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -77,6 +77,7 @@ jobs:
 
       - name: Check the signature
         run: |
+          "$TOOLS/aapt2" dump badging android/build/B-Side.apk | grep -E "^(package|application-label):"
           CERT=$(java -jar "$TOOLS/apksigner.jar" verify --print-certs android/build/B-Side.apk \
             | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
           echo "Signed with $CERT"
