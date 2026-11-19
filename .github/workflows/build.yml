@@ -21,8 +21,9 @@ permissions:
   contents: write # only used to draft a release when a V* tag is pushed
 
 env:
-  # the certificate every B-Side release so far was signed with; a release build must match it
-  RELEASE_CERT_SHA256: 0eabd9696e0e39db005751547ef1b29399eed25e85e9c88213ecfef3ecf8a507
+  # the certificate B-Side is signed with from 1.10.0 on; a release build must match it
+  # (1.9.6 and older used 0eabd9696e0e39db005751547ef1b29399eed25e85e9c88213ecfef3ecf8a507)
+  RELEASE_CERT_SHA256: efb72b48ab05e1018a2926f1b53c079f8e531feebbd62d4786d821e1fc51d2b1
   ECJ_VERSION: 3.33.0
 
 jobs:
@@ -82,7 +83,7 @@ jobs:
             | sed -n 's/.*certificate SHA-256 digest: //p' | head -1)
           echo "Signed with $CERT"
           if [ "$KIND" = release ] && [ "$CERT" != "$RELEASE_CERT_SHA256" ]; then
-            echo "::error::BSIDE_KEYSTORE isn't the key earlier releases were signed with, so this APK wouldn't install over B-Side."
+            echo "::error::BSIDE_KEYSTORE isn't the key B-Side 1.10.0 was signed with, so this APK wouldn't install over B-Side."
             exit 1
           fi
 

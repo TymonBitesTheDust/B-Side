@@ -59,7 +59,8 @@ To get the base64, run this in the folder with the key:
 base64 -w0 bside-release.jks        # Linux (on a Mac: base64 -i bside-release.jks)
 ```
 
-The workflow checks that the APK's certificate matches the one earlier releases used, and fails if it doesn't.
+The workflow checks that the APK's certificate matches the one B-Side 1.10.0 was signed with, and fails if it doesn't.
+(1.10.0 moved to a new key, so it was the one release that couldn't install over the version before it.)
 Without the secrets it builds B-Side Test instead, so a build can't be mistaken for a release.
 
 ## Release
