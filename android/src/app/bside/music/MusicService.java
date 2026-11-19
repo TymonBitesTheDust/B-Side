@@ -51,13 +51,31 @@ public class MusicService extends Service {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static MusicService inst;
     private static JSONObject state;
-    private static String artKey = "";
-    private static Bitmap art;
+    private static long stateAt; // SystemClock.elapsedRealtime() of the last update, to move the lock screen's progress bar
+    private static long pausedAt; // when playback last went from playing to paused
+    private static final long LOCK_AFTER_PAUSE_MS = 10 * 60 * 1000L;
+    private static String artKey = "", bigArtKey = "";
+    private static Bitmap art, bigArt;
 
     private MediaSession session;
     private NotificationManager nm;
     private boolean foreground, noisyRegistered;
     private PowerManager.WakeLock wakeLock;
+
+    /** The screen went off while music plays (or was paused in the last few minutes): put the lock screen player up. */
+    private final BroadcastReceiver screenOff = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent i) {
+            if (!Intent.ACTION_SCREEN_OFF.equals(i.getAction())) return;
+            JSONObject s = state;
+            if (s == null || !s.optBoolean("hasTrack")) return;
+            boolean recent = pausedAt > 0 && SystemClock.elapsedRealtime() - pausedAt < LOCK_AFTER_PAUSE_MS;
+            if (!isPlaying() && !recent) return;
+            AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+            if (am != null && (am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION)) return; // a call's screen-off
+            LockScreenActivity.show(MusicService.this);
+        }
+    };
 
     /**
      * After a pause the service stays in the foreground this long, so Android treats B-Side like an app in use
@@ -93,20 +111,22 @@ public class MusicService extends Service {
                 } catch (Exception e) {
                     return;
                 }
-                state = s;
-                remember(ctx, s);
                 String key = s.optString("artKey", "");
-                if (s.has("art")) {
-                    try {
-                        byte[] b = Base64.decode(s.getString("art"), Base64.DEFAULT);
-                        Bitmap bm = BitmapFactory.decodeByteArray(b, 0, b.length);
-                        if (bm != null) {
-                            art = bm;
-                            artKey = key;
-                        }
-                    } catch (Exception ignored) {
-                    }
+                Bitmap bm = decodeArt(s, "art");
+                if (bm != null) {
+                    art = bm;
+                    artKey = key;
                 }
+                Bitmap big = decodeArt(s, "bigArt"); // a larger cover, sent only while the lock screen player is on
+                if (big != null) {
+                    bigArt = big;
+                    bigArtKey = key;
+                }
+                if (state != null && state.optBoolean("playing") && !s.optBoolean("playing")) pausedAt = SystemClock.elapsedRealtime();
+                state = s;
+                stateAt = SystemClock.elapsedRealtime();
+                remember(ctx, s);
+                LockScreenActivity.refresh();
                 if (!s.optBoolean("playing")) MainActivity.applyPendingIcon(ctx);
                 if (!s.optBoolean("hasTrack")) {
                     if (inst != null) inst.shutdown();
@@ -127,8 +147,45 @@ public class MusicService extends Service {
         });
     }
 
+    /** Decodes a cover sent by the page and drops the text from the kept state. */
+    private static Bitmap decodeArt(JSONObject s, String field) {
+        if (!s.has(field)) return null;
+        try {
+            byte[] b = Base64.decode(s.getString(field), Base64.DEFAULT);
+            return BitmapFactory.decodeByteArray(b, 0, b.length);
+        } catch (Exception e) {
+            return null;
+        } finally {
+            s.remove(field);
+        }
+    }
+
     static boolean isPlaying() {
         return state != null && state.optBoolean("playing");
+    }
+
+    /** What's playing now, as last sent by the page (read-only). */
+    static JSONObject now() {
+        return state;
+    }
+
+    /** Where the song is now, in ms: the last position sent, moved on by the time since while it plays. */
+    static long positionNow() {
+        JSONObject s = state;
+        if (s == null) return 0;
+        long pos = s.optLong("position");
+        if (s.optBoolean("playing")) pos += (long) ((SystemClock.elapsedRealtime() - stateAt) * s.optDouble("speed", 1.0));
+        long dur = s.optLong("duration");
+        return dur > 0 ? Math.min(pos, dur) : pos;
+    }
+
+    /** The best cover there is for the song that's playing: the large one if it was sent, else the notification's. */
+    static Bitmap coverNow() {
+        JSONObject s = state;
+        if (s == null) return null;
+        String key = s.optString("artKey", "");
+        if (key.length() > 0 && key.equals(bigArtKey) && bigArt != null) return bigArt;
+        return artFor(s);
     }
 
     /**
@@ -240,6 +297,10 @@ public class MusicService extends Service {
                 WebHost.remote("pause", 0);
             }
         });
+        // Screen-off can only be heard by a receiver registered while running; checked against the setting each time.
+        IntentFilter off = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(screenOff, off, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(screenOff, off);
     }
 
     @Override
@@ -295,6 +356,11 @@ public class MusicService extends Service {
         MAIN.removeCallbacks(dropForeground);
         releaseWakeLock();
         unregisterNoisy();
+        try {
+            unregisterReceiver(screenOff);
+        } catch (Exception ignored) {
+        }
+        LockScreenActivity.close();
         if (nm != null) nm.cancel(NID);
         if (session != null) {
             session.setActive(false);

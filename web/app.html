@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#f3f3f6">
 <!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
      itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
-<meta name="bside-version" content="1.9.6">
-<meta name="bside-build" content="18">
+<meta name="bside-version" content="1.10.0">
+<meta name="bside-build" content="19">
 <meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
@@ -342,6 +342,12 @@ body.is-playing .i-pause{display:block}
 .eq-top small{display:block;color:var(--text-2);font-size:13px;margin-top:2px}
 .eq-bands{display:flex;justify-content:space-between;height:210px;padding:6px 6px 0;transition:opacity .2s}
 .eq-bands.off{opacity:.4;pointer-events:none}
+.tone{padding:0 0 2px;transition:opacity .2s}
+.tone.off{opacity:.5}
+.tone-row{padding:0 16px 4px}
+.tone-row .tl{flex:none;width:104px;font-size:14px;font-weight:600;color:var(--text)}
+.tone-row b{min-width:52px}
+.eq-top .txt-btn{flex:none;height:34px;padding:0 12px;font-size:14px}
 .band{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
 .band .hit{flex:1;width:44px;display:flex;justify-content:center;touch-action:none;cursor:pointer;position:relative}
 .band .trk{position:relative;width:6px;height:100%;border-radius:6px;background:var(--surface-2)}
@@ -556,6 +562,9 @@ body.np-open .fscroll{visibility:hidden}
   <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M13.5 4.5h6v6M19.5 4.5l-8.5 8.5"/><path d="M18 14v3.5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2H10"/></symbol>
   <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 4.5v10.5M7.5 10.5L12 15l4.5-4.5"/><path d="M5 15v2.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V15"/></symbol>
+  <symbol id="i-rescan" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.8 3.2v3.9h-3.9M6.2 20.8v-3.9h3.9"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.2"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/><circle stroke="none" fill="currentColor" cx="12" cy="15.2" r="1.4"/></symbol>
+  <symbol id="i-tone" viewBox="0 0 24 24"><circle cx="12" cy="13" r="6"/><path d="M12 13l3.2-3.2"/><path d="M4.2 18.6l1.4-1M19.8 18.6l-1.4-1M12 3.8v1.6M5.4 7l1.2 1M18.6 7l-1.2 1"/></symbol>
   <symbol id="i-az" viewBox="0 0 24 24"><path d="M3.5 11l3-7.5 3 7.5M4.6 8.4h3.8M3.8 13.5h5.4l-5.4 7h5.4"/><path d="M17 4v16M13.5 16.5L17 20l3.5-3.5"/></symbol>
 </svg>
 
@@ -692,7 +701,12 @@ const gradFor = seed => { const h = hueOf(seed); return `background:linear-gradi
 const LS_KEY = 'bside:v1';
 const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } })();
 const DEFAULT_SETTINGS = {motion: 'system', stars: true, tabs: null, npActs: null, split: null, bgAsked: false, accent: 'cobalt', matchIcon: true, skin: 'bside', sfx: 'all', sfxVol: .6, theme: 'system', persist: true, speed: 1, sort: 'title', eqOn: false, eqPreset: 'Normal', eqGains: [0, 0, 0, 0, 0, 0, 0], volume: 1,
-  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off', autoUpdate: true};
+  lvOn: false, lvMode: 'track', lvTarget: 'normal', aaShow: 'albums', aaSplit: true, fastScroll: 'off', autoUpdate: true,
+  toneOn: false, bass: 0, treble: 0, width: 0, rescan: 'open'};
+// Folders you added, so they can be checked again for new and deleted songs. Kept apart from the rest so the
+// list isn't rewritten every few seconds while music plays.
+const FOLDERS_KEY = 'bside:folders';
+const savedFolders = (() => { try { return JSON.parse(localStorage.getItem(FOLDERS_KEY)) || {}; } catch (e) { return {}; } })();
 const S = {
   tracks: new Map(), files: new Map(), arts: new Map(),
   fav: new Set(saved.fav || []), playlists: Array.isArray(saved.playlists) ? saved.playlists : [],
@@ -701,7 +715,9 @@ const S = {
   base: [], queue: [], qi: -1, shuffle: !!saved.shuffle, repeat: saved.repeat || 'off',
   ctx: saved.ctx || {label: 'Tracks'}, tab: saved.tab || 'tracks', route: null, search: null,
   lists: {}, listCtx: {}, current: null, booting: true, restorePos: 0, dbOk: false,
+  folders: Array.isArray(savedFolders.list) ? savedFolders.list.filter(f => f && f.id) : [], folderScan: +savedFolders.last || 0,
 };
+function saveFolders() { try { localStorage.setItem(FOLDERS_KEY, JSON.stringify({list: S.folders, last: S.folderScan})); } catch (e) {} }
 let saveT = 0;
 function persist() {
   const data = {
@@ -1537,24 +1553,56 @@ audio.addEventListener('error', () => {
 /* ── equaliser (Web Audio) ── */
 const EQF = [60, 150, 400, 1000, 2400, 6000, 15000];
 const EQ_PRESETS = {Normal: [0, 0, 0, 0, 0, 0, 0], Pop: [-1, 1, 3, 4, 2, 0, -1], Rock: [4, 3, -1, -2, 1, 3, 4], Jazz: [3, 2, 0, 1, -1, 2, 3], Classical: [4, 3, 0, -1, 0, 2, 4], Dance: [5, 4, 1, -1, 1, 3, 2], 'Bass boost': [7, 5, 2, 0, 0, 0, 0], 'Treble boost': [0, 0, 0, 1, 3, 5, 7], Vocal: [-2, -1, 2, 4, 3, 1, -1], Acoustic: [3, 2, 1, 1, 2, 2, 3]};
-let actx = null, eqNodes = [], preamp = null, lvNode = null;
-function ensureEQ() { // builds the Web Audio chain once the equaliser or volume levelling is used
-  if (!(S.settings.eqOn || S.settings.lvOn) || actx) { applyEQ(); applyLevel(); return; }
+/* Bass, treble and stereo expand: a low shelf, a high shelf and a mid/side widener after the equaliser. */
+const TONE_MAX = 12, TONE_BASS_HZ = 100, TONE_TREBLE_HZ = 8000, WIDTH_MAX = 1.2; // width 100% → sides × 2.2
+const toneVals = () => { const st = S.settings, on = !!st.toneOn; return {bass: on ? clamp(Math.round(+st.bass || 0), -TONE_MAX, TONE_MAX) : 0, treble: on ? clamp(Math.round(+st.treble || 0), -TONE_MAX, TONE_MAX) : 0, width: on ? clamp(Math.round(+st.width || 0), 0, 100) : 0}; };
+const toneActive = () => { const v = toneVals(); return !!(v.bass || v.treble || v.width); };
+const fxWanted = () => !!(S.settings.eqOn || S.settings.lvOn || toneActive());
+let actx = null, eqNodes = [], preamp = null, lvNode = null, bassNode = null, trebleNode = null, widener = null;
+function stereoWidener(c) {
+  // L' = M + w·S and R' = M − w·S, with M = (L+R)/2 and S = (L−R)/2. The input is made stereo first, so a mono
+  // song plays on both sides and is left as it is (it has no sides to widen).
+  const input = c.createGain(); input.channelCount = 2; input.channelCountMode = 'explicit'; input.channelInterpretation = 'speakers';
+  const split = c.createChannelSplitter(2), output = c.createChannelMerger(2);
+  const g = [0, 1, 2, 3].map(() => c.createGain()); // L→L, R→L, L→R, R→R
+  g[0].gain.value = g[3].gain.value = 1; g[1].gain.value = g[2].gain.value = 0;
+  input.connect(split);
+  split.connect(g[0], 0); split.connect(g[1], 1); split.connect(g[2], 0); split.connect(g[3], 1);
+  g[0].connect(output, 0, 0); g[1].connect(output, 0, 0); g[2].connect(output, 0, 1); g[3].connect(output, 0, 1);
+  return {input, output, set(w, now) { const a = (1 + w) / 2, b = (1 - w) / 2; [a, b, b, a].forEach((v, i) => g[i].gain.setTargetAtTime(v, now, .05)); }};
+}
+function ensureEQ() { // builds the Web Audio chain once the equaliser, tone or volume levelling is used
+  if (!fxWanted() || actx) { applyEQ(); applyLevel(); return; }
   try {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     actx = new AC(); const src = actx.createMediaElementSource(audio); let node = src;
     eqNodes = EQF.map((f, i) => { const b = actx.createBiquadFilter(); b.type = i === 0 ? 'lowshelf' : i === EQF.length - 1 ? 'highshelf' : 'peaking'; b.frequency.value = f; b.Q.value = 1.1; node.connect(b); node = b; return b; });
-    preamp = actx.createGain(); node.connect(preamp);
+    bassNode = actx.createBiquadFilter(); bassNode.type = 'lowshelf'; bassNode.frequency.value = TONE_BASS_HZ; node.connect(bassNode);
+    trebleNode = actx.createBiquadFilter(); trebleNode.type = 'highshelf'; trebleNode.frequency.value = TONE_TREBLE_HZ; bassNode.connect(trebleNode);
+    widener = stereoWidener(actx); trebleNode.connect(widener.input);
+    preamp = actx.createGain(); widener.output.connect(preamp);
     lvNode = actx.createGain(); preamp.connect(lvNode); lvNode.connect(actx.destination);
-  } catch (e) { console.warn('EQ unavailable', e); actx = null; lvNode = null; }
+  } catch (e) { console.warn('EQ unavailable', e); actx = null; lvNode = null; bassNode = trebleNode = widener = null; }
   applyEQ(); applyLevel();
 }
 function applyEQ() {
   if (!actx) return;
-  const g = S.settings.eqOn ? S.settings.eqGains : EQF.map(() => 0), now = actx.currentTime;
+  const g = S.settings.eqOn ? S.settings.eqGains : EQF.map(() => 0), now = actx.currentTime, tv = toneVals(), n = g.length;
   eqNodes.forEach((b, i) => b.gain.setTargetAtTime(g[i] || 0, now, .04));
-  preamp.gain.setTargetAtTime(Math.pow(10, -Math.max(0, ...g) * .55 / 20), now, .04);
+  const w = 1 + tv.width / 100 * WIDTH_MAX;
+  if (bassNode) { bassNode.gain.setTargetAtTime(tv.bass, now, .04); trebleNode.gain.setTargetAtTime(tv.treble, now, .04); widener.set(w, now); }
+  // Headroom for the boosts, so they don't clip: the shelves add to the equaliser's lowest and highest bands.
+  const boost = Math.max(0, ...g, (g[0] || 0) + tv.bass, (g[1] || 0) + tv.bass * .5, (g[n - 1] || 0) + tv.treble, (g[n - 2] || 0) + tv.treble * .6);
+  const wideDb = 20 * Math.log10(1 + (w - 1) * .3);
+  preamp.gain.setTargetAtTime(Math.pow(10, -(boost * .55 + wideDb) / 20), now, .04);
   if (actx.state === 'suspended' && !audio.paused) actx.resume().catch(() => {});
+}
+const fmtTone = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' dB';
+function toneText() {
+  const v = toneVals();
+  if (!S.settings.toneOn) return 'Off';
+  if (!toneActive()) return 'On · flat';
+  return [v.bass ? 'Bass ' + fmtTone(v.bass) : '', v.treble ? 'Treble ' + fmtTone(v.treble) : '', v.width ? 'Stereo ' + v.width + '%' : ''].filter(Boolean).join(' · ');
 }
 
 /* ── volume levelling ──
@@ -1755,7 +1803,23 @@ function updateSleepUI() {
 const sleepText = () => !sleep ? 'Off' : sleep.eot ? 'At the end of this song' : `${fmt((sleep.end - Date.now()) / 1000)} remaining`;
 
 /* ───────────────────────── external controls ───────────────────────── */
-let lastArtSent = null, extT = 0, msId = null;
+let lastArtSent = null, lastBigSent = null, extT = 0, msId = null;
+let lockArtOn = (() => { try { return !!(NATIVE && NATIVE.lockPlayer && JSON.parse(NATIVE.lockPlayer()).on); } catch (e) { return false; } })();
+const bigArtCache = new Map();
+async function bigArtData(key) { // a sharper cover for the lock screen player than the notification's 320px one
+  if (bigArtCache.has(key)) return bigArtCache.get(key);
+  const a = S.arts.get(key); let d = '';
+  if (a && a.full) {
+    try {
+      let src; try { src = await createImageBitmap(a.full); } catch (e) { src = await loadImgEl(a.full); }
+      const W = src.width, H = src.height, m = Math.min(W, H), size = Math.min(720, m);
+      if (size > 360) { const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(src, (W - m) / 2, (H - m) / 2, m, m, 0, 0, size, size); d = c.toDataURL('image/jpeg', .86); }
+      if (src.close) src.close();
+    } catch (e) {}
+  }
+  bigArtCache.clear(); bigArtCache.set(key, d);
+  return d;
+}
 function artDataUrl(key) {
   const a = S.arts.get(key); if (!a || !a.thumb) return Promise.resolve('');
   return new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result || '')); r.onerror = () => res(''); r.readAsDataURL(a.thumb); });
@@ -1782,6 +1846,10 @@ function syncExternalNow() {
     if (t && t.artKey && t.artKey !== lastArtSent) {
       const key = t.artKey; lastArtSent = key;
       artDataUrl(key).then(d => { if (d && S.current && T(S.current) && T(S.current).artKey === key) { payload.art = d.slice(d.indexOf(',') + 1); try { NATIVE.update(JSON.stringify(payload)); } catch (e) {} } });
+    }
+    if (lockArtOn && t && t.artKey && t.artKey !== lastBigSent) {
+      const key = t.artKey; lastBigSent = key;
+      bigArtData(key).then(d => { if (d && S.current && T(S.current) && T(S.current).artKey === key) { try { NATIVE.update(JSON.stringify(Object.assign({}, payload, {playing: !audio.paused, position: Math.round((audio.currentTime || 0) * 1000), bigArt: d.slice(d.indexOf(',') + 1)}))); } catch (e) {} } });
     }
   }
 }
@@ -1861,7 +1929,7 @@ function updateModes() {
   $('#btnShuffle').setAttribute('aria-pressed', S.shuffle);
   $('#speedLbl').textContent = (+S.settings.speed).toString().replace(/^0\./, '.') + '×';
   $('#actSpeed').classList.toggle('on', +S.settings.speed !== 1);
-  $('#actEq').classList.toggle('on', !!(S.settings.eqOn || S.settings.lvOn));
+  $('#actEq').classList.toggle('on', fxWanted());
 }
 function updateTime(force) {
   const t = S.current ? T(S.current) : null;
@@ -2015,7 +2083,8 @@ function folderRow(f, sub, az) {
 const folderPickOK = () => !!NATIVE || ('webkitdirectory' in document.createElement('input'));
 function foldersHTML() {
   const roots = groups().roots, n = roots.filter(r => r.key).length, az = fsOn();
-  return `<div class="bar-row">${folderPickOK() ? `<button class="pill" data-act="pick-folder">${ic('plus')}<span>Add folder</span></button>` : '<span></span>'}<span class="chip">${plural(n, 'folder')}</span></div><div class="card list"${az ? ' data-az' : ''}>${roots.map(r => folderRow(r, false, az)).join('')}</div>`;
+  const right = nativeScanOK() || S.folders.some(f => f.name) ? `<button class="pill" data-act="rescan" aria-label="Check folders for new and deleted songs">${ic('rescan')}<span>${scanning ? 'Checking…' : 'Rescan'}</span></button>` : `<span class="chip">${plural(n, 'folder')}</span>`;
+  return `<div class="bar-row">${folderPickOK() ? `<button class="pill" data-act="pick-folder">${ic('plus')}<span>Add folder</span></button>` : '<span></span>'}${right}</div><div class="card list"${az ? ' data-az' : ''}>${roots.map(r => folderRow(r, false, az)).join('')}</div>`;
 }
 function folderPageHTML(d) {
   const G = groups(), f = d.folder, segs = f.key ? f.key.split('/') : [];
@@ -2704,23 +2773,34 @@ function detailsSheet(id) {
   const rows = [['Title', t.title], ['Artist', t.artist], ['Artists', artistsOf(t).length > 1 ? artistsOf(t).join(' · ') : ''], ['Album', t.album], ['Album artist', t.albumArtist], ['Track', t.track ? t.track + (t.disc ? ` (disc ${t.disc})` : '') : ''], ['Year', t.year], ['Genre', t.genre], ['Length', t.duration ? fmt(t.duration) : ''], ['Format', (extOf(t.name) || '').toUpperCase() + (t.type ? ` · ${t.type}` : '')], ['Bitrate', br], ['Loudness', t.lufs != null ? `${t.lufs.toFixed(1).replace('-', '−')} LUFS · ${t.lvSrc === 'tag' ? 'from the file’s tags' : 'measured on this device'}` : t.lvFail ? 'Could not be measured' : ''], ['Levelling', S.settings.lvOn && lvKnown(t) ? fmtDb(lvGainFor(t)) : ''], ['Size', (t.size / 1048576).toFixed(1) + ' MB'], ['File', t.name], ['Folder', t.path || '—'], ['Played', plural(S.plays[id] || 0, 'time')], ['Added', new Date(t.added).toLocaleDateString()], ['Stored', S.dbOk && S.settings.persist ? 'Saved on this device' : f ? 'This session only' : 'Missing']];
   openSheet({head: sheetHead('Details'), body: rows.filter(r => r[1]).map(r => `<div class="kv"><span>${r[0]}</span><b>${esc(r[1])}</b></div>`).join('')});
 }
-async function removeTracks(ids) {
+async function removeTracks(ids, {folderKey = null} = {}) {
   const ok = await dialog({title: ids.length > 1 ? `Remove ${ids.length} songs?` : 'Remove this song?', text: 'It will be removed from your B-Side library and playlists. The original file on your device is not touched.', ok: 'Remove', danger: true});
   if (!ok) return;
+  dropTracks(ids, {skip: true}); // a folder check won't bring them back
+  if (folderKey) S.folders.filter(f => f.name === folderKey).forEach(f => forgetFolder(f)); // a whole folder: stop checking it
+  sfx('delete'); toast(ids.length > 1 ? `Removed ${ids.length} songs` : 'Removed from library');
+}
+/* Takes songs out of the library, queue and playlists. skip: you removed them, so checking their folder again
+   doesn't add them back. release: also give back Android's access to a song that was picked on its own. */
+function dropTracks(ids, {skip = false, release: rel = false} = {}) {
   const del = new Set(ids), curGone = !!S.current && del.has(S.current), wasPlaying = !audio.paused;
   let newQi = 0; const nq = [];
   S.queue.forEach((x, i) => { if (i === S.qi) newQi = nq.length; if (!del.has(x)) nq.push(x); });
   S.queue = nq; S.base = S.base.filter(x => !del.has(x));
   for (const id of del) {
+    const t = S.tracks.get(id);
+    if (t && skip) { const f = (t.src && folderById(t.src)) || S.folders.find(x => underRoot(t, x.name)); if (f) (f.skip || (f.skip = [])).push(id); }
+    if (t && t.uri && (skip || rel)) release(t.uri);
     S.tracks.delete(id); S.files.delete(id); S.fav.delete(id); delete S.plays[id]; delete S.recent[id];
     if (S.dbOk) { DB.del('tracks', id).catch(() => {}); DB.del('files', id).catch(() => {}); }
   }
+  if (skip) saveFolders();
   S.playlists.forEach(p => { p.ids = p.ids.filter(x => !del.has(x)); });
   if (curGone) { if (S.queue.length) { S.qi = Math.min(newQi, S.queue.length - 1); load(S.queue[S.qi], {autoplay: wasPlaying}); } else stopAll(); }
   else S.qi = S.queue.length ? newQi : -1;
   const used = new Set([...S.tracks.values()].map(t => t.artKey).filter(Boolean));
   for (const k of [...S.arts.keys()]) if (!used.has(k)) { const a = S.arts.get(k); if (a.tu) URL.revokeObjectURL(a.tu); if (a.fu) URL.revokeObjectURL(a.fu); S.arts.delete(k); if (S.dbOk) DB.del('arts', k).catch(() => {}); }
-  invalidate(); persistSoon(); render(); sfx('delete'); toast(ids.length > 1 ? `Removed ${ids.length} songs` : 'Removed from library');
+  invalidate(); persistSoon(); render();
 }
 /* A list you can switch on/off and drag into order — used for the library tabs and the player buttons. */
 function orderSheet({title, sub, get, set, labels, icons, min, reset, minMsg}) {
@@ -2849,6 +2929,8 @@ async function settingsSheet() {
   <div class="lbl">Playback</div>
   ${menuItem('level', 'Volume levelling', 'level', {sub: S.settings.lvOn ? 'On — every song plays at about the same loudness' : 'Off — songs play at their own volume'})}
   ${menuItem('eq', 'Equaliser', 'eq', {sub: S.settings.eqOn ? S.settings.eqPreset : 'Off'})}
+  ${menuItem('tone', 'Bass, treble and stereo', 'tone', {sub: toneText()})}
+  <div id="lockBox">${lockBoxHTML()}</div>
   <div class="lbl">Layout</div>
   ${menuItem('tabs', 'Library tabs', 'tabs', {sub: visibleTabs().map(k => tabTitle[k]).join(' · ')})}
   ${menuItem('buttons', 'Player buttons', 'npacts', {sub: npActOrder().filter(e => e[1]).map(e => NP_ACTS[e[0]].label).join(' · ') || 'None'})}
@@ -2862,6 +2944,7 @@ async function settingsSheet() {
   <button class="mi" data-mi="persist">${ic('db')}<span class="mt">Keep songs on this device<span class="sub">${esc(persistNote)}</span></span><span class="switch ${S.settings.persist && S.dbOk ? 'on' : ''}"></span></button>
   ${menuItem('import', 'Import from Spotify', 'spotify', {sub: spLoad().refresh ? 'Connected' + (spLoad().user ? ' as ' + spLoad().user : '') + ' · playlists and Liked Songs' : 'Your playlists and Liked Songs, matched to your music'})}
   ${menuItem('upload', 'Add music files', 'files')}${(!!NATIVE || ('webkitdirectory' in document.createElement('input'))) ? menuItem('folder', 'Add a folder', 'folder') : ''}
+  ${menuItem('rescan', 'Folders', 'folders', {sub: foldersText()})}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
   ${NATIVE && NATIVE.checkUpdate ? `<div class="lbl">Updates</div><div id="updBox">${updBoxHTML()}</div>` : ''}
   <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: `Version ${APP_VERSION} · plays your files locally`})}`;
@@ -2900,12 +2983,15 @@ async function settingsSheet() {
     const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
     if (k === 'autoupd') { S.settings.autoUpdate = S.settings.autoUpdate === false; persistSoon(); if (S.settings.autoUpdate) checkUpdate(true); const u = $('#updBox', sheetEl); if (u) u.innerHTML = updBoxHTML(); return; }
     if (k === 'applyupd') { persist(); try { NATIVE.applyUpdate(); } catch (e) {} return; }
+    if (k === 'lockplayer') { await toggleLockPlayer(); return; }
+    if (k === 'lockallow') { askLockPermission(); return; }
     if (k === 'persist') { if (!S.dbOk) { toast('Storage is not available here'); return; } await setPersist(!S.settings.persist); b.querySelector('.switch').classList.toggle('on', S.settings.persist); b.querySelector('.sub').textContent = S.settings.persist ? 'Your library is still here next time' : 'Library is cleared when you close the app'; return; }
     await closeTop();
     if (k === 'files') pickFiles(); else if (k === 'folder') pickFolder(); else if (k === 'clear') clearLibrary();
     else if (k === 'spotify') spotifySheet();
     else if (k === 'tabs') tabsSheet(); else if (k === 'npacts') npActsSheet(); else if (k === 'artists') artistSplitSheet(); else if (k === 'albums') albumsSheet();
-    else if (k === 'level') eqSheet('lv'); else if (k === 'eq') eqSheet();
+    else if (k === 'level') eqSheet('lv'); else if (k === 'eq') eqSheet(); else if (k === 'tone') eqSheet('tone');
+    else if (k === 'folders') foldersSheet();
     else if (k === 'background') requestBackground();
     else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Importing from a connected Spotify account reads your playlists from Spotify only when you ask; a Spotify data file is read on your device. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
   }});
@@ -2936,6 +3022,7 @@ async function clearLibrary() {
   stopAll();
   S.tracks.clear(); S.files.clear(); S.arts.forEach(a => { if (a.tu) URL.revokeObjectURL(a.tu); if (a.fu) URL.revokeObjectURL(a.fu); }); S.arts.clear();
   S.fav.clear(); S.playlists = []; S.plays = {}; S.recent = {};
+  forgetAllFolders();
   if (S.dbOk) await Promise.all(['tracks', 'files', 'arts'].map(s => DB.clear(s).catch(() => {})));
   invalidate(); persist(); render(); sfx('delete'); toast('Library cleared');
 }
@@ -2978,6 +3065,10 @@ function eqSheet(focus) {
     <div class="chips">${Object.keys(EQ_PRESETS).concat(st.eqPreset === 'Custom' ? ['Custom'] : []).map(k => `<button class="chipb ${st.eqOn && st.eqPreset === k ? 'on' : ''}" data-preset="${esc(k)}">${esc(k)}</button>`).join('')}</div>
     <div class="eq-bands ${st.eqOn ? '' : 'off'}">${bandsHTML()}</div>
     <div class="sep" style="margin-top:14px"></div>
+    <div class="eq-top" id="toneTop" style="padding-top:12px"><span class="mt"><b>Bass, treble and stereo</b><small id="toneStat">${esc(toneText())}</small></span><button class="txt-btn" data-tone-reset ${st.bass || st.treble || st.width ? '' : 'hidden'}>Reset</button><button class="switch ${st.toneOn ? 'on' : ''}" data-tone-toggle aria-label="Bass, treble and stereo on or off"></button></div>
+    <div class="tone ${st.toneOn ? '' : 'off'}">${toneRowsHTML()}</div>
+    <div class="accent-note">Bass and treble lift or soften the low and high end. Stereo expand widens the sound, best on headphones; songs recorded in mono stay as they are.</div>
+    <div class="sep" style="margin-top:6px"></div>
     <div class="eq-top" id="lvTop" style="padding-top:12px"><span class="mt"><b>Volume levelling</b><small id="lvStat">${esc(lvStatus())}</small></span><button class="switch ${st.lvOn ? 'on' : ''}" data-lv-toggle aria-label="Volume levelling on or off"></button></div>
     <div class="accent-note">Plays every song at about the same loudness, so quiet songs aren't lost and loud ones don't jump out.</div>
     <div ${st.lvOn ? '' : 'hidden'}>
@@ -2989,8 +3080,10 @@ function eqSheet(focus) {
       <div class="accent-note">Uses ReplayGain tags when your files have them. Other songs are measured on this device the first time they're queued, and the result is saved.</div>
     </div>`;
   const refresh = () => { const b = $('.sheet-body', sheetEl); if (b) { const y = b.scrollTop; b.innerHTML = body(); b.scrollTop = y; } };
-  openSheet({head: sheetHead('Sound', 'Equaliser and volume levelling'), body: body(),
+  openSheet({head: sheetHead('Sound', 'Equaliser, bass and treble, volume levelling'), body: body(),
     onClick: e => {
+      if (e.target.closest('[data-tone-toggle]')) { st.toneOn = !st.toneOn; ensureEQ(); applyEQ(); updateModes(); persistSoon(); refresh(); return; }
+      if (e.target.closest('[data-tone-reset]')) { st.bass = st.treble = st.width = 0; applyEQ(); updateModes(); persistSoon(); refresh(); sfx('delete'); return; }
       if (e.target.closest('[data-lv-toggle]')) { st.lvOn = !st.lvOn; persistSoon(); ensureEQ(); applyLevel(.08); if (st.lvOn) lvWant(lvUpcoming(), true); updateModes(); refresh(); return; }
       const lm = e.target.closest('[data-lv-mode]'); if (lm) { st.lvMode = lm.dataset.lvMode; persistSoon(); if (st.lvMode === 'album') lvWant(lvUpcoming()); applyLevel(.08); refresh(); return; }
       const lt = e.target.closest('[data-lv-target]'); if (lt) { st.lvTarget = lt.dataset.lvTarget; persistSoon(); applyLevel(.08); refresh(); return; }
@@ -3008,9 +3101,29 @@ function eqSheet(focus) {
         const up = () => { hit.removeEventListener('pointermove', mv); hit.removeEventListener('pointerup', up); hit.removeEventListener('pointercancel', up); persistSoon(); refresh(); sfx('drop'); };
         hit.addEventListener('pointermove', mv); hit.addEventListener('pointerup', up); hit.addEventListener('pointercancel', up);
       };
-      el.addEventListener('pointerdown', onDown); el._cleanup = () => el.removeEventListener('pointerdown', onDown);
-      if (focus === 'lv') setTimeout(() => { const b = $('.sheet-body', el), x = $('#lvTop', el); if (b && x) b.scrollTop = x.offsetTop - 12; }, 40);
+      const onTone = e => { // the bass, treble and stereo sliders
+        const r = e.target.closest('[data-tone]'); if (!r) return;
+        const k = r.dataset.tone, v = +r.value;
+        if (st[k] === v && st.toneOn) return;
+        st[k] = v; st.toneOn = true; ensureEQ(); applyEQ(); updateModes();
+        r.style.setProperty('--p', toneP(k, v) + '%');
+        const lb = r.closest('.vol-row').querySelector('b'); if (lb) lb.textContent = toneLabel(k, v);
+        const ts = $('#toneStat', el); if (ts) ts.textContent = toneText();
+        const tg = $('[data-tone-toggle]', el); if (tg) tg.classList.add('on');
+        const box = $('.tone', el); if (box) box.classList.remove('off');
+        const rs = $('[data-tone-reset]', el); if (rs) rs.hidden = !(st.bass || st.treble || st.width);
+      };
+      const onToneEnd = e => { if (e.target.closest('[data-tone]')) { persistSoon(); sfx('drop'); } };
+      el.addEventListener('pointerdown', onDown); el.addEventListener('input', onTone); el.addEventListener('change', onToneEnd);
+      el._cleanup = () => { el.removeEventListener('pointerdown', onDown); el.removeEventListener('input', onTone); el.removeEventListener('change', onToneEnd); };
+      if (focus === 'lv' || focus === 'tone') setTimeout(() => { const b = $('.sheet-body', el), x = $(focus === 'lv' ? '#lvTop' : '#toneTop', el); if (b && x) b.scrollTop = x.offsetTop - 12; }, 40);
     }});
+}
+const TONE_ROWS = [['bass', 'Bass', -TONE_MAX, TONE_MAX], ['treble', 'Treble', -TONE_MAX, TONE_MAX], ['width', 'Stereo expand', 0, 100]];
+const toneP = (k, v) => { const r = TONE_ROWS.find(x => x[0] === k); return (v - r[2]) / (r[3] - r[2]) * 100; };
+const toneLabel = (k, v) => k === 'width' ? v + '%' : fmtTone(v);
+function toneRowsHTML() {
+  return TONE_ROWS.map(([k, l, lo, hi]) => { const v = clamp(Math.round(+S.settings[k] || 0), lo, hi); return `<div class="vol-row tone-row"><span class="tl">${esc(l)}</span><div class="seek"><input type="range" data-tone="${k}" min="${lo}" max="${hi}" step="${k === 'width' ? 5 : 1}" value="${v}" aria-label="${esc(l)}" style="--p:${toneP(k, v)}%"></div><b>${esc(toneLabel(k, v))}</b></div>`; }).join('');
 }
 function sleepSheet() {
   const opts = [[0, 'Off'], [15, '15 minutes'], [30, '30 minutes'], [45, '45 minutes'], [60, '1 hour'], [90, '1 hour 30 minutes'], ['eot', 'End of this song']];
@@ -3040,6 +3153,7 @@ function npMenu() {
 }
 function detailMenu() {
   const d = S.detail; if (!d) return;
+  const fr = d.folder && d.folder.key ? S.folders.find(f => keyUnder(d.folder.key, f.name)) : null;
   const sq = d.kind === 'Album' && d.title !== 'Unknown album' ? [d.title, knownArtist(d.artist)].filter(Boolean).join(' ') : d.kind === 'Artist' ? knownArtist(d.title) : '';
   menuSheet(sheetHead(d.title, plural(d.ids.length, 'song')), [
     ['playnext', 'Play next', () => playNext(d.ids)],
@@ -3048,11 +3162,13 @@ function detailMenu() {
     sq ? ['open', 'Open in Spotify', () => openSpotify(sq), {now: true}] : null,
     d.user && d.user.src && /^(api:|liked$)/.test(d.user.src.key) && spLoad().refresh ? ['import', 'Update from Spotify', async () => { if (!SPC || !SPC.lists) await spLoadAccount(); spRunImport([d.user.src.key]); }] : null,
     d.user && d.user.src && /^(file:|liked$)/.test(d.user.src.key) ? ['import', 'Update from a Spotify file', () => pickSpotifyFile()] : null,
-    d.kind !== 'Playlist' && d.ids.length ? ['trash', d.folder ? 'Remove folder from library' : 'Remove from library', () => removeTracks(d.ids.slice()), {cls: 'danger', sub: d.folder ? 'The files on your device are not touched' : ''}] : null,
+    fr && canRead(fr) ? ['rescan', `Rescan “${fr.name}”`, () => { grantAccessNow([fr.id]).then(() => rescanFolders({manual: true, only: [fr.id]})); }, {now: true, sub: 'Adds new songs, removes deleted ones'}] : null,
+    fr && fr.kind === 'pick' && !NATIVE ? ['rescan', `Check “${fr.name}” again`, () => repickFolder(fr), {now: true, sub: 'Choose the folder again to find new and deleted songs'}] : null,
+    d.kind !== 'Playlist' && d.ids.length ? ['trash', d.folder ? 'Remove folder from library' : 'Remove from library', () => removeTracks(d.ids.slice(), {folderKey: d.folder ? d.folder.key : null}), {cls: 'danger', sub: d.folder ? 'The files on your device are not touched' : ''}] : null,
   ]);
 }
 const ACTIONS = {
-  'pick-files': () => pickFiles(), 'pick-folder': () => pickFolder(), sort: sortSheet,
+  'pick-files': () => pickFiles(), 'pick-folder': () => pickFolder(), sort: sortSheet, rescan: () => rescanAll(), folders: () => foldersSheet(),
   'shuffle-all': () => { const ids = sortedIds(); playList(ids, -1, {label: 'Tracks'}, true); },
   'play-all': () => { const d = S.detail; if (d) playList(d.ids, 0, d.ctx, false); },
   'shuffle-list': () => { const d = S.detail; if (d) playList(d.ids, -1, d.ctx, true); },
@@ -3134,17 +3250,39 @@ document.addEventListener('keydown', e => {
 /* ───────────────────────── importing ───────────────────────── */
 const filePick = $('#filePick'), folderPick = $('#folderPick');
 function pickFiles() { try { NATIVE && NATIVE.setPickMode && NATIVE.setPickMode('files'); } catch (e) {} filePick.value = ''; filePick.click(); }
-function pickFolder() { if (NATIVE && NATIVE.setPickMode) { try { NATIVE.setPickMode('folder'); } catch (e) {} filePick.value = ''; filePick.click(); return; } folderPick.value = ''; folderPick.click(); }
-filePick.addEventListener('change', () => { const f = Array.from(filePick.files || []); setTimeout(() => importFiles(f), 30); });
-folderPick.addEventListener('change', () => importFiles(Array.from(folderPick.files || [])));
+async function pickFolder() {
+  if (NATIVE && NATIVE.setPickMode) { try { NATIVE.setPickMode('folder'); } catch (e) {} filePick.value = ''; filePick.click(); return; }
+  if (handleOK()) { // Chrome and Edge: a folder handle, so the folder can be checked again later
+    let h = null;
+    try { h = await window.showDirectoryPicker({id: 'bside-music', mode: 'read'}); } catch (e) { if (e && e.name === 'AbortError') return; }
+    if (h) return importHandle(h);
+  }
+  repickFor = null; folderPick.value = ''; folderPick.click();
+}
+// What the Android app says about a pick (folder paths, the folder itself, where single songs came from),
+// taken as the pick arrives so a later import can't pick it up by mistake.
+function takeNativeMeta() { const m = {paths: window.__bsidePaths || null, tree: window.__bsideTree || null, uris: window.__bsideUris || null}; window.__bsidePaths = window.__bsideTree = window.__bsideUris = null; return m; }
+filePick.addEventListener('change', () => { const f = Array.from(filePick.files || []); setTimeout(() => importFiles(f, {meta: takeNativeMeta()}), 30); });
+let repickFor = null; // a folder this browser can only check by having it chosen again
+folderPick.addEventListener('change', () => {
+  const files = Array.from(folderPick.files || []), f = repickFor; repickFor = null;
+  if (f) return checkRepicked(f, files);
+  const roots = new Map(); // each chosen folder is remembered, so it can be checked by choosing it again
+  for (const x of files) { const r = (x.webkitRelativePath || '').split('/')[0]; if (!r) continue; if (!roots.has(r)) roots.set(r, addFolderRec({kind: 'pick', name: r}).id); x._src = roots.get(r); }
+  importFiles(files);
+});
 async function runPool(items, n, fn) { let i = 0; const worker = async () => { while (i < items.length) { const x = items[i++]; try { await fn(x); } catch (e) { console.warn(e); } } }; await Promise.all(Array.from({length: Math.min(n, items.length)}, worker)); }
 let bootDone; const booted = new Promise(r => { bootDone = r; });
 let importing = booted, addedSeq = 0;
 function importFiles(files, opts) { importing = importing.then(() => doImport(files, opts || {})).catch(e => console.error(e)); return importing; }
-async function doImport(files, {playFirst = false} = {}) {
+async function doImport(files, {playFirst = false, quiet = false, meta = null} = {}) {
   if (!files || !files.length) return [];
-  const nativePaths = window.__bsidePaths || null; window.__bsidePaths = null;
+  const m = meta || {}, nativePaths = m.paths || null;
   const relOf = f => f._rel != null ? f._rel : f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(0, -1).join('/') : nativePaths ? (nativePaths[f.name + '|' + f.size] || '') : '';
+  // Where each song came from: a folder B-Side can check again, or (Android) the single file that was picked.
+  const tree = m.tree && m.tree.uri ? addFolderRec({kind: 'tree', uri: m.tree.uri, name: m.tree.name, kept: m.tree.kept !== false}) : null;
+  const srcOf = f => f._src || (tree ? tree.id : undefined);
+  const uriOf = f => f._uri || (m.uris && m.uris[f.name + '|' + f.size]) || undefined;
   const aud = [], lrc = new Map(), covers = new Map();
   for (const f of files) {
     const ext = extOf(f.name), dir = relOf(f), base = f.name.replace(/\.[^.]+$/, '').toLowerCase();
@@ -3152,15 +3290,19 @@ async function doImport(files, {playFirst = false} = {}) {
     else if (IMG_EXT.has(ext) || /^image\//.test(f.type || '')) { const rank = /^(cover|folder|front)$/.test(base) ? 0 : /cover|front|folder|album/.test(base) ? 1 : 2; const c = covers.get(dir); if (!c || rank < c.rank) covers.set(dir, {f, rank}); }
     else if (isAudioFile(f, ext)) aud.push({f, dir, base});
   }
-  if (!aud.length) { sfx('error'); toast(lrc.size ? 'Lyrics files need their songs added at the same time' : 'No audio files found in that selection'); return []; }
-  const idFor = f => 't' + hashStr(f.name + '|' + f.size);
+  if (!aud.length) { if (!quiet) { sfx('error'); toast(lrc.size ? 'Lyrics files need their songs added at the same time' : 'No audio files found in that selection'); } return []; }
+  const idFor = f => trackIdOf(f.name, f.size);
   const fresh = [], seen = new Set();
-  for (const x of aud) { const id = idFor(x.f); if (S.tracks.has(id) || seen.has(id)) { if (!S.files.has(id) && S.tracks.has(id)) S.files.set(id, x.f); continue; } seen.add(id); x.id = id; fresh.push(x); }
+  for (const x of aud) {
+    const id = idFor(x.f);
+    if (S.tracks.has(id) || seen.has(id)) { const old = S.tracks.get(id); if (old) { if (!S.files.has(id)) S.files.set(id, x.f); linkSource(old, srcOf(x.f), uriOf(x.f)); } continue; }
+    seen.add(id); x.id = id; fresh.push(x);
+  }
   const dupes = aud.length - fresh.length;
-  if (!fresh.length) { sfx('pop'); toast(dupes === 1 ? 'That song is already in your library' : 'Those songs are already in your library'); return aud.map(x => idFor(x.f)); }
+  if (!fresh.length) { if (quiet) return []; sfx('pop'); toast(dupes === 1 ? 'That song is already in your library' : 'Those songs are already in your library'); return aud.map(x => idFor(x.f)); }
   if (navigator.storage && navigator.storage.persist && canStore()) navigator.storage.persist().catch(() => {});
   const coverKeys = new Map(); let done = 0, storeFail = false;
-  const t0 = Date.now(), showProgress = () => toast(`Adding songs… ${done}/${fresh.length}`, 0);
+  const t0 = Date.now(), showProgress = () => { if (!quiet) toast(`Adding songs… ${done}/${fresh.length}`, 0); };
   if (fresh.length > 3) showProgress();
   const added = [];
   await runPool(fresh, 3, async x => {
@@ -3169,6 +3311,7 @@ async function doImport(files, {playFirst = false} = {}) {
     if (!title) { let n = x.f.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim(); n = n.replace(/^\d{1,3}\s*[-._)]\s*/, ''); const m = /^(.+?)\s+-\s+(.+)$/.exec(n); if (m && !artist) { artist = m[1].trim(); title = m[2].trim(); } else title = n || x.f.name; }
     const t = {id: x.id, name: x.f.name, path: x.dir, size: x.f.size, type: x.f.type || '', added: t0 + (addedSeq++), title, artist: artist || '', artists: Array.isArray(tags.artists) && tags.artists.length > 1 ? tags.artists.slice(0, 20) : undefined, album: tags.album || '', albumArtist: tags.albumArtist || '',
       track: parseInt(tags.track, 10) || 0, disc: parseInt(tags.disc, 10) || 0, year: (String(tags.year || '').match(/\d{4}/) || [''])[0], genre: cleanGenre(tags.genre), duration: tags.duration || 0, lyrics: tags.lyrics || '', artKey: null};
+    const src = srcOf(x.f), uri = uriOf(x.f); if (src) t.src = src; if (uri) t.uri = uri;
     lvFromTags(t, tags.rg); t.lvTag = 1;
     if (tags.picture) t.artKey = await saveArt(tags.picture.data, tags.picture.mime);
     if (!t.artKey && covers.has(x.dir)) { if (!coverKeys.has(x.dir)) coverKeys.set(x.dir, saveArt(covers.get(x.dir).f)); t.artKey = await coverKeys.get(x.dir); }
@@ -3178,8 +3321,8 @@ async function doImport(files, {playFirst = false} = {}) {
     done++; invalidate(); if (fresh.length > 3) showProgress(); renderSoon(done < 20 ? 150 : 600);
   });
   if (storeFail) toast('Device storage is full — some songs will only last this session', 4000);
-  else toast(`Added ${plural(added.length, 'song')}${dupes ? ` · ${dupes} already in library` : ''}`);
-  if (added.length) sfx('goal');
+  else if (!quiet) toast(`Added ${plural(added.length, 'song')}${dupes ? ` · ${dupes} already in library` : ''}`);
+  if (added.length && !quiet) sfx('goal');
   render(); probeDurations(added);
   if (playFirst && added.length) playList(added, 0, {label: 'Opened files'});
   return added;
@@ -3204,15 +3347,22 @@ async function probeOne(id) {
   window.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; drop.classList.remove('show'); } });
   window.addEventListener('drop', async e => {
     if (!hasFiles(e)) return; e.preventDefault(); depth = 0; drop.classList.remove('show');
-    const items = Array.from(e.dataTransfer.items || []), entries = items.map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
-    if (!entries.length) return importFiles(Array.from(e.dataTransfer.files || []));
+    // Both have to be asked for during the drop itself. A dropped folder's handle (Chrome, Edge) lets B-Side check it again later.
+    const items = Array.from(e.dataTransfer.items || []), all = items.map(i => i.webkitGetAsEntry && i.webkitGetAsEntry());
+    const handles = items.map(i => handleOK() && i.kind === 'file' && i.getAsFileSystemHandle ? i.getAsFileSystemHandle().catch(() => null) : null);
+    if (!all.some(Boolean)) return importFiles(Array.from(e.dataTransfer.files || []));
     const out = [];
-    const walk = async (entry, dir) => {
-      if (entry.isFile) { try { const f = await new Promise((r, j) => entry.file(r, j)); f._rel = dir; out.push(f); } catch (er) {} }
-      else if (entry.isDirectory) { const rd = entry.createReader(), sub = dir ? dir + '/' + entry.name : entry.name; let batch; do { batch = await new Promise(r => rd.readEntries(r, () => r([]))); for (const x of batch) await walk(x, sub); } while (batch.length); }
+    const walk = async (entry, dir, src) => {
+      if (entry.isFile) { try { const f = await new Promise((r, j) => entry.file(r, j)); f._rel = dir; if (src) f._src = src; out.push(f); } catch (er) {} }
+      else if (entry.isDirectory) { const rd = entry.createReader(), sub = dir ? dir + '/' + entry.name : entry.name; let batch; do { batch = await new Promise(r => rd.readEntries(r, () => r([]))); for (const x of batch) await walk(x, sub, src); } while (batch.length); }
     };
     toast('Reading dropped files…', 0);
-    for (const en of entries) await walk(en, '');
+    for (let i = 0; i < all.length; i++) {
+      const en = all[i]; if (!en) continue;
+      let src;
+      if (en.isDirectory) { const h = await handles[i]; src = h && h.kind === 'directory' ? (await addHandleFolder(h)).id : addFolderRec({kind: 'pick', name: en.name}).id; }
+      await walk(en, '', src);
+    }
     importFiles(out);
   });
 })();
@@ -3224,6 +3374,363 @@ window.bsideOpenExternal = async list => {
     if (files.length) await importFiles(files, {playFirst: true});
   } catch (e) { toast("Couldn't open that file"); }
 };
+
+/* ───────────────────────── folders: checking them again ─────────────────────────
+   Every folder you add is remembered, so B-Side can look through it again (when it opens, hourly, daily or when
+   you tap Rescan): new songs are added, and songs whose files were deleted leave the library, the queue and your
+   playlists. On Android the folder is read again with the lasting access Android gave when it was picked; in
+   Chrome and Edge through the folder's handle (the browser may ask once per visit); other browsers can only check
+   a folder by having it chosen again. On Android, songs picked one by one are checked too.
+   A folder that can't be read, or only partly, never loses songs: unplugged storage isn't a deleted song. */
+const RESCAN_MODES = [['off', 'Manually'], ['open', 'On open'], ['hourly', 'Hourly'], ['daily', 'Daily']];
+const RESCAN_NOTES = {off: 'Only when you tap Rescan.', open: 'Each time you open B-Side, and when you come back to it after a while.', hourly: 'Every hour while B-Side is running, and when you open it.', daily: 'Once a day, while B-Side is running.'};
+const RESCAN_EVERY = {hourly: 3600e3, daily: 86400e3};
+const trackIdOf = (name, size) => 't' + hashStr(name + '|' + size);
+const isAudioName = n => AUDIO_EXT.has(extOf(n));
+const isAudioEntry = e => e.a != null ? !!e.a || isAudioName(e.name) : isAudioName(e.name);
+const nativeScanOK = () => !!(NATIVE && NATIVE.scanTree && NATIVE.access && NATIVE.checkFiles);
+const handleOK = () => !NATIVE && typeof window.showDirectoryPicker === 'function';
+const folderById = id => S.folders.find(f => f.id === id);
+const srcLive = t => !!(t.src && folderById(t.src));
+const underRoot = (t, name) => !!name && (t.path === name || (t.path || '').startsWith(name + '/'));
+const keyUnder = (key, name) => !!name && (key === name || (key || '').startsWith(name + '/'));
+const pathKey = (dir, name) => (dir || '') + '/' + name;
+const newFolderId = () => 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const release = u => { try { if (u && NATIVE && NATIVE.release) NATIVE.release(u); } catch (e) {} };
+function linkSource(t, src, uri) {
+  let ch = false;
+  if (src && !srcLive(t)) { t.src = src; ch = true; }
+  if (uri && !t.uri) { t.uri = uri; ch = true; }
+  if (ch) saveTrackSoon(t);
+}
+function addFolderRec(o) { // finds or adds the record of a folder that was just picked
+  let f = o.id ? folderById(o.id) : o.uri ? S.folders.find(x => x.uri === o.uri) : o.kind === 'pick' ? S.folders.find(x => x.kind === 'pick' && x.name === o.name) : null;
+  if (!f) { f = {id: newFolderId(), kind: o.kind, name: o.name || 'Folder', added: Date.now()}; if (o.uri) f.uri = o.uri; S.folders.push(f); }
+  if (o.name) f.name = o.name;
+  f.skip = []; f.scanned = Date.now(); f.state = o.kept === false ? 'gone' : 'ok'; delete f.legacy; // picked again: everything in it counts
+  saveFolders(); return f;
+}
+function folderTrackIds(f) { const out = []; for (const t of S.tracks.values()) if (t.src === f.id || (!srcLive(t) && underRoot(t, f.name))) out.push(t.id); return out; }
+const canRead = f => (f.kind === 'tree' && nativeScanOK()) || (f.kind === 'handle' && handleOK() && HANDLES.has(f.id));
+function forgetFolder(f, songs = false) {
+  if (songs) dropTracks(folderTrackIds(f));
+  S.folders = S.folders.filter(x => x !== f);
+  if (f.kind === 'tree') release(f.uri);
+  if (f.kind === 'handle') dropHandle(f.id);
+  saveFolders(); refreshFolderViews();
+}
+function forgetAllFolders() { // the library was cleared: nothing is left to check
+  for (const f of S.folders) if (f.kind === 'handle') dropHandle(f.id);
+  S.folders = []; S.folderScan = 0; saveFolders();
+  if (NATIVE && NATIVE.access) { try { const acc = JSON.parse(NATIVE.access()); [...(acc.trees || []), ...(acc.files || [])].forEach(release); } catch (e) {} }
+}
+
+/* Chrome and Edge keep folder handles; they are stored apart from the library so it never needs upgrading. */
+const HANDLES = new Map(); // folder id → FileSystemDirectoryHandle
+const HDB = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(true);
+    return new Promise(res => {
+      if (!('indexedDB' in window)) return res(false);
+      let req; try { req = indexedDB.open('bside-folders', 1); } catch (e) { return res(false); }
+      req.onupgradeneeded = () => { if (!req.result.objectStoreNames.contains('handles')) req.result.createObjectStore('handles'); };
+      req.onsuccess = () => { this.db = req.result; res(true); }; req.onerror = () => res(false); req.onblocked = () => res(false);
+    });
+  },
+  async tx(mode, fn) { if (!(await this.open())) return; return new Promise(res => { try { const t = this.db.transaction('handles', mode); fn(t.objectStore('handles')); t.oncomplete = () => res(); t.onerror = t.onabort = () => res(); } catch (e) { res(); } }); },
+};
+async function loadHandles() {
+  if (!handleOK() || !S.folders.some(f => f.kind === 'handle')) return;
+  await HDB.tx('readonly', o => { const rq = o.openCursor(); rq.onsuccess = () => { const c = rq.result; if (!c) return; HANDLES.set(String(c.key), c.value); c.continue(); }; });
+  for (const f of S.folders) if (f.kind === 'handle' && !HANDLES.has(f.id)) f.state = 'gone';
+  for (const id of [...HANDLES.keys()]) if (!folderById(id)) dropHandle(id);
+}
+const storeHandle = (id, h) => HDB.tx('readwrite', o => o.put(h, id));
+const dropHandle = id => { HANDLES.delete(id); return HDB.tx('readwrite', o => o.delete(id)); };
+async function addHandleFolder(h) {
+  for (const [id, x] of HANDLES) { try { if (folderById(id) && await x.isSameEntry(h)) { HANDLES.set(id, h); storeHandle(id, h); return addFolderRec({id, kind: 'handle', name: h.name}); } } catch (e) {} }
+  const f = addFolderRec({kind: 'handle', name: h.name}); HANDLES.set(f.id, h); await storeHandle(f.id, h); return f;
+}
+async function listHandle(h, root) { // → {ok, partial, files: [{name, size, dir, get}]}
+  const files = []; let partial = false;
+  const walk = async (dir, path, depth) => {
+    if (depth > 12 || files.length > 20000) { partial = true; return; }
+    try {
+      for await (const e of dir.values()) {
+        if (e.name.startsWith('.')) continue;
+        if (e.kind === 'directory') { await walk(e, path + '/' + e.name, depth + 1); continue; }
+        const ext = extOf(e.name); if (!AUDIO_EXT.has(ext) && ext !== 'lrc' && !IMG_EXT.has(ext)) continue;
+        try { const file = await e.getFile(); files.push({name: e.name, size: file.size, dir: path, get: async () => file}); } catch (er) { partial = true; }
+      }
+    } catch (er) { if (depth === 0) throw er; partial = true; }
+  };
+  await walk(h, root || h.name, 0);
+  return {ok: true, partial, files};
+}
+async function importHandle(h) {
+  toast('Reading folder…', 0);
+  const f = await addHandleFolder(h);
+  let list; try { list = await listHandle(h, h.name); } catch (e) { toast('Couldn’t read that folder'); return; }
+  const files = [];
+  for (const e of list.files) { try { const file = await e.get(); file._rel = e.dir; file._src = f.id; files.push(file); } catch (er) {} }
+  if (!files.some(x => isAudioName(x.name))) { sfx('error'); toast('No songs found in that folder'); return; }
+  return importFiles(files);
+}
+
+/* Android: the app reads a folder (or checks single songs) off the main thread and answers bsideScanResult. */
+let askSeq = 0; const askWait = new Map();
+window.bsideScanResult = (token, res) => { const w = askWait.get(token); if (w) { askWait.delete(token); w(res || {ok: false}); } };
+function nativeAsk(method, arg) {
+  const token = 'q' + (++askSeq) + '-' + Date.now().toString(36);
+  return new Promise(res => {
+    const to = setTimeout(() => { if (askWait.delete(token)) res({ok: false, why: 'timeout'}); }, 10 * 60e3);
+    askWait.set(token, r => { clearTimeout(to); res(r); });
+    try { NATIVE[method](arg, token); } catch (e) { askWait.delete(token); clearTimeout(to); res({ok: false, why: 'error'}); }
+  });
+}
+async function listTree(f) {
+  const r = await nativeAsk('scanTree', f.uri);
+  if (!r || !r.ok) return {ok: false, why: (r && r.why) || 'error'};
+  if (r.name) f.name = r.name;
+  return {ok: true, partial: !!r.partial, files: (r.files || []).map(e => ({name: e.n, size: +e.s || 0, dir: e.p, a: e.a, get: () => fetchScanned(e.k, e.n)}))};
+}
+async function fetchScanned(key, name) {
+  const r = await fetch('/__scan/' + encodeURIComponent(key));
+  if (!r.ok) throw new Error('read ' + r.status);
+  const b = await r.blob();
+  return new File([b], name, {type: b.type || '', lastModified: 0});
+}
+function adoptNativeAccess() { // folders picked before B-Side remembered folders still have Android's lasting access
+  let acc; try { acc = JSON.parse(NATIVE.access()); } catch (e) { return; }
+  for (const uri of acc.trees || []) if (!S.folders.some(f => f.uri === uri)) S.folders.push({id: newFolderId(), kind: 'tree', uri, name: '', added: Date.now(), legacy: true, skip: []});
+}
+/* Other browsers: a folder is checked by choosing it again. */
+function listPicked(files) { return {ok: true, partial: false, files: files.map(x => ({name: x.name, size: x.size, dir: (x.webkitRelativePath || '').split('/').slice(0, -1).join('/'), get: async () => x}))}; }
+function repickFolder(f) { repickFor = f; folderPick.value = ''; folderPick.click(); }
+function checkRepicked(f, files) {
+  if (!files.length) return;
+  const root = (files[0].webkitRelativePath || '').split('/')[0];
+  if (root !== f.name) { sfx('error'); toast(`That’s “${root}”. Choose “${f.name}” to check it`, 3500); return; }
+  rescanFolders({manual: true, only: [f.id], lists: {[f.id]: listPicked(files)}});
+}
+
+let scanning = null, scanToast = false;
+function rescanFolders(opts = {}) {
+  if (scanning) { if (opts.manual) toast('Already checking your folders…'); return scanning; }
+  scanning = doRescan(opts)
+    .catch(e => { console.warn('rescan', e); if (opts.manual) toast('Couldn’t check your folders'); })
+    .finally(() => { scanning = null; try { NATIVE && NATIVE.scanDone && NATIVE.scanDone(); } catch (e) {} saveFolders(); refreshFolderViews(); });
+  refreshFolderViews();
+  return scanning;
+}
+function grantAccessNow(only) { // during a tap: lets the browser ask to read folders again (Chrome forgets between visits)
+  return Promise.all(S.folders.filter(f => f.kind === 'handle' && HANDLES.has(f.id) && (!only || only.includes(f.id)))
+    .map(f => HANDLES.get(f.id).requestPermission({mode: 'read'}).catch(() => 'denied')));
+}
+async function doRescan({manual = false, only = null, lists = null} = {}) {
+  await booted;
+  if (nativeScanOK() && !only) adoptNativeAccess();
+  const want = S.folders.filter(f => !only || only.includes(f.id)), jobs = [];
+  let unread = 0; scanToast = false;
+  if (manual) toast(want.length ? `Checking ${plural(want.filter(f => f.name).length || want.length, 'folder')}…` : 'Checking your songs…', 0);
+  for (const f of want) {
+    let list = lists && lists[f.id];
+    if (!list) {
+      try {
+        if (f.kind === 'tree' && nativeScanOK()) list = await listTree(f);
+        else if (f.kind === 'handle' && handleOK()) {
+          const h = HANDLES.get(f.id);
+          list = !h ? {ok: false, why: 'gone'} : (await h.queryPermission({mode: 'read'})) !== 'granted' ? {ok: false, why: 'access'} : await listHandle(h, f.name);
+        } else continue; // checked only by choosing it again
+      } catch (e) { list = {ok: false, why: e && e.name === 'NotFoundError' ? 'gone' : 'missing'}; }
+    }
+    f.state = list.ok ? (list.partial ? 'partial' : 'ok') : ({denied: 'gone', gone: 'gone', access: 'access'}[list.why] || 'missing');
+    if (list.ok) f.scanned = Date.now(); else if (f.name) unread++;
+    jobs.push({f, list});
+  }
+  const res = await applyListings(jobs, {manual});
+  if (nativeScanOK() && !only) res.removed += (await checkSingleFiles({manual})).removed;
+  S.folderScan = Date.now(); saveFolders();
+  const parts = [res.added ? `added ${plural(res.added, 'new song')}` : '', res.removed ? `removed ${plural(res.removed, 'deleted song')}` : ''].filter(Boolean);
+  if (parts.length) { const m = parts.join(' · '); toast(m[0].toUpperCase() + m.slice(1), 3500); if (res.added) sfx('goal'); }
+  else if (manual) toast(unread ? `${plural(unread, 'folder')} couldn’t be read — see Settings › Folders` : 'No changes — your library is up to date', 3200);
+  else if (scanToast) toast('');
+  return res;
+}
+async function confirmRemoval(title, text, manual) { // never asked over another dialog, or while nobody's looking
+  if (layers.some(l => l.name === 'dialog') || (!manual && document.visibilityState !== 'visible')) return false;
+  return !!(await dialog({title, text, ok: 'Remove', cancel: 'Keep them', danger: true}));
+}
+async function applyListings(jobs, {manual}) {
+  const out = {added: 0, removed: 0}, read = jobs.filter(j => j.list.ok);
+  if (!read.length) return out;
+  // What is on the disk now, in every folder that could be read
+  const onDisk = new Set(), onDiskPath = new Set();
+  for (const j of read) for (const e of j.list.files) { onDisk.add(trackIdOf(e.name, e.size)); onDiskPath.add(pathKey(e.dir, e.name)); }
+  const here = t => onDisk.has(t.id) || onDiskPath.has(pathKey(t.path, t.name));
+  // Songs added before their folder was remembered (or whose folder was forgotten) join the folder they're in
+  const loose = new Map(); for (const t of S.tracks.values()) if (!srcLive(t)) loose.set(pathKey(t.path, t.name), t);
+  for (const j of read) for (const e of j.list.files) {
+    if (!isAudioEntry(e)) continue;
+    const t = T(trackIdOf(e.name, e.size)) || loose.get(pathKey(e.dir, e.name));
+    if (t && !srcLive(t)) linkSource(t, j.f.id);
+  }
+  // A folder from before, with none of its songs in the library, had been removed from B-Side: let it go.
+  for (const j of read) if (j.f.legacy && !folderTrackIds(j.f).length) forgetFolder(j.f);
+  // Songs whose files are gone
+  const unsure = new Set(S.folders.filter(f => f.state !== 'ok').map(f => f.name)); // same-named folders that weren't read whole
+  const gone = [];
+  for (const j of read) {
+    const f = j.f; if (!folderById(f.id) || j.list.partial) continue;
+    const mine = folderTrackIds(f).map(T).filter(t => t && (t.src === f.id || !unsure.has(f.name)));
+    const missing = mine.filter(t => !here(t));
+    if (!missing.length) continue;
+    const songs = j.list.files.filter(isAudioEntry).length;
+    if (!songs) { // more likely a memory card or drive that isn't connected than every song deleted
+      f.state = 'empty';
+      if (!(await confirmRemoval(`“${f.name}” looks empty`, `B-Side found no songs in it. If it's on a memory card or USB drive, check that it's connected. Remove its ${plural(missing.length, 'song')} from your library?`, manual))) continue;
+      f.state = 'ok';
+    } else if (missing.length > 10 && missing.length > mine.length / 2) {
+      if (!(await confirmRemoval(`Remove ${missing.length} songs?`, `${missing.length} of the ${mine.length} songs from “${f.name}” aren't in the folder any more. Remove them from your library and playlists?`, manual))) { f.state = 'held'; continue; }
+    }
+    gone.push(...missing.map(t => t.id));
+  }
+  const cur = S.current && !audio.paused ? S.current : null; // the song that's playing stays until the next check
+  const drop = [...new Set(gone)].filter(id => id !== cur && S.tracks.has(id));
+  if (drop.length) { dropTracks(drop); out.removed = drop.length; }
+  // New songs
+  const inLib = new Set(); for (const t of S.tracks.values()) inLib.add(pathKey(t.path, t.name));
+  for (const j of read) {
+    const f = j.f; if (!folderById(f.id)) continue;
+    const skip = new Set(f.skip || []);
+    const fresh = j.list.files.filter(e => { if (!isAudioEntry(e)) return false; const id = trackIdOf(e.name, e.size); return !S.tracks.has(id) && !skip.has(id) && !inLib.has(pathKey(e.dir, e.name)); });
+    if (f.legacy) { // first look at a folder from before: songs there now but not in the library were left out on purpose
+      f.skip = [...skip, ...fresh.map(e => trackIdOf(e.name, e.size))].slice(-20000); delete f.legacy; continue;
+    }
+    out.added += await addFound(f, j.list.files, fresh);
+  }
+  return out;
+}
+async function addFound(f, files, fresh) { // imports new songs a few at a time, each with the covers and lyrics beside it
+  if (!fresh.length) return 0;
+  const byDir = new Map(), sides = new Map();
+  for (const e of fresh) { if (!byDir.has(e.dir)) byDir.set(e.dir, []); byDir.get(e.dir).push(e); }
+  for (const e of files) if (!isAudioEntry(e) && byDir.has(e.dir)) { if (!sides.has(e.dir)) sides.set(e.dir, []); sides.get(e.dir).push(e); }
+  let added = 0, done = 0;
+  for (const [dir, list] of byDir) {
+    for (let i = 0; i < list.length; i += 12) { // on Android each new song is read into memory first, so a few at a time
+      const part = list.slice(i, i + 12), got = [];
+      await runPool(part.concat(sides.get(dir) || []), 2, async e => { const file = await e.get(); file._rel = e.dir; file._src = f.id; got.push(file); });
+      done += part.length;
+      if (fresh.length > 3) { scanToast = true; toast(`Adding new songs… ${done}/${fresh.length}`, 0); }
+      added += ((await importFiles(got, {quiet: true})) || []).length;
+    }
+  }
+  return added;
+}
+function volOf(u) { // the app holding a file and, for phone storage and memory cards, which of them it's on
+  const m = /^content:\/\/([^/]+)\/(?:tree\/[^/]+\/)?document\/([^/?#]+)/.exec(u || ''); if (!m) return String(u || '');
+  let id = m[2]; try { id = decodeURIComponent(id); } catch (e) {}
+  return m[1] === 'com.android.externalstorage.documents' ? m[1] + '|' + id.split(':')[0] : m[1];
+}
+async function checkSingleFiles({manual}) { // Android: songs picked one by one
+  const out = {removed: 0};
+  let acc; try { acc = JSON.parse(NATIVE.access()); } catch (e) { return out; }
+  const linked = [...S.tracks.values()].filter(t => t.uri), known = new Set(linked.map(t => t.uri));
+  const loose = (acc.files || []).filter(u => !known.has(u));
+  if (!linked.length && !loose.length) return out;
+  const r = await nativeAsk('checkFiles', JSON.stringify([...known, ...loose]));
+  if (!r || !r.ok) return out;
+  const st = new Map((r.files || []).map(x => [x.u, x]));
+  // "No such file" is only believed from an app that found other files on the same storage just now.
+  const alive = new Set(); for (const x of st.values()) if (x.st === 'ok') alive.add(volOf(x.u));
+  const isGone = u => { const x = st.get(u); return !!x && (x.st === 'empty' || x.st === 'none') && alive.has(volOf(u)); };
+  for (const u of loose) { // songs picked before B-Side noted where they came from
+    const x = st.get(u);
+    if (x && x.st === 'ok') { const t = T(trackIdOf(x.n, x.s)); if (t) linkSource(t, null, u); }
+    else if (isGone(u)) release(u);
+  }
+  const gone = linked.filter(t => isGone(t.uri));
+  if (!gone.length) return out;
+  if (gone.length > 1 && gone.length > linked.length * .3 && !(await confirmRemoval(`Remove ${gone.length} songs?`, `${plural(gone.length, 'song')} you added one by one can't be found on your phone any more. Remove them from your library and playlists?`, manual))) return out;
+  const cur = S.current && !audio.paused ? S.current : null;
+  const drop = gone.filter(t => t.id !== cur).map(t => t.id);
+  if (drop.length) { dropTracks(drop, {release: true}); out.removed = drop.length; }
+  return out;
+}
+function maybeRescan(why) {
+  const m = S.settings.rescan || 'open';
+  if (S.booting || scanning || m === 'off' || !(nativeScanOK() || S.folders.some(f => f.kind === 'handle' && HANDLES.has(f.id)))) return;
+  const since = Date.now() - (S.folderScan || 0);
+  const due = m === 'open' ? why === 'boot' || (why === 'resume' && since > 15 * 60e3) : since >= RESCAN_EVERY[m];
+  if (due) rescanFolders();
+}
+setInterval(() => maybeRescan('timer'), 5 * 60e3);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !NATIVE) maybeRescan('resume'); });
+
+/* The Folders panel (Settings › Folders, the Folders tab's Rescan) */
+const ago = ts => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 60 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : plural(Math.round(s / 86400), 'day') + ' ago'; };
+const FOLDER_STATE = {
+  gone: 'B-Side can’t open it any more. Choose it again to keep checking it',
+  missing: 'Couldn’t be read last time. Is its storage connected?',
+  access: 'Tap Rescan to let B-Side read it again',
+  partial: 'Only partly read last time, so no songs were removed',
+  empty: 'Looked empty last time, so no songs were removed',
+  held: 'Many songs were missing, so none were removed. Tap Rescan to review',
+};
+function folderSub(f) {
+  const n = folderTrackIds(f).length;
+  if (f.kind === 'pick' && !NATIVE) return `${plural(n, 'song')} · choose it again to check it`;
+  return (f.state && FOLDER_STATE[f.state]) || `${plural(n, 'song')}${f.scanned ? ' · checked ' + ago(f.scanned) : ''}`;
+}
+function foldersText() {
+  const n = S.folders.filter(f => f.name).length, auto = nativeScanOK() || handleOK();
+  const when = !auto ? 'checked when you choose them again' : {off: 'checked when you tap Rescan', open: 'checked when B-Side opens', hourly: 'checked every hour', daily: 'checked once a day'}[S.settings.rescan || 'open'];
+  return n ? `${plural(n, 'folder')} · ${when}` : 'New and deleted songs in your folders';
+}
+function foldersBodyHTML() {
+  const list = S.folders.filter(f => f.name), mode = S.settings.rescan || 'open', auto = nativeScanOK() || handleOK();
+  const rows = list.map(f => menuItem(FOLDER_STATE[f.state] && f.state !== 'access' ? 'info' : 'folder', f.name, 'f:' + f.id, {sub: folderSub(f), extra: ic('right', 'chev')})).join('');
+  return (auto ? `<div class="lbl">Check folders for new and deleted songs</div><div class="seg" id="rsSeg">${RESCAN_MODES.map(([k, l]) => `<button data-rs-k="${k}" class="${mode === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="accent-note" id="rsNote">${esc(RESCAN_NOTES[mode])} New songs are added, and songs whose files were deleted leave your library, the queue and your playlists.</div>
+    ${menuItem('rescan', scanning ? 'Checking…' : 'Rescan now', 'rescan', {sub: S.folderScan ? 'Last checked ' + ago(S.folderScan) : 'Not checked yet'})}`
+    : `<div class="accent-note" style="padding-top:10px">This browser can’t open a folder again by itself. To check one for new and deleted songs, tap it below and choose it again. Chrome and Edge can check your folders for you.</div>`) +
+    `<div class="lbl">Your folders</div>${rows || '<div class="accent-note">No folders yet. Folders you add show up here.</div>'}${menuItem('plus', 'Add a folder', 'addfolder')}` +
+    (NATIVE ? '<div class="accent-note">Songs you add one by one are checked too, and leave B-Side when their file is deleted. A folder that can’t be read never loses songs.</div>' : '<div class="accent-note">A folder that can’t be read never loses songs.</div>');
+}
+function refreshFolderViews() {
+  if (sheetEl._folders && topLayer() === 'sheet') { const b = $('.sheet-body', sheetEl); if (b) { const y = b.scrollTop; b.innerHTML = foldersBodyHTML(); b.scrollTop = y; } }
+  if (S.tab === 'folders' && !layers.some(l => l.name === 'route')) renderSoon(80);
+}
+function rescanAll() { // from a tap
+  if (!(nativeScanOK() || handleOK())) return foldersSheet();
+  grantAccessNow().then(() => rescanFolders({manual: true}));
+}
+function foldersSheet() {
+  openSheet({head: sheetHead('Folders', 'New and deleted songs'), body: foldersBodyHTML(),
+    onMount: el => { el._folders = true; el._cleanup = () => { el._folders = false; }; },
+    onClick: async e => {
+      const rk = e.target.closest('[data-rs-k]');
+      if (rk) { S.settings.rescan = rk.dataset.rsK; persistSoon(); $$('#rsSeg button', sheetEl).forEach(b => b.classList.toggle('on', b === rk)); const n = $('#rsNote', sheetEl); if (n) n.textContent = RESCAN_NOTES[S.settings.rescan] + ' New songs are added, and songs whose files were deleted leave your library, the queue and your playlists.'; return; }
+      const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
+      if (k === 'rescan') { rescanAll(); return; }
+      if (k === 'addfolder') { await closeTop(); pickFolder(); return; }
+      if (k.startsWith('f:')) { const f = folderById(k.slice(2)); if (f) folderMenu(f); }
+    }});
+}
+function folderMenu(f) {
+  const n = folderTrackIds(f).length, readable = canRead(f);
+  menuSheet(sheetHead(f.name, folderSub(f)), [
+    readable ? ['rescan', 'Rescan this folder', () => { grantAccessNow([f.id]).then(() => rescanFolders({manual: true, only: [f.id]})); }, {now: true}] : null,
+    f.kind === 'pick' && !NATIVE ? ['folder', 'Choose it again to check it', () => repickFolder(f), {now: true, sub: 'New songs are added, deleted ones removed'}] : null,
+    !readable && f.kind !== 'pick' ? ['folder', 'Choose the folder again', () => pickFolder(), {sub: 'So B-Side can keep checking it'}] : null,
+    n && groups().folders.has(f.name) ? ['right', 'Show its songs', () => goFolder(f.name)] : null,
+    '-',
+    ['close', 'Stop checking it', () => { forgetFolder(f); toast(`B-Side won’t check “${f.name}” any more`); }, {sub: 'Its songs stay in your library'}],
+    n ? ['trash', 'Remove it and its songs', async () => { const ok = await dialog({title: `Remove “${f.name}”?`, text: `Its ${plural(n, 'song')} leave your B-Side library and playlists. The files on your device are not touched.`, ok: 'Remove', danger: true}); if (!ok) return; forgetFolder(f, true); sfx('delete'); toast(`Removed “${f.name}”`); }, {cls: 'danger', sub: plural(n, 'song')}] : null,
+  ]);
+}
 
 /* ───────────────────────── theme & native glue ───────────────────────── */
 let nativeDark = null;
@@ -3297,6 +3804,32 @@ function bgRowHTML() {
   return `<button class="mi" data-mi="background" id="bgRow">${ic('battery')}<span class="mt">Background playback<span class="sub">${esc(sub)}</span></span>${ok ? ic('check') : ''}</button>`;
 }
 function requestBackground() { try { NATIVE && NATIVE.requestBackground && NATIVE.requestBackground(); } catch (e) {} }
+/* Lock screen player (Android): B-Side's own full-screen player over the lock screen while music plays
+   (LockScreenActivity.java). Android 10 and later need "Display over other apps" for it. */
+const lockOK = () => !!(NATIVE && NATIVE.lockPlayer && NATIVE.setLockPlayer);
+function lockState() { if (!lockOK()) return null; try { return JSON.parse(NATIVE.lockPlayer()); } catch (e) { return null; } }
+function lockBoxHTML() {
+  const st = lockState(); if (!st) return '';
+  const xiaomi = /xiaomi|redmi|poco/i.test(st.maker || '');
+  const sub = !st.on ? 'Off — the lock screen shows Android’s own media controls'
+    : st.allowed ? 'On — the cover, the song and big controls fill the lock screen while music plays' + (xiaomi ? '. On Xiaomi phones also allow “Show on Lock screen” in B-Side’s app permissions.' : '')
+    : 'On, but Android isn’t letting it show yet';
+  return `<button class="mi" data-mi="lockplayer" id="lockRow" role="switch" aria-checked="${st.on}">${ic('lock')}<span class="mt">Lock screen player<span class="sub">${esc(sub)}</span></span><span class="switch ${st.on ? 'on' : ''}"></span></button>` +
+    (st.on && !st.allowed ? menuItem('open', 'Allow it over the lock screen', 'lockallow', {cls: 'sel', sub: 'Android calls this “Display over other apps”'}) : '');
+}
+function refreshLockBox() { const b = $('#lockBox'); if (b) b.innerHTML = lockBoxHTML(); }
+async function askLockPermission() {
+  const ok = await dialog({title: 'Show B-Side on the lock screen?', text: 'Android needs one permission for this, called “Display over other apps”. B-Side only uses it to show its player when the screen goes off while music plays. Find B-Side in the list and switch it on.', ok: 'Open settings', cancel: 'Not now'});
+  if (ok) { try { NATIVE.lockPermission && NATIVE.lockPermission(); } catch (e) {} }
+}
+async function toggleLockPlayer() {
+  const st = lockState(); if (!st) return;
+  try { NATIVE.setLockPlayer(!st.on); } catch (e) { return; }
+  lockArtOn = !st.on; lastBigSent = null; syncExternal();
+  refreshLockBox();
+  if (!st.on && !st.allowed) await askLockPermission();
+  else if (!st.on) toast('Turn the screen off while music plays to see it', 3000);
+}
 async function maybeAskBackground() {
   const st = bgState(); if (!st || S.settings.bgAsked || (st.ignoring && !st.restricted)) return;
   S.settings.bgAsked = true; persistSoon();
@@ -3315,7 +3848,7 @@ audio.addEventListener('playing', () => { // ask once, a moment after music star
   };
   bgAskTimer = setTimeout(check, 2500);
 });
-window.bsideResume = () => { const row = $('#bgRow'); if (row) row.outerHTML = bgRowHTML(); };
+window.bsideResume = () => { const row = $('#bgRow'); if (row) row.outerHTML = bgRowHTML(); refreshLockBox(); maybeRescan('resume'); };
 window.bsideSystemDark = d => { nativeDark = !!d; applyTheme(); };
 window.bsideInsets = (top, bottom) => { const r = document.documentElement.style; r.setProperty('--sat', (+top || 0) + 'px'); r.setProperty('--sab', (+bottom || 0) + 'px'); onScroll(); };
 try { if (NATIVE && NATIVE.insets) { const i = JSON.parse(NATIVE.insets()); window.bsideInsets(i.top, i.bottom); } } catch (e) {}
@@ -3345,6 +3878,7 @@ async function boot() {
     updateNow();
   }
   render(); bootDone(); pageFx();
+  loadHandles().then(() => { if (S.tab === 'folders') render(); setTimeout(() => maybeRescan('boot'), 3000); });
   try { if (NATIVE && NATIVE.pageStarted) NATIVE.pageStarted(APP_BUILD); } catch (e) {}
   checkUpdate();
   probeDurations([...S.tracks.keys()].slice(0, 200));

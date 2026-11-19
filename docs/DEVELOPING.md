@@ -54,11 +54,23 @@ The player's version lives in three `<meta>` tags at the top of `web/app.html`:
 ## How it works
 
 The whole player is one web page. Audio plays through an HTML `<audio>` element, routed through Web Audio for the
-equaliser and volume levelling. To measure a song without loudness tags, B-Side decodes it once with an
+equaliser, bass and treble (a 100 Hz low shelf and an 8 kHz high shelf), stereo expand (mid/side: the side signal is
+raised up to 2.2×, after making mono input stereo) and volume levelling. The chain is only built once one of them is
+used; a pre-gain leaves headroom for boosts. To measure a song without loudness tags, B-Side decodes it once with an
 `OfflineAudioContext` and applies the ITU-R BS.1770 K-weighting with 400 ms gated blocks; each song's level is then set
 by one gain node. Tags are parsed in JavaScript with no libraries: ID3v1 and ID3v2.2–2.4, Vorbis comments (FLAC, Ogg,
 Opus), MP4 metadata and RIFF INFO; loudness from `REPLAYGAIN_*`, Opus `R128_*_GAIN` or iTunes `iTunNORM`. The library
 and copied song files live in IndexedDB, settings in `localStorage`.
+
+Folders are remembered in `localStorage` (`bside:folders`), and each song records the folder it came from (`src`) or,
+on Android, the single file that was picked (`uri`). A rescan lists each folder again: on Android through the app's
+lasting folder access, in Chrome and Edge through the folder's `FileSystemDirectoryHandle` (kept in a separate IndexedDB
+database, `bside-folders`), elsewhere by having the folder chosen again. Songs on disk are matched by name and size, or by
+folder path and name. Songs no longer there are removed, except from folders that couldn't be read whole; a folder that
+reads as empty, or one that would lose more than half its songs, asks first (or waits, if nobody's looking). Songs you
+remove yourself go on the folder's skip list. Folders picked before 1.10 are adopted from Android's list of granted
+folders: their songs are linked and whatever was in the folder but not in the library is noted, so only later additions
+are imported.
 
 Spotify import uses the Web API with Authorization Code + PKCE and the Redirect URI `http://127.0.0.1:43821/callback`
 on every device: the Android app listens there during a sign-in; in a browser the user pastes that address back. Songs
@@ -72,8 +84,13 @@ flowchart LR
     A["MainActivity<br/>screen · file pickers · Open with<br/>home-screen icon"] -- shows --> W
     W["WebHost<br/>owns the WebView that plays the music<br/>(lives as long as the app process)"]
     S["MusicService<br/>foreground media service · notification<br/>lock screen · headset · wake lock"]
+    L["LockScreenActivity<br/>optional player over the lock screen"]
+    F["FolderScan<br/>reads picked folders, checks single files"]
     W -- now playing --> S
     S -- play / pause / skip / seek --> W
+    S -- screen off --> L
+    L -- play / pause / skip / seek --> W
+    W -- rescan --> F
 ```
 
 - **`WebHost`** owns the WebView at process level rather than inside the screen. Closing B-Side, swiping it away or
@@ -89,6 +106,16 @@ flowchart LR
   moves to an older build or one needing a newer app, and sets aside a page that fails to start three times.
 - **`LoopbackLogin`** listens on `127.0.0.1:43821` only while a Spotify sign-in is waiting and passes the code to the
   page.
+- **`FolderScan`** reads a folder picked with `ACTION_OPEN_DOCUMENT_TREE` (songs, `cover`/`folder` pictures and `.lrc`
+  files, up to 12 levels and 20,000 files). It's used when a folder is added and again when the page asks for a rescan
+  (`scanTree`): the files found are served at `/__scan/<key>` so the page can add the new ones. A walk that couldn't read
+  every subfolder is reported as partial, and the page then removes nothing from that folder. `checkFiles` looks up songs
+  picked one by one; the page only believes "no such file" when the same storage answered for other files just then.
+- **`LockScreenActivity`** is the optional lock screen player. `MusicService` listens for `SCREEN_OFF` and, while music
+  plays (or for 10 minutes after a pause, never during a call), opens it with `showWhenLocked`. It shows playback
+  controls only; swiping up calls `requestDismissKeyguard`, and it closes itself on `USER_PRESENT` or when there's no
+  lock screen to cover. Android 10+ only allows the start from the background with `SYSTEM_ALERT_WINDOW` ("Display over
+  other apps"), which the page asks for when the setting is turned on. The page sends a 720 px cover for it while it's on.
 - **`MainActivity`** serves the page at `https://appassets.androidplatform.net/`, handles the Storage Access Framework
   pickers and "Open with", and switches the home-screen icon between 16 `<activity-alias>` entries.
 
@@ -111,6 +138,8 @@ b-side/
 │   │   ├── WebUpdater.java
 │   │   ├── MusicService.java
 │   │   ├── MediaButtonReceiver.java
+│   │   ├── LockScreenActivity.java
+│   │   ├── FolderScan.java
 │   │   └── LoopbackLogin.java
 │   ├── res/              hand-made resources (strings, theme, notification icons)
 │   ├── res-gen/          launcher icons generated by gen_icons.py

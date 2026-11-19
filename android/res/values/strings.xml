@@ -8,4 +8,6 @@
     <string name="pause">Pause</string>
     <string name="next">Next</string>
     <string name="prev">Previous</string>
+    <string name="lock_unlock">Swipe up to unlock</string>
+    <string name="lock_open">Unlock and open B-Side</string>
 </resources>
