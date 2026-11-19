@@ -1,4 +1,4 @@
-# One-off: builds the B-Side APK unsigned and attaches it to the V1.10.0 draft release. Deleted right after.
+# One-off: builds the B-Side APK unsigned and commits it to this temporary branch. Deleted right after.
 name: One-off unsigned APK
 on:
   push:
@@ -26,7 +26,11 @@ jobs:
           "$RUNNER_TEMP/tools/aapt2" dump badging android/build/aligned.apk | grep -E "^(package|application-label):"
           sha256sum android/build/aligned.apk
           cp android/build/aligned.apk android/build/B-Side-unsigned.apk
-      - name: Attach to the draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload V1.10.0 android/build/B-Side-unsigned.apk --clobber
+      - name: Commit it to this temporary branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p out && cp android/build/B-Side-unsigned.apk out/
+          git add -f out/B-Side-unsigned.apk
+          git commit -m "Unsigned APK (temporary)"
+          git push origin HEAD:tmp/apk-1.10.0
