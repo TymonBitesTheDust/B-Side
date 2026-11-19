@@ -512,6 +512,52 @@ body.np-open .fscroll{visibility:hidden}
 .sp-ph{color:var(--text-3)}
 .sp-err{color:var(--danger);font-weight:600}
 
+
+/* ───── lock screen player (lock.js): the Now Playing screen, with a clock, over Android's lock screen ───── */
+.lock{--art:min(76vw,33vh,400px);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.lock.lk-no-clock.lk-no-date{--art:min(84vw,44vh,440px)}
+.lock:not(.lk-no-lyrics){--art:min(66vw,26vh,340px)}
+.np.lock>.lk-bgart{position:absolute;inset:-60px;display:none;background:center/cover no-repeat;filter:blur(46px) saturate(1.25);opacity:.6;pointer-events:none}
+.np.lock.lk-bg>.lk-bgart{display:block}
+:root[data-theme="light"] .np.lock>.lk-bgart{opacity:.45}
+.lk-move{flex:1;min-height:0;display:flex;flex-direction:column;transition:transform .28s var(--ease),opacity .28s}
+.lock.dragging .lk-move{transition:none}
+.lk-clock{flex:none;text-align:center;padding:30px 20px 0;color:var(--text)}
+.lk-time{font-family:var(--display);font-size:clamp(66px,23vw,104px);font-weight:300;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lk-date{font-size:16px;font-weight:600;color:var(--text-2);margin-top:10px}
+.lock .np-body{justify-content:space-evenly}
+.lock .np-art{display:block;width:100%;height:100%;padding:0;border:0;font:inherit;color:inherit;cursor:pointer}
+.lk-lyric{display:none;width:min(100%,520px);text-align:center;flex:none}
+.lock:not(.lk-no-lyrics) .lk-lyric.has{display:block}
+.lk-lyric p{margin:0;font-size:15px;line-height:1.35;color:var(--text-3);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.lk-lyric p.on{font-size:21px;font-weight:700;color:var(--text);margin-bottom:6px}
+.lk-hint{flex:none;align-self:center;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 24px 14px;color:var(--text-2);font-size:13px;font-weight:600;background:none;border:0}
+.lk-hint svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;animation:lk-nudge 2.6s ease-in-out infinite}
+@keyframes lk-nudge{0%,55%,100%{transform:none}28%{transform:translateY(-6px)}}
+:root[data-motion="reduced"] .lk-hint svg{animation:none}
+.lock.lk-no-clock .lk-time,.lock.lk-no-date .lk-date,.lock.lk-no-clock.lk-no-date .lk-clock,.lock.lk-no-cover .np-stage,.lock.lk-no-progress .lk-prog,
+.lock.lk-no-controls .ctrls,.lock.lk-no-fav #npFav{display:none}
+.lock.lk-no-hint .lk-hint{visibility:hidden}
+.lock.leaving .lk-move{opacity:0;transform:translateY(-30vh)}
+@media (max-height:520px){.lock{--art:min(36vw,52vh)}.lock .lk-clock{display:none}.lock .np-body{flex-direction:row;justify-content:center;gap:30px}}
+/* each style's clock */
+[data-skin="archive"] .lk-time{font-weight:300;letter-spacing:.08em}
+[data-skin="archive"] .lk-date{text-transform:uppercase;letter-spacing:.24em;font-size:12px}
+[data-skin="riot"] .lk-time{font-size:clamp(54px,17vw,84px);letter-spacing:0}
+[data-skin="riot"] .lk-time .tl{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+[data-skin="riot"] .lk-date{display:inline-block;background:var(--red);color:#fff;padding:3px 12px;transform:skewX(-10deg);font-family:var(--display);font-weight:400;letter-spacing:.08em;text-transform:uppercase;margin-top:16px}
+[data-skin="tide"] .lk-time{font-style:italic;font-weight:800;letter-spacing:-.04em;transform:rotate(-6deg);text-shadow:4px 4px 0 var(--ink-dark,#06123a)}
+[data-skin="tide"] .lk-date{font-style:italic;font-weight:800;text-transform:uppercase;color:var(--c1,#7fe6ff);transform:rotate(-4deg);margin-top:14px}
+[data-skin="tide"] .lk-clock{padding-bottom:14px}
+[data-skin="frontier"] .lk-time{font-weight:400;letter-spacing:0}
+[data-skin="frontier"] .lk-date{font-family:var(--display);font-weight:400;letter-spacing:.06em}
+[data-skin="neon"] .lk-time{font-weight:700;letter-spacing:.02em;text-shadow:3px 0 0 rgba(0,240,255,.55),-3px 0 0 rgba(255,0,60,.5)}
+[data-skin="neon"] .lk-date{text-transform:uppercase;letter-spacing:.2em;font-size:13px}
+/* the preview in Settings › Lock screen */
+.lk-pvbox{display:flex;justify-content:center;padding:6px 0 14px}
+.lk-phone{position:relative;width:164px;height:355px;border-radius:24px;overflow:hidden;background:#000;box-shadow:0 0 0 5px var(--surface-2),0 14px 34px rgba(0,0,0,.28);flex:none}
+.lk-phone iframe{position:absolute;left:0;top:0;width:390px;height:844px;border:0;transform:scale(.4205);transform-origin:0 0;pointer-events:none;background:#000}
+.lk-sk .sk-card{padding-bottom:9px}
 /*@SKINS@*/
 </style>
 </head>
@@ -664,9 +710,11 @@ body.np-open .fscroll{visibility:hidden}
 <input type="file" id="folderPick" class="vh" multiple webkitdirectory tabindex="-1" aria-hidden="true">
 <input type="file" id="dataPick" class="vh" multiple accept=".zip,.json,.csv,application/zip,application/json,text/csv" tabindex="-1" aria-hidden="true">
 
+<script>/*@LOCKJS@*/</script>
 <script>
 'use strict';
 (() => {
+if (window.__bsideLock) return; // opened as the lock screen player (lock.js): the player itself never starts here
 /* ───────────────────────── basics ───────────────────────── */
 const NATIVE = window.BSideNative || null;
 const metaOf = n => { const m = document.querySelector(`meta[name="bside-${n}"]`); return m ? m.content : ''; };
@@ -1803,7 +1851,7 @@ function updateSleepUI() {
 const sleepText = () => !sleep ? 'Off' : sleep.eot ? 'At the end of this song' : `${fmt((sleep.end - Date.now()) / 1000)} remaining`;
 
 /* ───────────────────────── external controls ───────────────────────── */
-let lastArtSent = null, lastBigSent = null, extT = 0, msId = null;
+let lastArtSent = null, lastBigSent = null, lastLyrSent = null, extT = 0, msId = null;
 let lockArtOn = (() => { try { return !!(NATIVE && NATIVE.lockPlayer && JSON.parse(NATIVE.lockPlayer()).on); } catch (e) { return false; } })();
 const bigArtCache = new Map();
 async function bigArtData(key) { // a sharper cover for the lock screen player than the notification's 320px one
@@ -1841,7 +1889,12 @@ function syncExternalNow() {
   }
   if (NATIVE && NATIVE.update) {
     const payload = {color: notifColour, hasTrack: !!t, playing: !!t && !audio.paused, title: t ? t.title : '', artist: t ? artistOf(t) : '', album: t ? albumLabel(t) : '',
-      duration: Math.round(((isFinite(audio.duration) && audio.duration) || (t && t.duration) || 0) * 1000), position: Math.round((audio.currentTime || 0) * 1000), speed: audio.playbackRate || 1, artKey: t && t.artKey ? t.artKey : ''};
+      duration: Math.round(((isFinite(audio.duration) && audio.duration) || (t && t.duration) || 0) * 1000), position: Math.round((audio.currentTime || 0) * 1000), speed: audio.playbackRate || 1, artKey: t && t.artKey ? t.artKey : '',
+      tint: t ? tintOf(t) : '', fav: !!t && S.fav.has(t.id), tid: t ? t.id : ''};
+    if (lockArtOn && t && t.id !== lastLyrSent) { // synced lyrics for the lock screen, once per song
+      lastLyrSent = t.id; const l = parseLyrics(t.lyrics);
+      payload.lyr = JSON.stringify({id: t.id, lines: l && l.synced ? l.lines.map(x => [x.t, x.text]) : []});
+    }
     try { NATIVE.update(JSON.stringify(payload)); } catch (e) {}
     if (t && t.artKey && t.artKey !== lastArtSent) {
       const key = t.artKey; lastArtSent = key;
@@ -1870,6 +1923,7 @@ window.bsideRemote = (a, v) => {
     case 'next': next(); break;
     case 'prev': prev(); break;
     case 'seek': seekTo((+v || 0) / 1000); break;
+    case 'fav': if (S.current) toggleFav(S.current); break;
     case 'stop': pause(); break;
     case 'duck': if (duckVol == null) { duckVol = audio.volume; audio.volume = duckVol * .25; } break;
     case 'unduck': if (duckVol != null) { audio.volume = duckVol; duckVol = null; } break;
@@ -2738,6 +2792,7 @@ function toggleFav(id) {
   if (S.fav.has(id)) { S.fav.delete(id); sfx('uncomplete'); toast('Removed from favourites', 1400); } else { S.fav.add(id); sfx('complete'); toast('Added to favourites', 1400); doneFx(); }
   if (id === S.current) $('#npFav').classList.toggle('on', S.fav.has(id));
   persistSoon(); if (S.route && S.route.key === '@fav' || S.tab === 'playlists') renderSoon(10);
+  if (id === S.current) syncExternal(); // the lock screen's heart
 }
 function trackMenu(id, listKey, idx) {
   const t = T(id); if (!t) return;
@@ -2983,7 +3038,7 @@ async function settingsSheet() {
     const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
     if (k === 'autoupd') { S.settings.autoUpdate = S.settings.autoUpdate === false; persistSoon(); if (S.settings.autoUpdate) checkUpdate(true); const u = $('#updBox', sheetEl); if (u) u.innerHTML = updBoxHTML(); return; }
     if (k === 'applyupd') { persist(); try { NATIVE.applyUpdate(); } catch (e) {} return; }
-    if (k === 'lockplayer') { await toggleLockPlayer(); return; }
+    if (k === 'lockscreen') { lockSheet(); return; }
     if (k === 'lockallow') { askLockPermission(); return; }
     if (k === 'persist') { if (!S.dbOk) { toast('Storage is not available here'); return; } await setPersist(!S.settings.persist); b.querySelector('.switch').classList.toggle('on', S.settings.persist); b.querySelector('.sub').textContent = S.settings.persist ? 'Your library is still here next time' : 'Library is cleared when you close the app'; return; }
     await closeTop();
@@ -3752,17 +3807,20 @@ function accentHex() {
 const iconKind = () => skinOf() === 'bside' ? 'bside' : skinOf();
 const launcherIconId = () => S.settings.matchIcon === false ? 'bside_cobalt' : skinOf() === 'bside' ? 'bside_' + nearestAccent(accentHex()).id : skinOf();
 let notifColour = ACCENTS[0].hex, lastIconKey = '';
-function applyAccent(dark) {
-  const st = document.documentElement.style, hex = accentHex();
-  if (skinOf() !== 'bside' || hex === ACCENTS[0].hex) { ACCENT_TOKENS.forEach(k => st.removeProperty(k)); return; }
+function accentVars(skin, dark) { // the theme colour as CSS properties; only B-Side's own style uses it
+  const hex = accentHex();
+  if (skin !== 'bside' || hex === ACCENTS[0].hex) return {};
   const base = cHex(hex);
   let acc, ink;
   if (!dark) { acc = cToward(base, [255, 255, 255], 4.5, -1); ink = [255, 255, 255]; }
   else { acc = cToward(base, [21, 21, 23], 5.5, 1); ink = cContrast(acc, [11, 11, 14]) >= 4.5 ? cMix(acc, [0, 0, 0], .85) : [255, 255, 255]; }
   const rgb = acc.map(Math.round).join(','), g = iconGradient(hex);
-  st.setProperty('--accent', cStr(acc)); st.setProperty('--accent-rgb', rgb); st.setProperty('--on-accent', cStr(ink));
-  st.setProperty('--accent-soft', `rgba(${rgb},${dark ? .16 : .12})`);
-  st.setProperty('--ic-a', g[0]); st.setProperty('--ic-b', g[1]); st.setProperty('--ic-c', g[2]);
+  return {'--accent': cStr(acc), '--accent-rgb': rgb, '--on-accent': cStr(ink), '--accent-soft': `rgba(${rgb},${dark ? .16 : .12})`, '--ic-a': g[0], '--ic-b': g[1], '--ic-c': g[2]};
+}
+function applyAccent(dark) {
+  const st = document.documentElement.style, v = accentVars(skinOf(), dark);
+  ACCENT_TOKENS.forEach(k => st.removeProperty(k));
+  for (const k in v) st.setProperty(k, v[k]);
 }
 function applyIcons() {
   const kind = iconKind(), hex = accentHex(), key = kind + '|' + hex + '|' + S.settings.matchIcon;
@@ -3770,8 +3828,9 @@ function applyIcons() {
   const fav = $('#favicon'); if (fav) fav.setAttribute('href', iconURL(kind, hex, 'full', 64));
   try { NATIVE && NATIVE.setLauncherIcon && NATIVE.setLauncherIcon(launcherIconId()); } catch (e) {}
 }
+const themeDark = () => { const p = S.settings.theme; return p === 'system' ? (nativeDark != null ? nativeDark : mq.matches) : p === 'dark'; };
 function applyTheme() {
-  const p = S.settings.theme, skin = skinOf(), dark = skin === 'riot' ? true : p === 'system' ? (nativeDark != null ? nativeDark : mq.matches) : p === 'dark';
+  const skin = skinOf(), dark = skin === 'riot' ? true : themeDark();
   const root = document.documentElement;
   root.dataset.theme = dark ? 'dark' : 'light';
   root.dataset.skin = skin;
@@ -3785,7 +3844,7 @@ function applyTheme() {
   setHeroTitle(tabTitle[S.tab] || 'Tracks');
   applyMotion(); starfield.sync(); updateRibbon(); updateKeyHints();
   if (skin !== lastSkin) { const was = lastSkin; lastSkin = skin; if (was) { renderTabs(); updateChrome(); } }
-  applyIcons();
+  applyIcons(); pushLockLook();
 }
 let lastSkin = '';
 if (mq.addEventListener) mq.addEventListener('change', applyTheme); else if (mq.addListener) mq.addListener(applyTheme);
@@ -3804,20 +3863,49 @@ function bgRowHTML() {
   return `<button class="mi" data-mi="background" id="bgRow">${ic('battery')}<span class="mt">Background playback<span class="sub">${esc(sub)}</span></span>${ok ? ic('check') : ''}</button>`;
 }
 function requestBackground() { try { NATIVE && NATIVE.requestBackground && NATIVE.requestBackground(); } catch (e) {} }
-/* Lock screen player (Android): B-Side's own full-screen player over the lock screen while music plays
-   (LockScreenActivity.java). Android 10 and later need "Display over other apps" for it. */
+/* Lock screen player (Android): B-Side's own player over the lock screen while music plays. LockScreenActivity.java
+   opens this same page in lock mode (lock.js) and shows it in the style and with the pieces chosen here. Android 10
+   and later need "Display over other apps" for it. */
 const lockOK = () => !!(NATIVE && NATIVE.lockPlayer && NATIVE.setLockPlayer);
 function lockState() { if (!lockOK()) return null; try { return JSON.parse(NATIVE.lockPlayer()); } catch (e) { return null; } }
+const LOCK_SHOW = [['clock', 'Clock'], ['date', 'Date'], ['cover', 'Cover'], ['artist', 'Artist'], ['album', 'Album'], ['progress', 'Progress bar'],
+  ['controls', 'Play, previous and next'], ['fav', 'Favourite button'], ['lyrics', 'Lyrics, line by line', 'For songs with synced lyrics'], ['hint', '“Swipe up to unlock”'], ['bgArt', 'Blurred cover behind', 'Instead of the style’s own background']];
+const LOCK_SHOW_DEFAULT = {clock: true, date: true, cover: true, artist: true, album: true, progress: true, controls: true, fav: false, lyrics: false, hint: true, bgArt: false};
+const LOCK_COLOURS = [['app', 'Same as app'], ['dark', 'Dark'], ['light', 'Light']];
+function lockPrefs() { const l = S.settings.lock || {}; return {style: l.style || 'app', colours: l.colours || 'app', show: Object.assign({}, LOCK_SHOW_DEFAULT, l.show || {})}; }
+function setLockPrefs(p) { S.settings.lock = p; persistSoon(); pushLockLook(); lockPreviewSend(); }
+function lockLook() { // what lock.js needs to dress the lock screen
+  const p = lockPrefs(), skin = p.style !== 'app' && SKINS.some(k => k.id === p.style) ? p.style : skinOf();
+  const dark = skin === 'riot' || (p.colours === 'app' ? themeDark() : p.colours === 'dark');
+  return {skin, dark, vars: accentVars(skin, dark), show: p.show};
+}
+let lastLook = '';
+function pushLockLook() {
+  if (!lockOK() || !NATIVE.setLockLook) return;
+  const j = JSON.stringify(lockLook()); if (j === lastLook) return; lastLook = j;
+  try { NATIVE.setLockLook(j); } catch (e) {}
+}
+function lockSummary(st) {
+  if (!st.on) return 'Off — the lock screen shows Android’s own media controls';
+  if (!st.allowed) return 'On, but Android isn’t letting it show yet';
+  const p = lockPrefs(), sk = SKINS.find(k => k.id === p.style);
+  return 'On · ' + (sk ? sk.name : 'same style as the app');
+}
 function lockBoxHTML() {
   const st = lockState(); if (!st) return '';
-  const xiaomi = /xiaomi|redmi|poco/i.test(st.maker || '');
-  const sub = !st.on ? 'Off — the lock screen shows Android’s own media controls'
-    : st.allowed ? 'On — the cover, the song and big controls fill the lock screen while music plays' + (xiaomi ? '. On Xiaomi phones also allow “Show on Lock screen” in B-Side’s app permissions.' : '')
-    : 'On, but Android isn’t letting it show yet';
-  return `<button class="mi" data-mi="lockplayer" id="lockRow" role="switch" aria-checked="${st.on}">${ic('lock')}<span class="mt">Lock screen player<span class="sub">${esc(sub)}</span></span><span class="switch ${st.on ? 'on' : ''}"></span></button>` +
+  return menuItem('lock', 'Lock screen player', 'lockscreen', {sub: lockSummary(st), extra: ic('right', 'chev')});
+}
+function lockTopHTML() {
+  const st = lockState() || {on: false, allowed: false};
+  const xiaomi = /xiaomi|redmi|poco/i.test(st.maker || '') && st.on && st.allowed ? ' On Xiaomi phones also allow “Show on Lock screen” in B-Side’s app permissions.' : '';
+  const sub = !st.on ? 'Off — the lock screen shows Android’s own media controls' : st.allowed ? 'Shows when the screen goes off while music plays. Swipe up to unlock.' + xiaomi : 'On, but Android isn’t letting it show yet';
+  return `<button class="mi" data-lk="toggle" id="lockRow" role="switch" aria-checked="${st.on}">${ic('lock')}<span class="mt">Lock screen player<span class="sub">${esc(sub)}</span></span><span class="switch ${st.on ? 'on' : ''}"></span></button>` +
     (st.on && !st.allowed ? menuItem('open', 'Allow it over the lock screen', 'lockallow', {cls: 'sel', sub: 'Android calls this “Display over other apps”'}) : '');
 }
-function refreshLockBox() { const b = $('#lockBox'); if (b) b.innerHTML = lockBoxHTML(); }
+function refreshLockBox() {
+  const b = $('#lockBox'); if (b) b.innerHTML = lockBoxHTML();
+  const t = $('#lkTop'); if (t) t.innerHTML = lockTopHTML();
+}
 async function askLockPermission() {
   const ok = await dialog({title: 'Show B-Side on the lock screen?', text: 'Android needs one permission for this, called “Display over other apps”. B-Side only uses it to show its player when the screen goes off while music plays. Find B-Side in the list and switch it on.', ok: 'Open settings', cancel: 'Not now'});
   if (ok) { try { NATIVE.lockPermission && NATIVE.lockPermission(); } catch (e) {} }
@@ -3825,11 +3913,63 @@ async function askLockPermission() {
 async function toggleLockPlayer() {
   const st = lockState(); if (!st) return;
   try { NATIVE.setLockPlayer(!st.on); } catch (e) { return; }
-  lockArtOn = !st.on; lastBigSent = null; syncExternal();
+  lockArtOn = !st.on; lastBigSent = lastLyrSent = null; lastLook = ''; pushLockLook(); syncExternal();
   refreshLockBox();
   if (!st.on && !st.allowed) await askLockPermission();
   else if (!st.on) toast('Turn the screen off while music plays to see it', 3000);
 }
+/* The preview: this page again, in an iframe, in lock mode (#lockpreview). It's told what to show by message. */
+let lockPvReady = false;
+function lockPreviewData() {
+  const t = S.current ? T(S.current) : null, live = !!t && loadedId === t.id;
+  const song = t ? {title: t.title, artist: artistOf(t), album: albumLabel(t), duration: Math.round(((live && isFinite(audio.duration) && audio.duration) || t.duration || 0) * 1000),
+    position: Math.round((live ? audio.currentTime : S.restorePos || 0) * 1000), playing: live && !audio.paused, speed: audio.playbackRate || 1, tint: tintOf(t), fav: S.fav.has(t.id), tid: t.id, cover: ''}
+    : {title: 'Song title', artist: 'Artist', album: 'Album', duration: 214000, position: 71000, playing: true, speed: 1, tint: '120,110,255', fav: false, tid: 'demo', cover: ''};
+  const l = t ? parseLyrics(t.lyrics) : null;
+  const lines = l && l.synced ? l.lines.map(x => [x.t, x.text]) : t ? [] : [[60, 'Lyrics show up here, line by line'], [80, 'for songs with synced lyrics']];
+  return {look: lockLook(), song, lyrics: {id: song.tid, lines}, t};
+}
+function lockPreviewSend() {
+  const f = $('#lkPreview'); if (!f || !lockPvReady || !f.contentWindow) return;
+  const d = lockPreviewData(), post = song => { try { f.contentWindow.postMessage({bsideLock: {look: d.look, song, lyrics: d.lyrics}}, '*'); } catch (e) {} };
+  post(d.song);
+  if (d.t && d.t.artKey) artDataUrl(d.t.artKey).then(u => { if (u) post(Object.assign({}, d.song, {cover: u})); });
+}
+window.addEventListener('message', e => { const f = $('#lkPreview'); if (f && e.source === f.contentWindow && e.data && e.data.bsideLockReady) { lockPvReady = true; lockPreviewSend(); } });
+function lockSheetBody() {
+  const p = lockPrefs(), cur = SKINS.find(k => k.id === skinOf()) || SKINS[0];
+  const card = (id, name, desc, pv) => `<button class="sk-card ${p.style === id ? 'on' : ''}" data-lk-skin="${id}" role="radio" aria-checked="${p.style === id}"><div class="sk-pv ${pv}" aria-hidden="true"><i class="h"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="m"></i></div><b>${esc(name)}</b><span>${esc(desc)}</span></button>`;
+  const src = location.href.split('#')[0].split('?')[0] + '?lock=preview#lockpreview';
+  return `<div id="lkTop">${lockTopHTML()}</div>
+    <div class="lk-pvbox"><div class="lk-phone"><iframe id="lkPreview" src="${esc(src)}" title="Preview of the lock screen" tabindex="-1" aria-hidden="true"></iframe></div></div>
+    <div class="lbl">Style</div>
+    <div class="sk-grid lk-sk" role="radiogroup" aria-label="Lock screen style">${card('app', 'Same as app', 'Now ' + cur.name, cur.id)}${SKINS.map(k => card(k.id, k.name, k.desc, k.id)).join('')}</div>
+    <div class="lbl">Colours</div>
+    <div class="seg" id="lkCol">${LOCK_COLOURS.map(([k, l]) => `<button data-lk-col="${k}" class="${p.colours === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="accent-note" id="lkColNote">${lockLook().skin === 'riot' ? 'Persona 5 is always dark.' : '“Same as app” follows Settings › Appearance.'}</div>
+    <div class="lbl">On the lock screen</div>
+    ${LOCK_SHOW.map(([k, l, sub]) => `<button class="mi" data-lk-show="${k}" role="switch" aria-checked="${!!p.show[k]}"><span class="mt">${esc(l)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span><span class="switch ${p.show[k] ? 'on' : ''}"></span></button>`).join('')}
+    ${menuItem('close', 'Reset the lock screen', 'lockreset', {sub: 'Same style as the app, everything but the extras shown'})}`;
+}
+function lockSheet() {
+  lockPvReady = false;
+  openSheet({head: sheetHead('Lock screen', 'B-Side’s player over Android’s lock screen'), body: lockSheetBody(),
+    onMount: el => { el._lock = true; el._cleanup = () => { el._lock = false; lockPvReady = false; }; },
+    onClick: async e => {
+      const p = lockPrefs();
+      if (e.target.closest('[data-lk="toggle"]')) { await toggleLockPlayer(); refreshLockBox(); return; }
+      const sk = e.target.closest('[data-lk-skin]');
+      if (sk) { p.style = sk.dataset.lkSkin; setLockPrefs(p); $$('[data-lk-skin]', sheetEl).forEach(c => { const on = c === sk; c.classList.toggle('on', on); c.setAttribute('aria-checked', on); }); lockColNote(); sfx('select'); return; }
+      const col = e.target.closest('[data-lk-col]');
+      if (col) { p.colours = col.dataset.lkCol; setLockPrefs(p); $$('[data-lk-col]', sheetEl).forEach(c => c.classList.toggle('on', c === col)); lockColNote(); sfx('select'); return; }
+      const sh = e.target.closest('[data-lk-show]');
+      if (sh) { const k = sh.dataset.lkShow; p.show[k] = !p.show[k]; setLockPrefs(p); sh.setAttribute('aria-checked', p.show[k]); $('.switch', sh).classList.toggle('on', p.show[k]); sfx(p.show[k] ? 'pop' : 'select'); return; }
+      const b = e.target.closest('[data-mi]'); if (!b) return;
+      if (b.dataset.mi === 'lockallow') { askLockPermission(); return; }
+      if (b.dataset.mi === 'lockreset') { S.settings.lock = null; setLockPrefs(lockPrefs()); const body = $('.sheet-body', sheetEl), y = body.scrollTop; body.innerHTML = lockSheetBody(); body.scrollTop = y; lockPvReady = false; sfx('delete'); }
+    }});
+}
+function lockColNote() { const n = $('#lkColNote', sheetEl); if (n) n.textContent = lockLook().skin === 'riot' ? 'Persona 5 is always dark.' : '“Same as app” follows Settings › Appearance.'; }
 async function maybeAskBackground() {
   const st = bgState(); if (!st || S.settings.bgAsked || (st.ignoring && !st.restricted)) return;
   S.settings.bgAsked = true; persistSoon();

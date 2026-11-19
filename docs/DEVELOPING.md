@@ -7,9 +7,9 @@ How to build B-Side, publish a release, and how the pieces fit together. For usi
 
 ### Web
 ```bash
-python3 web/build.py        # web/app.html + fonts.css + skins/ + skins.js + icons.js → web/index.html and docs/index.html
+python3 web/build.py        # web/app.html + fonts.css + skins/ + skins.js + icons.js + lock.js → web/index.html and docs/index.html
 ```
-Edit `web/app.html` (the player), `web/skins/*.css` and `web/skins.js` (the game styles), `web/icons.js` (the app icons)
+Edit `web/app.html` (the player), `web/skins/*.css` and `web/skins.js` (the game styles), `web/lock.js` (the lock screen player), `web/icons.js` (the app icons)
 or `web/fonts.css` (style fonts), then rebuild. `docs/index.html` is the copy GitHub Pages serves (deploy from the `docs`
 folder of `main`); it's at https://tymonbitesthedust.github.io/B-Side/ and is where installed Android apps get updates.
 
@@ -62,6 +62,12 @@ by one gain node. Tags are parsed in JavaScript with no libraries: ID3v1 and ID3
 Opus), MP4 metadata and RIFF INFO; loudness from `REPLAYGAIN_*`, Opus `R128_*_GAIN` or iTunes `iTunNORM`. The library
 and copied song files live in IndexedDB, settings in `localStorage`.
 
+The lock screen player is the same page in lock mode: `web/lock.js` runs first and, when it's opened with the
+`BSideLock` bridge or as `#lock` / `#lockpreview`, it keeps only the icon sprite and draws the Now Playing screen's markup
+with a clock, so every style dresses it exactly as it dresses the app. The player's own script then returns at once
+(`window.__bsideLock`). The preview in *Settings → Lock screen* is that page in an iframe (`?lock=preview#lockpreview`),
+fed by `postMessage`. Persona 5's cut-out letters live in `web/ransom.js`, shared by both.
+
 Folders are remembered in `localStorage` (`bside:folders`), and each song records the folder it came from (`src`) or,
 on Android, the single file that was picked (`uri`). A rescan lists each folder again: on Android through the app's
 lasting folder access, in Chrome and Edge through the folder's `FileSystemDirectoryHandle` (kept in a separate IndexedDB
@@ -112,10 +118,15 @@ flowchart LR
   every subfolder is reported as partial, and the page then removes nothing from that folder. `checkFiles` looks up songs
   picked one by one; the page only believes "no such file" when the same storage answered for other files just then.
 - **`LockScreenActivity`** is the optional lock screen player. `MusicService` listens for `SCREEN_OFF` and, while music
-  plays (or for 10 minutes after a pause, never during a call), opens it with `showWhenLocked`. It shows playback
-  controls only; swiping up calls `requestDismissKeyguard`, and it closes itself on `USER_PRESENT` or when there's no
-  lock screen to cover. Android 10+ only allows the start from the background with `SYSTEM_ALERT_WINDOW` ("Display over
-  other apps"), which the page asks for when the setting is turned on. The page sends a 720 px cover for it while it's on.
+  plays (or for 10 minutes after a pause, never during a call), opens it with `showWhenLocked`. It shows the player's own
+  page in lock mode (`web/lock.js`) in a WebView of its own, on its own origin (`lock.appassets.androidplatform.net`), so it
+  can't reach the library; nothing but the page and the cover (`/__cover/<key>`) loads. Through the `BSideLock` bridge it
+  gets the song, the synced lyrics and the look chosen in *Settings → Lock screen* (sent by the page with `setLockLook`), and
+  sends play/pause/skip/seek/favourite back. Swiping up calls `requestDismissKeyguard`; it closes itself on `USER_PRESENT` or
+  when there's no lock screen to cover. If no WebView can be made, a plain native screen stands in. Android 10+ only
+  allows the start from the background with `SYSTEM_ALERT_WINDOW` ("Display over other apps"), which the page asks for
+  when the setting is turned on. The page sends a 720 px cover for it while it's on. The lock page is read with
+  `WebUpdater.peek`, which doesn't count as a page start.
 - **`MainActivity`** serves the page at `https://appassets.androidplatform.net/`, handles the Storage Access Framework
   pickers and "Open with", and switches the home-screen icon between 16 `<activity-alias>` entries.
 
@@ -125,7 +136,9 @@ b-side/
 ├── web/
 │   ├── app.html          the player: markup, base styles and code
 │   ├── skins/            one CSS file per game style, every rule scoped to [data-skin="…"]
-│   ├── skins.js          style-only pieces: cut-out letters, star field, ribbon, page changes
+│   ├── skins.js          style-only pieces: star field, ribbon, page changes
+│   ├── ransom.js         Persona 5 cut-out letters (player and lock screen)
+│   ├── lock.js           the lock screen player: this page in lock mode
 │   ├── icons.js          app icon generator (tab icon, settings previews, launcher icons)
 │   ├── fonts.css         display fonts for the styles (embedded, works offline)
 │   ├── build.py          builds the single-file player

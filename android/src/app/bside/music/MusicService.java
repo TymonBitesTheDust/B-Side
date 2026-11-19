@@ -56,6 +56,8 @@ public class MusicService extends Service {
     private static final long LOCK_AFTER_PAUSE_MS = 10 * 60 * 1000L;
     private static String artKey = "", bigArtKey = "";
     private static Bitmap art, bigArt;
+    private static byte[] artBytes, bigArtBytes; // the same covers as image files, for the lock screen page
+    private static String lyrics = ""; // the song's synced lyrics, sent while the lock screen player is on
 
     private MediaSession session;
     private NotificationManager nm;
@@ -112,15 +114,22 @@ public class MusicService extends Service {
                     return;
                 }
                 String key = s.optString("artKey", "");
-                Bitmap bm = decodeArt(s, "art");
+                byte[][] raw = new byte[1][];
+                Bitmap bm = decodeArt(s, "art", raw);
                 if (bm != null) {
                     art = bm;
                     artKey = key;
+                    artBytes = raw[0];
                 }
-                Bitmap big = decodeArt(s, "bigArt"); // a larger cover, sent only while the lock screen player is on
+                Bitmap big = decodeArt(s, "bigArt", raw); // a larger cover, sent only while the lock screen player is on
                 if (big != null) {
                     bigArt = big;
                     bigArtKey = key;
+                    bigArtBytes = raw[0];
+                }
+                if (s.has("lyr")) {
+                    lyrics = s.optString("lyr", "");
+                    s.remove("lyr");
                 }
                 if (state != null && state.optBoolean("playing") && !s.optBoolean("playing")) pausedAt = SystemClock.elapsedRealtime();
                 state = s;
@@ -147,11 +156,12 @@ public class MusicService extends Service {
         });
     }
 
-    /** Decodes a cover sent by the page and drops the text from the kept state. */
-    private static Bitmap decodeArt(JSONObject s, String field) {
+    /** Decodes a cover sent by the page (its bytes go in raw[0]) and drops the text from the kept state. */
+    private static Bitmap decodeArt(JSONObject s, String field, byte[][] raw) {
         if (!s.has(field)) return null;
         try {
             byte[] b = Base64.decode(s.getString(field), Base64.DEFAULT);
+            raw[0] = b;
             return BitmapFactory.decodeByteArray(b, 0, b.length);
         } catch (Exception e) {
             return null;
@@ -177,6 +187,19 @@ public class MusicService extends Service {
         if (s.optBoolean("playing")) pos += (long) ((SystemClock.elapsedRealtime() - stateAt) * s.optDouble("speed", 1.0));
         long dur = s.optLong("duration");
         return dur > 0 ? Math.min(pos, dur) : pos;
+    }
+
+    /** A cover's image file for the lock screen page: the large one if it was sent, else the notification's. */
+    static byte[] coverBytes(String key) {
+        if (key == null || key.isEmpty()) return null;
+        if (key.equals(bigArtKey) && bigArtBytes != null) return bigArtBytes;
+        if (key.equals(artKey) && artBytes != null) return artBytes;
+        return null;
+    }
+
+    /** {"id": song, "lines": [[seconds, text]…]} for the song playing, or "". */
+    static String lyrics() {
+        return lyrics;
     }
 
     /** The best cover there is for the song that's playing: the large one if it was sent, else the notification's. */

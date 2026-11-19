@@ -91,7 +91,7 @@ Each style changes the whole look and feel, not just the colours: the type, shap
 
 ### On Android
 - **Keeps playing after you close the app**, with controls in the notification, on the lock screen, and on headphones and Bluetooth devices.
-- **Lock screen player** (optional, *Settings → Lock screen player*): when the screen goes off while music plays, B-Side's own player fills the lock screen with the cover, the time, a progress bar and big buttons. Swipe up to unlock. It only shows playback controls, never your library. Android asks you to allow *Display over other apps* for it.
+- **Lock screen player** (optional, *Settings → Lock screen player*): when the screen goes off while music plays, B-Side's own player fills the lock screen. Swipe up to unlock. Give it the same style as the app or any of the six, light or dark, and choose what it shows: clock, date, cover, artist, album, progress bar, buttons, a favourite button, the lyrics line by line, the unlock hint, or a blurred cover behind it all. A live preview shows the result as you go. It only shows playback controls, never your library. Android asks you to allow *Display over other apps* for it.
 - **Songs you added one by one** are checked too, and leave B-Side when their file is deleted.
 - **Play from your car or headphones even when B-Side is closed.** Press Play and B-Side picks up your last song where you left off.
 - **Pauses when headphones are unplugged.**
@@ -159,7 +159,7 @@ When it says **"Connected as [your name]"**, tap **Import all**, or one playlist
 | Even out loud and quiet songs | Now Playing → Sound button → *Volume levelling* |
 | Turn the bass or treble up, or widen the stereo | Now Playing → Sound button → *Bass, treble and stereo* |
 | Pick up new songs and drop deleted ones | **Folders** tab → **Rescan**, or *Settings → Folders* to choose how often |
-| Show the player on the lock screen (Android) | *Settings → Lock screen player*, then allow *Display over other apps* |
+| Show the player on the lock screen (Android) | *Settings → Lock screen player*, then allow *Display over other apps*. Choose its style and what it shows on the same page |
 | Fix how an artist is split | *Settings → Artists* |
 | Stop an album splitting in two | *Settings → Albums* → switch off *Separate albums by album artist* |
 | Skip from Now Playing | Swipe the album cover left or right |

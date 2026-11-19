@@ -42,9 +42,17 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextClock;
 import android.widget.TextView;
+import android.net.Uri;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.util.Locale;
 
 /**
@@ -54,11 +62,18 @@ import java.util.Locale;
  * playback controls; swiping up (or tapping the cover) asks Android to unlock as usual. It closes by itself once
  * the phone is unlocked, or when there's nothing playing.
  *
+ * What it shows is B-Side's own page opened in lock mode (web/lock.js), so it wears the style chosen in
+ * Settings › Lock screen exactly as the app does, with the pieces chosen there. The page runs in a WebView of its
+ * own, on an origin of its own (lock.appassets.androidplatform.net), so it can't see the library; it gets the song
+ * and the look through the BSideLock bridge and nothing else loads. If no WebView can be made, a plain native
+ * screen stands in.
+ *
  * Android 10 and later only let an app open a screen from the background with "Display over other apps", so the
  * setting asks for that permission.
  */
 public class LockScreenActivity extends Activity {
-    private static final String PREF = "lockPlayer";
+    private static final String PREF = "lockPlayer", PREF_LOOK = "lockLook";
+    private static final String LOCK_HOST = "lock.appassets.androidplatform.net";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static LockScreenActivity shown;
 
@@ -86,6 +101,9 @@ public class LockScreenActivity extends Activity {
     };
 
     private float dn;
+    private WebView web; // the lock screen page; null when it couldn't be made (then the native views below)
+    private boolean webReady;
+    private int insetTop, insetBottom;
     private View content;
     private ImageView bg, art;
     private TextView title, sub, tCur, tDur;
@@ -107,6 +125,21 @@ public class LockScreenActivity extends Activity {
             @Override
             public void run() {
                 close();
+            }
+        });
+    }
+
+    /** The style and pieces chosen in Settings › Lock screen, as JSON from the page (see lock.js). */
+    static String look(Context c) {
+        return c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).getString(PREF_LOOK, "");
+    }
+
+    static void setLook(Context c, String json) {
+        c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).edit().putString(PREF_LOOK, json == null ? "" : json).apply();
+        MAIN.post(new Runnable() {
+            @Override
+            public void run() {
+                refresh();
             }
         });
     }
@@ -165,7 +198,8 @@ public class LockScreenActivity extends Activity {
         }
         w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        setContentView(build());
+        View page = buildWeb();
+        setContentView(page != null ? page : build());
         IntentFilter f = new IntentFilter(Intent.ACTION_USER_PRESENT);
         f.addAction(Intent.ACTION_SCREEN_ON);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(screen, f, Context.RECEIVER_NOT_EXPORTED);
@@ -180,7 +214,7 @@ public class LockScreenActivity extends Activity {
         if (closeIfUnlocked()) return;
         bind();
         MAIN.removeCallbacks(tick);
-        MAIN.post(tick);
+        if (web == null) MAIN.post(tick);
     }
 
     @Override
@@ -194,6 +228,10 @@ public class LockScreenActivity extends Activity {
         MAIN.removeCallbacks(tick);
         MAIN.removeCallbacks(checkLocked);
         if (shown == this) shown = null;
+        if (web != null) {
+            web.destroy();
+            web = null;
+        }
         if (listening) {
             listening = false;
             try {
@@ -237,6 +275,7 @@ public class LockScreenActivity extends Activity {
                 public void onDismissCancelled() {
                     leaving = false;
                     settle();
+                    if (web != null) web.evaluateJavascript("window.bsideLockReset&&bsideLockReset()", null);
                 }
 
                 @Override
@@ -265,12 +304,16 @@ public class LockScreenActivity extends Activity {
 
     // ───────────────────────── showing the song ─────────────────────────
     private void bind() {
-        if (content == null) return;
         JSONObject s = MusicService.now();
         if (s == null || !s.optBoolean("hasTrack")) {
             finish();
             return;
         }
+        if (web != null) {
+            if (webReady) web.evaluateJavascript("window.bsideLockUpdate&&bsideLockUpdate()", null);
+            return;
+        }
+        if (content == null) return;
         String t = s.optString("title"), a = s.optString("artist"), al = s.optString("album");
         if (!t.equals(String.valueOf(title.getText()))) {
             title.setText(t);
@@ -328,7 +371,169 @@ public class LockScreenActivity extends Activity {
         tDur.setText(fmt(dur));
     }
 
-    // ───────────────────────── layout ─────────────────────────
+    // ───────────────────────── the lock screen page ─────────────────────────
+    private View buildWeb() {
+        final WebView w;
+        try {
+            w = new WebView(this);
+        } catch (Throwable e) {
+            return null; // no WebView right now (it may be updating): the native screen
+        }
+        web = w;
+        w.setBackgroundColor(Color.BLACK);
+        WebSettings s = w.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(false);
+        s.setAllowFileAccess(false);
+        s.setAllowContentAccess(false);
+        s.setTextZoom(100);
+        s.setSupportZoom(false);
+        s.setBuiltInZoomControls(false);
+        s.setDisplayZoomControls(false);
+        s.setSupportMultipleWindows(false);
+        w.setVerticalScrollBarEnabled(false);
+        w.setHorizontalScrollBarEnabled(false);
+        w.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        w.addJavascriptInterface(new Bridge(), "BSideLock");
+        w.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override
+            @SuppressWarnings("deprecation")
+            public WindowInsets onApplyWindowInsets(View v, WindowInsets in) {
+                insetTop = in.getSystemWindowInsetTop();
+                insetBottom = in.getSystemWindowInsetBottom();
+                pushInsets();
+                return in.consumeSystemWindowInsets();
+            }
+        });
+        w.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
+                Uri u = req.getUrl();
+                String path = u.getPath() == null ? "" : u.getPath();
+                try {
+                    if (LOCK_HOST.equals(u.getHost())) {
+                        if (path.equals("/") || path.equals("/index.html")) {
+                            return new WebResourceResponse("text/html", "utf-8", WebUpdater.peek(getApplicationContext()));
+                        }
+                        if (path.startsWith("/__cover/")) {
+                            byte[] b = MusicService.coverBytes(Uri.decode(path.substring(9)));
+                            if (b != null) return new WebResourceResponse("image/jpeg", null, new ByteArrayInputStream(b));
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+                return empty(); // nothing else loads on the lock screen: no network at all
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
+                return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                if (view != web) return;
+                webReady = true;
+                pushInsets();
+                bind();
+            }
+
+            @Override
+            public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
+                if (view == web) { // its renderer went away: carry on with the native screen
+                    web = null;
+                    webReady = false;
+                    setContentView(build());
+                    bind();
+                    MAIN.removeCallbacks(tick);
+                    MAIN.post(tick);
+                }
+                view.destroy();
+                return true;
+            }
+        });
+        w.loadUrl("https://" + LOCK_HOST + "/index.html#lock");
+        return w;
+    }
+
+    private static WebResourceResponse empty() {
+        WebResourceResponse r = new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
+        r.setStatusCodeAndReasonPhrase(404, "Not Found");
+        return r;
+    }
+
+    private void pushInsets() {
+        if (web == null || !webReady) return;
+        web.evaluateJavascript("window.bsideInsets&&bsideInsets(" + (insetTop / dn) + "," + (insetBottom / dn) + ")", null);
+    }
+
+    /** What the lock screen page may ask for and do: the song, its look, and playback controls. */
+    private final class Bridge {
+        @JavascriptInterface
+        public String state() {
+            JSONObject s = MusicService.now();
+            if (s == null) return "{}";
+            try {
+                JSONObject o = new JSONObject(s.toString());
+                o.put("position", MusicService.positionNow());
+                String key = s.optString("artKey", "");
+                byte[] b = MusicService.coverBytes(key);
+                o.put("cover", b != null ? "/__cover/" + Uri.encode(key) + "?n=" + b.length : "");
+                return o.toString();
+            } catch (Exception e) {
+                return "{}";
+            }
+        }
+
+        @JavascriptInterface
+        public String config() {
+            return look(LockScreenActivity.this);
+        }
+
+        @JavascriptInterface
+        public String lyrics() {
+            return MusicService.lyrics();
+        }
+
+        @JavascriptInterface
+        public boolean clock24() {
+            return DateFormat.is24HourFormat(LockScreenActivity.this);
+        }
+
+        @JavascriptInterface
+        public String insets() {
+            return "{\"top\":" + (insetTop / dn) + ",\"bottom\":" + (insetBottom / dn) + "}";
+        }
+
+        @JavascriptInterface
+        public void command(final String c) {
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    if ("pause".equals(c)) WebHost.remote("pause", 0);
+                    else if ("fav".equals(c)) WebHost.remote("fav", 0);
+                    else if ("play".equals(c) || "next".equals(c) || "prev".equals(c)) WebHost.command(LockScreenActivity.this, c);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void seek(long ms) {
+            WebHost.remote("seek", Math.max(0, ms));
+        }
+
+        @JavascriptInterface
+        public void unlock(final boolean openApp) {
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    LockScreenActivity.this.unlock(openApp);
+                }
+            });
+        }
+    }
+
+    // ───────────────────────── layout (when there's no WebView) ─────────────────────────
     private View build() {
         final SwipeFrame root = new SwipeFrame(this);
         root.setBackgroundColor(0xFF050507);

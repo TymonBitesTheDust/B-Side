@@ -565,6 +565,12 @@ final class WebHost {
             LockScreenActivity.setEnabled(app, on);
         }
 
+        /** The lock screen's style and what it shows, as chosen in Settings › Lock screen (see lock.js). */
+        @JavascriptInterface
+        public void setLockLook(String json) {
+            LockScreenActivity.setLook(app, json);
+        }
+
         /** Opens Android's "Display over other apps" page for B-Side; Android 10 and later need it to show the player. */
         @JavascriptInterface
         public void lockPermission() {
@@ -625,7 +631,9 @@ final class WebHost {
                 }
                 String asset = path.substring(1);
                 if (asset.contains("..")) return notFound();
-                InputStream body = "index.html".equals(asset) ? WebUpdater.open(app) : app.getAssets().open(asset); // a newer page from the website, if one was downloaded
+                boolean lockPreview = u.getQuery() != null && u.getQuery().contains("lock"); // the lock screen preview in Settings
+                InputStream body = !"index.html".equals(asset) ? app.getAssets().open(asset)
+                        : lockPreview ? WebUpdater.peek(app) : WebUpdater.open(app); // a newer page from the website, if one was downloaded
                 WebResourceResponse r = new WebResourceResponse(mimeFor(asset), "utf-8", body);
                 Map<String, String> h = new HashMap<>();
                 h.put("Cache-Control", "no-cache");
