@@ -35,6 +35,33 @@ The first build creates a signing key at `android/bside-release.jks` if there is
 back it up.** It is excluded by `.gitignore`, and every update must be signed with the same key to install over an
 existing copy of B-Side.
 
+Add `TEST_PACKAGE=app.bside.music.test` to build **B-Side Test** instead: the same app under another package name,
+which installs next to B-Side rather than over it, so you can try a change without touching your library.
+
+### Build on GitHub
+`.github/workflows/build.yml` builds both files on GitHub's machines, which already have the Android tools, on every
+pull request and every push to `main`. The files are on the run's page under **Artifacts**.
+
+To sign them with the release key, add two repository secrets once (**Settings → Secrets and variables → Actions →
+New repository secret**):
+
+| Secret | Value |
+|---|---|
+| `BSIDE_KEYSTORE` | `android/bside-release.jks` as base64 |
+| `BSIDE_KS_PASS` | its password |
+
+To get the base64, run this in the folder with the key:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\bside-release.jks")) | Set-Clipboard   # Windows
+```
+```bash
+base64 -w0 bside-release.jks        # Linux (on a Mac: base64 -i bside-release.jks)
+```
+
+The workflow checks that the APK's certificate matches the one earlier releases used, and fails if it doesn't.
+Without the secrets it builds B-Side Test instead, so a build can't be mistaken for a release.
+
 ## Release
 
 The player's version lives in three `<meta>` tags at the top of `web/app.html`:
@@ -49,7 +76,9 @@ The player's version lives in three `<meta>` tags at the top of `web/app.html`:
   GitHub Pages publishes `docs/index.html`, and phones pick it up the next time B-Side opens.
 - **Android change:** also raise `versionCode` / `versionName` in `android/AndroidManifest.xml` and `android/build.sh`,
   set `bside-native` to the new `versionCode` if the page depends on it, and publish a new APK.
-- Attach `android/build/B-Side.apk` and `web/index.html` (renamed `B-Side.html`) to the GitHub release.
+- Attach `android/build/B-Side.apk` and `web/index.html` (renamed `B-Side.html`) to the GitHub release. With the
+  secrets above, pushing a tag such as `V1.10.0` does this for you: the workflow drafts the release with both files
+  attached, and you publish it.
 
 ## How it works
 
@@ -133,6 +162,8 @@ flowchart LR
 ## Project structure
 ```
 b-side/
+├── .github/workflows/
+│   └── build.yml         builds B-Side.apk and B-Side.html on GitHub
 ├── web/
 │   ├── app.html          the player: markup, base styles and code
 │   ├── skins/            one CSS file per game style, every rule scoped to [data-skin="…"]
