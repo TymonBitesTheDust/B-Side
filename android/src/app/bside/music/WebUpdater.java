@@ -121,6 +121,18 @@ final class WebUpdater {
         return c.getAssets().open("index.html");
     }
 
+    /**
+     * The same page, for the lock screen player and its preview: read without counting as a start, so opening the
+     * lock screen never marks a downloaded page as one that failed to start.
+     */
+    static synchronized InputStream peek(Context c) throws IOException {
+        SharedPreferences p = prefs(c);
+        File f = file(c);
+        int build = p.getInt("build", 0);
+        if (f.isFile() && usable(build, p.getInt("native", 0), builtInBuild(c), appVersion(c), p.getInt("bad", 0))) return new FileInputStream(f);
+        return c.getAssets().open("index.html");
+    }
+
     /** The page started properly. */
     static synchronized void started(Context c, int build) {
         SharedPreferences p = prefs(c);

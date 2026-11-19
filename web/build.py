@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Builds the single-file player: app.html + fonts.css + skins/*.css + skins.js + icons.js -> index.html.
+"""Builds the single-file player: app.html + fonts.css + skins/*.css + skins.js + icons.js + lock.js -> index.html.
 
 It also writes the same page to ../docs/index.html, the copy GitHub Pages serves (Settings → Pages → the docs
 folder of main), with a .nojekyll file so Pages serves it as it is.
 
 Each game style lives in its own file under skins/ (every rule scoped to [data-skin="…"]); they are
-inlined in a fixed order after the base styles."""
+inlined in a fixed order after the base styles. lock.js is the lock screen player: the same page opened in lock
+mode on Android's lock screen (and in the preview in Settings), where the rest of the player never starts."""
 import pathlib
 
 here = pathlib.Path(__file__).resolve().parent
@@ -20,7 +21,9 @@ def inline(text, marker, content):
 out = (here / 'app.html').read_text(encoding='utf-8')
 out = inline(out, '/*@FONTS@*/', (here / 'fonts.css').read_text(encoding='utf-8'))
 out = inline(out, '/*@SKINS@*/', '\n'.join((here / 'skins' / f'{k}.css').read_text(encoding='utf-8') for k in SKINS))
-out = inline(out, '/*@SKINJS@*/', (here / 'skins.js').read_text(encoding='utf-8'))
+ransom = (here / 'ransom.js').read_text(encoding='utf-8')
+out = inline(out, '/*@SKINJS@*/', inline((here / 'skins.js').read_text(encoding='utf-8'), '/*@RANSOM@*/', ransom))
+out = inline(out, '/*@LOCKJS@*/', inline((here / 'lock.js').read_text(encoding='utf-8'), '/*@RANSOM@*/', ransom))
 out = inline(out, '/*@ICONS@*/', (here / 'icons.js').read_text(encoding='utf-8'))
 (here / 'index.html').write_text(out, encoding='utf-8')
 docs = here.parent / 'docs'

@@ -30,7 +30,7 @@ Needs Android 7.0 or newer. To update, install the new `B-Side.apk` over the old
 - **Download `B-Side.html`** from the [latest release](../../releases/latest) and double-click it. It opens in Chrome, Edge, Firefox or Safari, works offline, and there's nothing to install.
 - **Or use it online** at **https://tymonbitesthedust.github.io/B-Side/**. Your music still stays on your computer: the page only plays the files you pick.
 
-On a computer you can also drag songs and folders straight onto the window.
+On a computer you can also drag songs and folders straight onto the window. In Chrome and Edge, B-Side can check the folders you add for new and deleted songs by itself (the browser may ask once per visit to let it read them again). In other browsers, a folder is checked when you choose it again.
 
 ### First steps
 1. Tap **+** and choose *Select music files* or *Select a folder*.
@@ -50,6 +50,7 @@ On a computer you can also drag songs and folders straight onto the window.
 - **Fast scroll** for long lists (*Settings → Fast scroll*): a **Scrollbar** you drag on the right edge, or **A–Z** letters you tap or slide along to jump to the first song, album or artist starting with that letter.
 - **Smart playlists**: Favourites, Recently added, Most played and Recently played, next to your own playlists.
 - **Everything comes from your files**: titles, artists, albums, cover art and lyrics, including `cover.jpg` / `folder.jpg` pictures and `.lrc` lyric files in the same folder.
+- **Folders stay up to date.** B-Side remembers the folders you add and checks them again for new and deleted songs: when it opens, every hour, once a day or only when you tap **Rescan** (*Settings → Folders*). New songs are added; songs whose files were deleted leave your library, the queue and your playlists. A folder that can't be read (say, a memory card that's out) never loses songs. Songs you remove from B-Side yourself aren't added back.
 
 ### The player
 - A mini player and a full **Now Playing** screen tinted by the album art. Swipe the cover to skip, drag down to close.
@@ -57,6 +58,7 @@ On a computer you can also drag songs and folders straight onto the window.
 - Shuffle, repeat all and repeat one.
 - **Volume levelling** plays every song at about the same loudness, so you don't reach for the volume between a quiet song and a loud one.
 - **7-band equaliser** with 10 presets (Pop, Rock, Jazz, Bass boost, Vocal and more).
+- **Bass, treble and stereo expand**: turn the low and high end up or down by up to 12 dB, and widen the sound for headphones. Songs recorded in mono are left as they are.
 - **Sleep timer** from 15 minutes to 1 hour 30, or at the end of the song. The music fades out.
 - **Playback speed** from 0.5× to 2×.
 - **Lyrics**, including time-synced lyrics that follow the song; tap a line to jump to it.
@@ -89,6 +91,8 @@ Each style changes the whole look and feel, not just the colours: the type, shap
 
 ### On Android
 - **Keeps playing after you close the app**, with controls in the notification, on the lock screen, and on headphones and Bluetooth devices.
+- **Lock screen player** (optional, *Settings → Lock screen player*): when the screen goes off while music plays, B-Side's own player fills the lock screen. Swipe up to unlock. Give it the same style as the app or any of the six, light or dark, and choose what it shows: clock, date, cover, artist, album, progress bar, buttons, a favourite button, the lyrics line by line, the unlock hint, or a blurred cover behind it all. A live preview shows the result as you go. It only shows playback controls, never your library. Android asks you to allow *Display over other apps* for it.
+- **Songs you added one by one** are checked too, and leave B-Side when their file is deleted.
 - **Play from your car or headphones even when B-Side is closed.** Press Play and B-Side picks up your last song where you left off.
 - **Pauses when headphones are unplugged.**
 - **Updates itself.** New versions download in the background and start the next time you open B-Side.
@@ -153,6 +157,9 @@ When it says **"Connected as [your name]"**, tap **Import all**, or one playlist
 | Choose the player buttons | Long-press the button row in Now Playing |
 | Jump through a long list | *Settings → Fast scroll* → *Scrollbar* or *A–Z* |
 | Even out loud and quiet songs | Now Playing → Sound button → *Volume levelling* |
+| Turn the bass or treble up, or widen the stereo | Now Playing → Sound button → *Bass, treble and stereo* |
+| Pick up new songs and drop deleted ones | **Folders** tab → **Rescan**, or *Settings → Folders* to choose how often |
+| Show the player on the lock screen (Android) | *Settings → Lock screen player*, then allow *Display over other apps*. Choose its style and what it shows on the same page |
 | Fix how an artist is split | *Settings → Artists* |
 | Stop an album splitting in two | *Settings → Albums* → switch off *Separate albums by album artist* |
 | Skip from Now Playing | Swipe the album cover left or right |
@@ -170,6 +177,8 @@ When it says **"Connected as [your name]"**, tap **Import all**, or one playlist
 - **A newer version is ready.** *Settings → Restart to use …* switches straight away, or it starts the next time you open B-Side.
 - **A song won't play.** B-Side plays MP3, M4A/AAC, FLAC, Ogg, Opus and WAV. Android plays all of them; a few Linux browsers can't play AAC.
 - **Your library is kept on the device**, so it's still there next time. Removing a song from B-Side never deletes the original file.
+- **A folder says it can't be opened any more.** Android or the browser no longer lets B-Side read it, often after it was moved or renamed. Its songs stay; open *Settings → Folders*, tap it and choose it again.
+- **The lock screen player doesn't appear.** Check that *Display over other apps* is allowed for B-Side. On Xiaomi, Redmi and POCO phones also allow *Show on Lock screen* in B-Side's app permissions. It shows while music plays and for a few minutes after you pause, and steps aside if your phone has no screen lock.
 
 ## Privacy
 No accounts, no ads and no tracking. Your music is never uploaded. B-Side only goes online when you use a Spotify feature, and when the Android app checks for a newer version (you can switch that off in *Settings → Update automatically*).

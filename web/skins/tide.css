@@ -79,7 +79,9 @@
 /* ---------- the tabs: a tilted stack of command words with the triangle cursor ---------- */
 
 [data-skin="tide"] .tabs { background: linear-gradient(180deg, color-mix(in srgb, var(--o2) 28%, var(--o3)), var(--o3)); box-shadow: 0 1.5px 0 rgba(255, 255, 255, .35); }
-[data-skin="tide"] .tabs-in { padding: 14px 18px 18px; gap: 4px; align-items: center; }
+/* Room above the words: the strip scrolls sideways, so it clips anything outside it, and the active word's
+   tilted cursor reaches up past the word. */
+[data-skin="tide"] .tabs-in { padding: 30px 18px 8px; gap: 4px; align-items: center; }
 [data-skin="tide"] .tab {
   position: relative; isolation: isolate; z-index: 2;
   font-style: italic; font-weight: 800; font-size: 21px; line-height: .92; letter-spacing: -.035em; text-transform: uppercase;
@@ -98,7 +100,7 @@
 [data-skin="tide"] .tab.on { color: #fff !important; text-shadow: 2px 2px 0 var(--ink-dark), -1px -1px 0 rgba(5, 8, 22, .55); scale: 1.2; z-index: 1; margin: 0 8px; }
 [data-skin="tide"] .tab::after { display: none; }
 [data-skin="tide"] .tab.on .hl { display: block; position: absolute; inset: 0; z-index: -1; }
-[data-skin="tide"] .tab.on .hl::before, [data-skin="tide"] .tab.on .hl::after { content: ""; position: absolute; left: -4px; top: 50%; width: calc(100% + 10px); height: 38px; margin-top: -21px; clip-path: polygon(0 82%, 100% 0, 84% 66%); animation: tide-cursor .22s cubic-bezier(.2, 1.3, .4, 1), tide-twitch 1.2s ease-out .22s infinite; }
+[data-skin="tide"] .tab.on .hl::before, [data-skin="tide"] .tab.on .hl::after { content: ""; position: absolute; left: -4px; top: 50%; width: calc(100% + 10px); height: 38px; margin-top: -16px; clip-path: polygon(0 82%, 100% 0, 84% 66%); animation: tide-cursor .22s cubic-bezier(.2, 1.3, .4, 1), tide-twitch 1.2s ease-out .22s infinite; }
 [data-skin="tide"] .tab.on .hl::before { z-index: -1; background: var(--hot); }
 [data-skin="tide"] .tab.on .hl::after { z-index: -2; background: #fff; translate: 5px -3px; rotate: -3deg; opacity: .95; }
 @keyframes tide-cursor { from { clip-path: polygon(0 82%, 0 82%, 0 82%); } }

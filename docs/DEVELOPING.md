@@ -7,9 +7,9 @@ How to build B-Side, publish a release, and how the pieces fit together. For usi
 
 ### Web
 ```bash
-python3 web/build.py        # web/app.html + fonts.css + skins/ + skins.js + icons.js → web/index.html and docs/index.html
+python3 web/build.py        # web/app.html + fonts.css + skins/ + skins.js + icons.js + lock.js → web/index.html and docs/index.html
 ```
-Edit `web/app.html` (the player), `web/skins/*.css` and `web/skins.js` (the game styles), `web/icons.js` (the app icons)
+Edit `web/app.html` (the player), `web/skins/*.css` and `web/skins.js` (the game styles), `web/lock.js` (the lock screen player), `web/icons.js` (the app icons)
 or `web/fonts.css` (style fonts), then rebuild. `docs/index.html` is the copy GitHub Pages serves (deploy from the `docs`
 folder of `main`); it's at https://tymonbitesthedust.github.io/B-Side/ and is where installed Android apps get updates.
 
@@ -35,6 +35,33 @@ The first build creates a signing key at `android/bside-release.jks` if there is
 back it up.** It is excluded by `.gitignore`, and every update must be signed with the same key to install over an
 existing copy of B-Side.
 
+Add `TEST_PACKAGE=app.bside.music.test` to build **B-Side Test** instead: the same app under another package name,
+which installs next to B-Side rather than over it, so you can try a change without touching your library.
+
+### Build on GitHub
+`.github/workflows/build.yml` builds both files on GitHub's machines, which already have the Android tools, on every
+pull request and every push to `main`. The files are on the run's page under **Artifacts**.
+
+To sign them with the release key, add two repository secrets once (**Settings → Secrets and variables → Actions →
+New repository secret**):
+
+| Secret | Value |
+|---|---|
+| `BSIDE_KEYSTORE` | `android/bside-release.jks` as base64 |
+| `BSIDE_KS_PASS` | its password |
+
+To get the base64, run this in the folder with the key:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\bside-release.jks")) | Set-Clipboard   # Windows
+```
+```bash
+base64 -w0 bside-release.jks        # Linux (on a Mac: base64 -i bside-release.jks)
+```
+
+The workflow checks that the APK's certificate matches the one earlier releases used, and fails if it doesn't.
+Without the secrets it builds B-Side Test instead, so a build can't be mistaken for a release.
+
 ## Release
 
 The player's version lives in three `<meta>` tags at the top of `web/app.html`:
@@ -49,16 +76,36 @@ The player's version lives in three `<meta>` tags at the top of `web/app.html`:
   GitHub Pages publishes `docs/index.html`, and phones pick it up the next time B-Side opens.
 - **Android change:** also raise `versionCode` / `versionName` in `android/AndroidManifest.xml` and `android/build.sh`,
   set `bside-native` to the new `versionCode` if the page depends on it, and publish a new APK.
-- Attach `android/build/B-Side.apk` and `web/index.html` (renamed `B-Side.html`) to the GitHub release.
+- Attach `android/build/B-Side.apk` and `web/index.html` (renamed `B-Side.html`) to the GitHub release. With the
+  secrets above, pushing a tag such as `V1.10.0` does this for you: the workflow drafts the release with both files
+  attached, and you publish it.
 
 ## How it works
 
 The whole player is one web page. Audio plays through an HTML `<audio>` element, routed through Web Audio for the
-equaliser and volume levelling. To measure a song without loudness tags, B-Side decodes it once with an
+equaliser, bass and treble (a 100 Hz low shelf and an 8 kHz high shelf), stereo expand (mid/side: the side signal is
+raised up to 2.2×, after making mono input stereo) and volume levelling. The chain is only built once one of them is
+used; a pre-gain leaves headroom for boosts. To measure a song without loudness tags, B-Side decodes it once with an
 `OfflineAudioContext` and applies the ITU-R BS.1770 K-weighting with 400 ms gated blocks; each song's level is then set
 by one gain node. Tags are parsed in JavaScript with no libraries: ID3v1 and ID3v2.2–2.4, Vorbis comments (FLAC, Ogg,
 Opus), MP4 metadata and RIFF INFO; loudness from `REPLAYGAIN_*`, Opus `R128_*_GAIN` or iTunes `iTunNORM`. The library
 and copied song files live in IndexedDB, settings in `localStorage`.
+
+The lock screen player is the same page in lock mode: `web/lock.js` runs first and, when it's opened with the
+`BSideLock` bridge or as `#lock` / `#lockpreview`, it keeps only the icon sprite and draws the Now Playing screen's markup
+with a clock, so every style dresses it exactly as it dresses the app. The player's own script then returns at once
+(`window.__bsideLock`). The preview in *Settings → Lock screen* is that page in an iframe (`?lock=preview#lockpreview`),
+fed by `postMessage`. Persona 5's cut-out letters live in `web/ransom.js`, shared by both.
+
+Folders are remembered in `localStorage` (`bside:folders`), and each song records the folder it came from (`src`) or,
+on Android, the single file that was picked (`uri`). A rescan lists each folder again: on Android through the app's
+lasting folder access, in Chrome and Edge through the folder's `FileSystemDirectoryHandle` (kept in a separate IndexedDB
+database, `bside-folders`), elsewhere by having the folder chosen again. Songs on disk are matched by name and size, or by
+folder path and name. Songs no longer there are removed, except from folders that couldn't be read whole; a folder that
+reads as empty, or one that would lose more than half its songs, asks first (or waits, if nobody's looking). Songs you
+remove yourself go on the folder's skip list. Folders picked before 1.10 are adopted from Android's list of granted
+folders: their songs are linked and whatever was in the folder but not in the library is noted, so only later additions
+are imported.
 
 Spotify import uses the Web API with Authorization Code + PKCE and the Redirect URI `http://127.0.0.1:43821/callback`
 on every device: the Android app listens there during a sign-in; in a browser the user pastes that address back. Songs
@@ -72,8 +119,13 @@ flowchart LR
     A["MainActivity<br/>screen · file pickers · Open with<br/>home-screen icon"] -- shows --> W
     W["WebHost<br/>owns the WebView that plays the music<br/>(lives as long as the app process)"]
     S["MusicService<br/>foreground media service · notification<br/>lock screen · headset · wake lock"]
+    L["LockScreenActivity<br/>optional player over the lock screen"]
+    F["FolderScan<br/>reads picked folders, checks single files"]
     W -- now playing --> S
     S -- play / pause / skip / seek --> W
+    S -- screen off --> L
+    L -- play / pause / skip / seek --> W
+    W -- rescan --> F
 ```
 
 - **`WebHost`** owns the WebView at process level rather than inside the screen. Closing B-Side, swiping it away or
@@ -89,16 +141,35 @@ flowchart LR
   moves to an older build or one needing a newer app, and sets aside a page that fails to start three times.
 - **`LoopbackLogin`** listens on `127.0.0.1:43821` only while a Spotify sign-in is waiting and passes the code to the
   page.
+- **`FolderScan`** reads a folder picked with `ACTION_OPEN_DOCUMENT_TREE` (songs, `cover`/`folder` pictures and `.lrc`
+  files, up to 12 levels and 20,000 files). It's used when a folder is added and again when the page asks for a rescan
+  (`scanTree`): the files found are served at `/__scan/<key>` so the page can add the new ones. A walk that couldn't read
+  every subfolder is reported as partial, and the page then removes nothing from that folder. `checkFiles` looks up songs
+  picked one by one; the page only believes "no such file" when the same storage answered for other files just then.
+- **`LockScreenActivity`** is the optional lock screen player. `MusicService` listens for `SCREEN_OFF` and, while music
+  plays (or for 10 minutes after a pause, never during a call), opens it with `showWhenLocked`. It shows the player's own
+  page in lock mode (`web/lock.js`) in a WebView of its own, on its own origin (`lock.appassets.androidplatform.net`), so it
+  can't reach the library; nothing but the page and the cover (`/__cover/<key>`) loads. Through the `BSideLock` bridge it
+  gets the song, the synced lyrics and the look chosen in *Settings → Lock screen* (sent by the page with `setLockLook`), and
+  sends play/pause/skip/seek/favourite back. Swiping up calls `requestDismissKeyguard`; it closes itself on `USER_PRESENT` or
+  when there's no lock screen to cover. If no WebView can be made, a plain native screen stands in. Android 10+ only
+  allows the start from the background with `SYSTEM_ALERT_WINDOW` ("Display over other apps"), which the page asks for
+  when the setting is turned on. The page sends a 720 px cover for it while it's on. The lock page is read with
+  `WebUpdater.peek`, which doesn't count as a page start.
 - **`MainActivity`** serves the page at `https://appassets.androidplatform.net/`, handles the Storage Access Framework
   pickers and "Open with", and switches the home-screen icon between 16 `<activity-alias>` entries.
 
 ## Project structure
 ```
 b-side/
+├── .github/workflows/
+│   └── build.yml         builds B-Side.apk and B-Side.html on GitHub
 ├── web/
 │   ├── app.html          the player: markup, base styles and code
 │   ├── skins/            one CSS file per game style, every rule scoped to [data-skin="…"]
-│   ├── skins.js          style-only pieces: cut-out letters, star field, ribbon, page changes
+│   ├── skins.js          style-only pieces: star field, ribbon, page changes
+│   ├── ransom.js         Persona 5 cut-out letters (player and lock screen)
+│   ├── lock.js           the lock screen player: this page in lock mode
 │   ├── icons.js          app icon generator (tab icon, settings previews, launcher icons)
 │   ├── fonts.css         display fonts for the styles (embedded, works offline)
 │   ├── build.py          builds the single-file player
@@ -111,6 +182,8 @@ b-side/
 │   │   ├── WebUpdater.java
 │   │   ├── MusicService.java
 │   │   ├── MediaButtonReceiver.java
+│   │   ├── LockScreenActivity.java
+│   │   ├── FolderScan.java
 │   │   └── LoopbackLogin.java
 │   ├── res/              hand-made resources (strings, theme, notification icons)
 │   ├── res-gen/          launcher icons generated by gen_icons.py

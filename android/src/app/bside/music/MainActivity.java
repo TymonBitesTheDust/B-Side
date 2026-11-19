@@ -27,8 +27,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
 
 /**
  * The B-Side screen. It shows the player that WebHost keeps alive and adds what a web page
@@ -37,8 +35,6 @@ import java.util.regex.Pattern;
  */
 public class MainActivity extends Activity {
     private static final int REQ_FILES = 11, REQ_TREE = 12, REQ_DATA = 13;
-    private static final Pattern AUDIO_NAME = Pattern.compile(".*\\.(mp3|m4a|m4b|mp4|aac|flac|ogg|oga|opus|wav|wave|wma|webm|weba|mka|aif|aiff|amr|3gp)$");
-    private static final Pattern SIDE_NAME = Pattern.compile("(.*\\.lrc)|((cover|folder|front|album[^/]*)\\.(jpe?g|png|webp))");
 
     static volatile boolean visible;
 
@@ -161,7 +157,14 @@ public class MainActivity extends Activity {
                 } else if (data.getData() != null) {
                     list.add(data.getData());
                 }
-                if (requestCode == REQ_FILES) for (int k = 0; k < list.size() && k < 300; k++) keepAccess(list.get(k));
+                if (requestCode == REQ_FILES) {
+                    final List<Uri> kept = new ArrayList<>();
+                    for (int k = 0; k < list.size() && k < 300; k++) if (keepAccess(list.get(k))) kept.add(list.get(k));
+                    if (!kept.isEmpty()) {
+                        deliverWithSources(list.toArray(new Uri[0]), kept);
+                        return;
+                    }
+                }
                 out = list.toArray(new Uri[0]);
             }
             host.deliver(out);
@@ -171,16 +174,30 @@ public class MainActivity extends Activity {
                 return;
             }
             final Uri tree = data.getData();
-            keepAccess(tree);
+            final boolean kept = keepAccess(tree);
             host.notice("Reading folder…");
             new Thread(new Runnable() {
             @Override
             public void run() {
                 final List<Uri> uris = new ArrayList<>();
                 final JSONObject paths = new JSONObject();
+                final JSONObject info = new JSONObject();
                 try {
                     String rootId = DocumentsContract.getTreeDocumentId(tree);
-                    walkTree(tree, rootId, rootName(tree, rootId), uris, paths, 0);
+                    String root = FolderScan.rootName(getContentResolver(), tree, rootId);
+                    info.put("uri", tree.toString());
+                    info.put("name", root);
+                    info.put("kept", kept);
+                    FolderScan.walk(getContentResolver(), tree, rootId, root, new FolderScan.Sink() {
+                        @Override
+                        public void file(String docId, String name, long size, String path, boolean audio) {
+                            uris.add(DocumentsContract.buildDocumentUriUsingTree(tree, docId));
+                            try {
+                                paths.put(name + "|" + size, path);
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }, 0, new int[1]);
                 } catch (Exception ignored) {
                 }
                 WebHost.MAIN.post(new Runnable() {
@@ -191,7 +208,8 @@ public class MainActivity extends Activity {
                         host.deliver(null);
                         return;
                     }
-                    if (host.web != null) host.web.evaluateJavascript("window.__bsidePaths=" + paths + ";", null);
+                    // The folder itself, so B-Side can look through it again later for new and deleted songs.
+                    if (host.web != null) host.web.evaluateJavascript("window.__bsidePaths=" + paths + ";window.__bsideTree=" + info + ";", null);
                     host.deliver(uris.toArray(new Uri[0]));
                 }
         });
@@ -203,56 +221,43 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Keeps read access to picked songs after this screen closes, so music that carries on in the
-     * background can still open the next file. Best effort: not every picker offers lasting access.
+     * Songs picked one by one: tells the page where each came from (by name and size, as the page sees the
+     * file), so B-Side can later notice when one of them has been deleted.
      */
-    private void keepAccess(Uri u) {
+    private void deliverWithSources(final Uri[] all, final List<Uri> kept) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final JSONObject map = new JSONObject();
+                for (Uri u : kept) {
+                    try (Cursor c = getContentResolver().query(u, new String[]{OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE}, null, null, null)) {
+                        if (c != null && c.moveToFirst() && !c.isNull(0) && !c.isNull(1)) map.put(c.getString(0) + "|" + c.getLong(1), u.toString());
+                    } catch (Exception ignored) {
+                    }
+                }
+                WebHost.MAIN.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (host.web != null && map.length() > 0) host.web.evaluateJavascript("window.__bsideUris=" + map + ";", null);
+                        host.deliver(all);
+                    }
+                });
+            }
+        }, "file-sources").start();
+    }
+
+    /**
+     * Keeps read access to picked songs and folders after this screen closes, so music that carries on in the
+     * background can still open the next file, and folders can be checked again. Best effort: not every picker
+     * offers lasting access.
+     */
+    private boolean keepAccess(Uri u) {
         try {
             getContentResolver().takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        } catch (Exception ignored) {
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-    }
-
-    private String rootName(Uri tree, String rootId) {
-        String name = null;
-        try (Cursor c = getContentResolver().query(DocumentsContract.buildDocumentUriUsingTree(tree, rootId),
-                new String[]{DocumentsContract.Document.COLUMN_DISPLAY_NAME}, null, null, null)) {
-            if (c != null && c.moveToFirst()) name = c.getString(0);
-        } catch (Exception ignored) {
-        }
-        return name == null || name.isEmpty() ? "Folder" : name;
-    }
-
-    private void walkTree(Uri tree, String docId, String path, List<Uri> out, JSONObject paths, int depth) {
-        if (depth > 12 || out.size() > 20000) return;
-        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, docId);
-        String[] cols = {DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-                DocumentsContract.Document.COLUMN_MIME_TYPE, DocumentsContract.Document.COLUMN_SIZE};
-        List<String[]> dirs = new ArrayList<>();
-        try (Cursor c = getContentResolver().query(children, cols, null, null, null)) {
-            if (c == null) return;
-            while (c.moveToNext()) {
-                String id = c.getString(0), name = c.getString(1), mime = c.getString(2);
-                long size = c.isNull(3) ? 0 : c.getLong(3);
-                if (name == null || name.startsWith(".")) continue;
-                if (DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) {
-                    dirs.add(new String[]{id, name});
-                    continue;
-                }
-                String lower = name.toLowerCase(Locale.ROOT);
-                boolean audio = (mime != null && (mime.startsWith("audio/") || mime.equals("application/ogg") || mime.equals("application/x-flac")))
-                        || AUDIO_NAME.matcher(lower).matches();
-                boolean side = SIDE_NAME.matcher(lower).matches();
-                if (!audio && !side) continue;
-                out.add(DocumentsContract.buildDocumentUriUsingTree(tree, id));
-                try {
-                    paths.put(name + "|" + size, path);
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        for (String[] d : dirs) walkTree(tree, d[0], path + "/" + d[1], out, paths, depth + 1);
     }
 
     // ───────────────────────── "Open with" and notification taps ─────────────────────────

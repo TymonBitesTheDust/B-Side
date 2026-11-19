@@ -59,6 +59,8 @@ final class WebHost {
     volatile boolean darkUi;
     volatile int bgColor;
     final Map<String, Uri> externalUris = Collections.synchronizedMap(new HashMap<String, Uri>());
+    /** Files found while checking a folder again, served at /__scan/<key> so the page can add the new ones. */
+    final Map<String, Uri> scanUris = Collections.synchronizedMap(new HashMap<String, Uri>());
     private int externalSeq;
     private JSONArray pendingOpen = new JSONArray();
     private boolean pendingOpenPlayer;
@@ -461,6 +463,136 @@ final class WebHost {
             float dn = app.getResources().getDisplayMetrics().density;
             return "{\"top\":" + (insetTop / dn) + ",\"bottom\":" + (insetBottom / dn) + "}";
         }
+
+        // ── folders: checking them again for new and deleted songs ──
+
+        /** The folders and single songs Android still lets B-Side read. */
+        @JavascriptInterface
+        public String access() {
+            return FolderScan.access(app.getContentResolver());
+        }
+
+        /**
+         * Reads a picked folder again, off the main thread, and answers bsideScanResult(token, result) with
+         * {ok, partial, name, files:[{n: name, s: size, p: folder path, k: key for /__scan/}]} or {ok:false, why}.
+         */
+        @JavascriptInterface
+        public void scanTree(final String uri, final String token) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    org.json.JSONObject res = new org.json.JSONObject();
+                    try {
+                        final Uri tree = Uri.parse(uri);
+                        if (!FolderScan.persisted(app.getContentResolver(), tree)) {
+                            res.put("ok", false).put("why", "denied");
+                        } else {
+                            String rootId = android.provider.DocumentsContract.getTreeDocumentId(tree);
+                            final String root = FolderScan.rootName(app.getContentResolver(), tree, rootId);
+                            final JSONArray files = new JSONArray();
+                            final String pre = token + ".";
+                            if (scanUris.size() > 60000) scanUris.clear();
+                            boolean whole = FolderScan.walk(app.getContentResolver(), tree, rootId, root, new FolderScan.Sink() {
+                                @Override
+                                public void file(String docId, String name, long size, String path, boolean audio) {
+                                    try {
+                                        String key = pre + files.length();
+                                        scanUris.put(key, android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, docId));
+                                        files.put(new org.json.JSONObject().put("n", name).put("s", size).put("p", path).put("k", key).put("a", audio ? 1 : 0));
+                                    } catch (Exception ignored) {
+                                    }
+                                }
+                            }, 0, new int[1]);
+                            // A folder that can't be opened at all (storage unplugged, folder deleted) reads as empty
+                            // and incomplete: the page then leaves its songs alone.
+                            if (!whole && files.length() == 0) res.put("ok", false).put("why", "missing");
+                            else res.put("ok", true).put("partial", !whole).put("name", root).put("files", files);
+                        }
+                    } catch (Exception e) {
+                        try {
+                            res.put("ok", false).put("why", e instanceof SecurityException ? "denied" : "error");
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    js("window.bsideScanResult&&bsideScanResult(" + org.json.JSONObject.quote(token) + "," + res + ")");
+                }
+            }, "folder-rescan").start();
+        }
+
+        /** Checks songs that were picked one by one; answers bsideScanResult(token, {ok, files:[…]}). */
+        @JavascriptInterface
+        public void checkFiles(final String json, final String token) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String res;
+                    try {
+                        res = "{\"ok\":true,\"files\":" + FolderScan.check(app.getContentResolver(), new JSONArray(json)) + "}";
+                    } catch (Exception e) {
+                        res = "{\"ok\":false,\"why\":\"error\"}";
+                    }
+                    js("window.bsideScanResult&&bsideScanResult(" + org.json.JSONObject.quote(token) + "," + res + ")");
+                }
+            }, "file-check").start();
+        }
+
+        /** Gives back Android's lasting access to a folder or song B-Side no longer keeps. */
+        @JavascriptInterface
+        public void release(String uri) {
+            try {
+                app.getContentResolver().releasePersistableUriPermission(Uri.parse(uri), Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Exception ignored) {
+            }
+        }
+
+        /** A check of the folders has finished: forget the files it found. */
+        @JavascriptInterface
+        public void scanDone() {
+            scanUris.clear();
+        }
+
+        // ── lock screen player ──
+
+        /** {"on": chosen in Settings, "allowed": Android lets it appear over the lock screen, "maker": …} */
+        @JavascriptInterface
+        public String lockPlayer() {
+            return "{\"on\":" + LockScreenActivity.enabled(app) + ",\"allowed\":" + LockScreenActivity.allowed(app)
+                    + ",\"maker\":" + org.json.JSONObject.quote(Build.MANUFACTURER == null ? "" : Build.MANUFACTURER) + "}";
+        }
+
+        @JavascriptInterface
+        public void setLockPlayer(boolean on) {
+            LockScreenActivity.setEnabled(app, on);
+        }
+
+        /** The lock screen's style and what it shows, as chosen in Settings › Lock screen (see lock.js). */
+        @JavascriptInterface
+        public void setLockLook(String json) {
+            LockScreenActivity.setLook(app, json);
+        }
+
+        /** Opens Android's "Display over other apps" page for B-Side; Android 10 and later need it to show the player. */
+        @JavascriptInterface
+        public void lockPermission() {
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    Context c = activity != null ? activity : app;
+                    Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + app.getPackageName()));
+                    if (activity == null) i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        c.startActivity(i);
+                    } catch (Exception e) {
+                        try {
+                            Intent d = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + app.getPackageName()));
+                            if (activity == null) d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            c.startActivity(d);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            });
+        }
     }
 
     // ───────────────────────── WebView clients ─────────────────────────
@@ -489,8 +621,8 @@ final class WebHost {
             String path = u.getPath();
             if (path == null || path.equals("/") || path.isEmpty()) path = "/index.html";
             try {
-                if (path.startsWith("/__open/")) {
-                    Uri src = externalUris.get(path.substring(8));
+                if (path.startsWith("/__open/") || path.startsWith("/__scan/")) {
+                    Uri src = (path.startsWith("/__open/") ? externalUris : scanUris).get(path.substring(8));
                     if (src == null) return notFound();
                     InputStream in = app.getContentResolver().openInputStream(src);
                     if (in == null) return notFound();
@@ -499,7 +631,9 @@ final class WebHost {
                 }
                 String asset = path.substring(1);
                 if (asset.contains("..")) return notFound();
-                InputStream body = "index.html".equals(asset) ? WebUpdater.open(app) : app.getAssets().open(asset); // a newer page from the website, if one was downloaded
+                boolean lockPreview = u.getQuery() != null && u.getQuery().contains("lock"); // the lock screen preview in Settings
+                InputStream body = !"index.html".equals(asset) ? app.getAssets().open(asset)
+                        : lockPreview ? WebUpdater.peek(app) : WebUpdater.open(app); // a newer page from the website, if one was downloaded
                 WebResourceResponse r = new WebResourceResponse(mimeFor(asset), "utf-8", body);
                 Map<String, String> h = new HashMap<>();
                 h.put("Cache-Control", "no-cache");
