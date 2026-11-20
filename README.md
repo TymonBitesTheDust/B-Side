@@ -178,7 +178,7 @@ When it says **"Connected as [your name]"**, tap **Import all**, or one playlist
 - **A song won't play.** B-Side plays MP3, M4A/AAC, FLAC, Ogg, Opus and WAV. Android plays all of them; a few Linux browsers can't play AAC.
 - **Your library is kept on the device**, so it's still there next time. Removing a song from B-Side never deletes the original file.
 - **A folder says it can't be opened any more.** Android or the browser no longer lets B-Side read it, often after it was moved or renamed. Its songs stay; open *Settings → Folders*, tap it and choose it again.
-- **The lock screen player doesn't appear.** Check that *Display over other apps* is allowed for B-Side. On Xiaomi, Redmi and POCO phones also allow *Show on Lock screen* in B-Side's app permissions. It shows while music plays and for a few minutes after you pause, and steps aside if your phone has no screen lock.
+- **The lock screen player doesn't appear.** Check that *Display over other apps* is allowed for B-Side. On Xiaomi, Redmi and POCO phones also allow *Show on Lock screen* in B-Side's app permissions. It shows while music plays and for 10 minutes after you pause, and steps aside if your phone has no screen lock. If face or fingerprint unlock opens the phone before you see it, turn on *Stay until I swipe it away*. If your phone blocks it, *Settings → Lock screen* says so and which setting to check.
 
 ## Privacy
 No accounts, no ads and no tracking. Your music is never uploaded. B-Side only goes online when you use a Spotify feature, and when the Android app checks for a newer version (you can switch that off in *Settings → Update automatically*).
