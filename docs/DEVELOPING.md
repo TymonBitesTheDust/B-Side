@@ -151,8 +151,13 @@ flowchart LR
   page in lock mode (`web/lock.js`) in a WebView of its own, on its own origin (`lock.appassets.androidplatform.net`), so it
   can't reach the library; nothing but the page and the cover (`/__cover/<key>`) loads. Through the `BSideLock` bridge it
   gets the song, the synced lyrics and the look chosen in *Settings → Lock screen* (sent by the page with `setLockLook`), and
-  sends play/pause/skip/seek/favourite back. Swiping up calls `requestDismissKeyguard`; it closes itself on `USER_PRESENT` or
-  when there's no lock screen to cover. If no WebView can be made, a plain native screen stands in. Android 10+ only
+  sends play/pause/skip/seek/favourite back. Swiping up calls `requestDismissKeyguard`; it closes itself on `USER_PRESENT` (unless
+  *Stay until I swipe it away* is on), when there's no lock screen to cover, or when something else covers it on an
+  unlocked phone. Every screen-off asks for it again, so one left out of sight is brought back to the front
+  (`onNewIntent`) instead of blocking the next; an unlock Android never answers is let go after 12 seconds. A start
+  Android refuses is noticed (nothing opened within 3 seconds) and counted, and *Settings → Lock screen* then says
+  which permission to check. The native screen shows if the page hasn't said it has drawn (`BSideLock.ready()`)
+  within 8 seconds. If no WebView can be made, a plain native screen stands in. Android 10+ only
   allows the start from the background with `SYSTEM_ALERT_WINDOW` ("Display over other apps"), which the page asks for
   when the setting is turned on. The page sends a 720 px cover for it while it's on. The lock page is read with
   `WebUpdater.peek`, which doesn't count as a page start.

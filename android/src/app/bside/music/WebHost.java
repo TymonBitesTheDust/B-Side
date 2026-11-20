@@ -557,6 +557,7 @@ final class WebHost {
         @JavascriptInterface
         public String lockPlayer() {
             return "{\"on\":" + LockScreenActivity.enabled(app) + ",\"allowed\":" + LockScreenActivity.allowed(app)
+                    + ",\"blocked\":" + LockScreenActivity.blocked(app) + ",\"blockedAt\":" + LockScreenActivity.blockedAt(app)
                     + ",\"maker\":" + org.json.JSONObject.quote(Build.MANUFACTURER == null ? "" : Build.MANUFACTURER) + "}";
         }
 
@@ -569,6 +570,23 @@ final class WebHost {
         @JavascriptInterface
         public void setLockLook(String json) {
             LockScreenActivity.setLook(app, json);
+        }
+
+        /** Opens B-Side's page in Android's app settings (permissions some phones add, such as "Show on Lock screen"). */
+        @JavascriptInterface
+        public void appSettings() {
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    Context c = activity != null ? activity : app;
+                    Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + app.getPackageName()));
+                    if (activity == null) i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        c.startActivity(i);
+                    } catch (Exception ignored) {
+                    }
+                }
+            });
         }
 
         /** Opens Android's "Display over other apps" page for B-Side; Android 10 and later need it to show the player. */

@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#f3f3f6">
 <!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
      itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
-<meta name="bside-version" content="1.10.1">
-<meta name="bside-build" content="20">
+<meta name="bside-version" content="1.10.2">
+<meta name="bside-build" content="21">
 <meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
@@ -2342,15 +2342,22 @@ function marquee() {
 setInterval(() => { if (!document.hidden) { tick(); clock(); } }, 250);
 
 /* ── what it's given ── */
+let drawnSent = false;
 function pull() { // lock mode: read everything again from the app
   if (!BRIDGE) return;
-  look = parse(BRIDGE.config()) || look;
-  song = parse(BRIDGE.state());
-  const ly = parse(BRIDGE.lyrics && BRIDGE.lyrics()); if (ly) lyrics = ly;
-  if (h24 == null && BRIDGE.clock24) try { h24 = !!BRIDGE.clock24(); } catch (e) {}
+  try {
+    look = parse(BRIDGE.config()) || look;
+    song = parse(BRIDGE.state());
+    const ly = parse(BRIDGE.lyrics && BRIDGE.lyrics()); if (ly) lyrics = ly;
+    if (h24 == null && BRIDGE.clock24) h24 = !!BRIDGE.clock24();
+  } catch (e) {}
   draw();
+  // The app shows the plain native screen until it hears this, so a page that fails never leaves it blank.
+  if (!drawnSent) { drawnSent = true; try { BRIDGE.ready && BRIDGE.ready(); } catch (e) {} }
 }
 window.bsideLockUpdate = pull;
+// The screen came on: the song may have moved on while the page wasn't being drawn.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (BRIDGE) pull(); else { tick(); clock(true); } } });
 window.bsideInsets = (top, bottom) => { D.style.setProperty('--sat', (+top || 0) + 'px'); D.style.setProperty('--sab', (+bottom || 0) + 'px'); };
 if (BRIDGE) { try { const i = JSON.parse(BRIDGE.insets()); window.bsideInsets(i.top, i.bottom); } catch (e) {} pull(); }
 else if (MODE === 'lock') draw();
@@ -2405,7 +2412,7 @@ const end = e => {
   else { move.style.transform = ''; move.style.opacity = ''; }
 };
 np.addEventListener('pointerup', end); np.addEventListener('pointercancel', end);
-window.bsideLockReset = () => { np.classList.remove('leaving', 'dragging'); move.style.transform = ''; move.style.opacity = ''; }; // unlocking was cancelled
+window.bsideLockReset = () => { drag = null; dragged = false; np.classList.remove('leaving', 'dragging'); move.style.transform = ''; move.style.opacity = ''; }; // unlocking was cancelled, or it's shown again
 })();
 </script>
 <script>
@@ -5893,12 +5900,12 @@ const LOCK_COLOURS = [['app', 'Same as app'], ['dark', 'Dark'], ['light', 'Light
 // spread: how far previous and next sit from play, 0 (right beside it) to 100 (out at the edges, as before 1.10.1)
 const lockSpread = v => typeof v === 'number' && isFinite(v) ? clamp(Math.round(v), 0, 100) : 100;
 const spreadLabel = v => v <= 0 ? 'Close' : v >= 100 ? 'Edges' : v + '%';
-function lockPrefs() { const l = S.settings.lock || {}; return {style: l.style || 'app', colours: l.colours || 'app', show: Object.assign({}, LOCK_SHOW_DEFAULT, l.show || {}), spread: lockSpread(l.spread)}; }
+function lockPrefs() { const l = S.settings.lock || {}; return {style: l.style || 'app', colours: l.colours || 'app', show: Object.assign({}, LOCK_SHOW_DEFAULT, l.show || {}), spread: lockSpread(l.spread), stay: !!l.stay}; }
 function setLockPrefs(p) { S.settings.lock = p; persistSoon(); pushLockLook(); lockPreviewSend(); }
 function lockLook() { // what lock.js needs to dress the lock screen
   const p = lockPrefs(), skin = p.style !== 'app' && SKINS.some(k => k.id === p.style) ? p.style : skinOf();
   const dark = skin === 'riot' || (p.colours === 'app' ? themeDark() : p.colours === 'dark');
-  return {skin, dark, vars: accentVars(skin, dark), show: p.show, spread: p.spread};
+  return {skin, dark, vars: accentVars(skin, dark), show: p.show, spread: p.spread, stay: !!p.stay};
 }
 let lastLook = '';
 function pushLockLook() {
@@ -5919,9 +5926,15 @@ function lockBoxHTML() {
 function lockTopHTML() {
   const st = lockState() || {on: false, allowed: false};
   const xiaomi = /xiaomi|redmi|poco/i.test(st.maker || '') && st.on && st.allowed ? ' On Xiaomi phones also allow “Show on Lock screen” in B-Side’s app permissions.' : '';
-  const sub = !st.on ? 'Off — the lock screen shows Android’s own media controls' : st.allowed ? 'Shows when the screen goes off while music plays. Swipe up to unlock.' + xiaomi : 'On, but Android isn’t letting it show yet';
+  const sub = !st.on ? 'Off — the lock screen shows Android’s own media controls' : st.allowed ? 'Shows when the screen goes off while music plays, or up to 10 minutes after you pause. Swipe up to unlock.' + xiaomi : 'On, but Android isn’t letting it show yet';
+  // Android refused to open it although the permission is there: some phones add switches of their own.
+  const refused = st.on && st.allowed && (st.blocked || 0) > 0 && Date.now() - (st.blockedAt || 0) < 7 * 86400e3;
+  const maker = /xiaomi|redmi|poco/i.test(st.maker || '') ? 'In B-Side’s app settings, under Other permissions, allow “Show on Lock screen” and “Display pop-up windows while running in the background”.'
+    : /oppo|realme|oneplus|vivo|iqoo|huawei|honor/i.test(st.maker || '') ? 'In B-Side’s app settings, allow pop-up windows or “Display over other apps”, and let B-Side run in the background.'
+    : 'In B-Side’s app settings, check that “Display over other apps” is still allowed.';
   return `<button class="mi" data-lk="toggle" id="lockRow" role="switch" aria-checked="${st.on}">${ic('lock')}<span class="mt">Lock screen player<span class="sub">${esc(sub)}</span></span><span class="switch ${st.on ? 'on' : ''}"></span></button>` +
-    (st.on && !st.allowed ? menuItem('open', 'Allow it over the lock screen', 'lockallow', {cls: 'sel', sub: 'Android calls this “Display over other apps”'}) : '');
+    (st.on && !st.allowed ? menuItem('open', 'Allow it over the lock screen', 'lockallow', {cls: 'sel', sub: 'Android calls this “Display over other apps”'}) : '') +
+    (refused ? menuItem('info', `Your phone stopped it opening ${st.blocked === 1 ? 'once' : st.blocked + ' times'} lately`, 'lockapp', {cls: 'sel', sub: maker + ' Tap to open them.'}) : '');
 }
 function refreshLockBox() {
   const b = $('#lockBox'); if (b) b.innerHTML = lockBoxHTML();
@@ -5972,6 +5985,8 @@ function lockSheetBody() {
     <div class="lbl">Colours</div>
     <div class="seg" id="lkCol">${LOCK_COLOURS.map(([k, l]) => `<button data-lk-col="${k}" class="${p.colours === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="accent-note" id="lkColNote">${lockLook().skin === 'riot' ? 'Persona 5 is always dark.' : '“Same as app” follows Settings › Appearance.'}</div>
+    <div class="lbl">When the phone unlocks</div>
+    <button class="mi" data-lk-stay role="switch" aria-checked="${!!p.stay}"><span class="mt">Stay until I swipe it away<span class="sub">With face or fingerprint unlock the phone can open before you see the player. With this on, it stays up after unlocking until you swipe up</span></span><span class="switch ${p.stay ? 'on' : ''}"></span></button>
     <div class="lbl">On the lock screen</div>
     ${LOCK_SHOW.map(([k, l, sub]) => `<button class="mi" data-lk-show="${k}" role="switch" aria-checked="${!!p.show[k]}"><span class="mt">${esc(l)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span><span class="switch ${p.show[k] ? 'on' : ''}"></span></button>` + (k === 'controls' ? lockSpreadHTML(p) : '')).join('')}
     ${menuItem('close', 'Reset the lock screen', 'lockreset', {sub: 'Same style as the app, everything but the extras shown, buttons at the edges'})}`;
@@ -6006,8 +6021,11 @@ function lockSheet() {
       if (col) { p.colours = col.dataset.lkCol; setLockPrefs(p); $$('[data-lk-col]', sheetEl).forEach(c => c.classList.toggle('on', c === col)); lockColNote(); sfx('select'); return; }
       const sh = e.target.closest('[data-lk-show]');
       if (sh) { const k = sh.dataset.lkShow; p.show[k] = !p.show[k]; setLockPrefs(p); sh.setAttribute('aria-checked', p.show[k]); $('.switch', sh).classList.toggle('on', p.show[k]); if (k === 'controls') { const r = $('#lkSpreadRow', sheetEl); if (r) r.hidden = !p.show[k]; } sfx(p.show[k] ? 'pop' : 'select'); return; }
+      const stay = e.target.closest('[data-lk-stay]');
+      if (stay) { p.stay = !p.stay; setLockPrefs(p); stay.setAttribute('aria-checked', p.stay); $('.switch', stay).classList.toggle('on', p.stay); sfx(p.stay ? 'pop' : 'select'); return; }
       const b = e.target.closest('[data-mi]'); if (!b) return;
       if (b.dataset.mi === 'lockallow') { askLockPermission(); return; }
+      if (b.dataset.mi === 'lockapp') { try { NATIVE.appSettings ? NATIVE.appSettings() : NATIVE.lockPermission(); } catch (er) {} return; }
       if (b.dataset.mi === 'lockreset') { S.settings.lock = null; setLockPrefs(lockPrefs()); const body = $('.sheet-body', sheetEl), y = body.scrollTop; body.innerHTML = lockSheetBody(); body.scrollTop = y; lockPvReady = false; sfx('delete'); }
     }});
 }
