@@ -22,6 +22,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
+import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -72,10 +74,14 @@ import java.util.Locale;
  * setting asks for that permission.
  */
 public class LockScreenActivity extends Activity {
-    private static final String PREF = "lockPlayer", PREF_LOOK = "lockLook";
+    private static final String PREF = "lockPlayer", PREF_LOOK = "lockLook", PREF_BLOCKED = "lockBlocked", PREF_BLOCKED_AT = "lockBlockedAt";
+    private static final long CHECK_OPENED_MS = 3000, UNSTICK_MS = 12000, PAGE_READY_MS = 8000;
     private static final String LOCK_HOST = "lock.appassets.androidplatform.net";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static LockScreenActivity shown;
+    // When the screen was last asked for and last came up, to notice when Android quietly refuses to open it.
+    private static long askedAt, openedAt;
+    private static Runnable checkOpened;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -90,26 +96,47 @@ public class LockScreenActivity extends Activity {
             closeIfUnlocked();
         }
     };
+    /** An unlock that Android never answered (it can happen if the screen goes off during the PIN): let it go. */
+    private final Runnable unstick = new Runnable() {
+        @Override
+        public void run() {
+            if (!leaving || left) return;
+            leaving = false;
+            settle();
+            resetPage();
+        }
+    };
+    /** The page didn't come up (or didn't say so) in time: the native screen instead, never a blank one. */
+    private final Runnable pageTimeout = new Runnable() {
+        @Override
+        public void run() {
+            if (web != null && !webDrawn) useNative();
+        }
+    };
     private final BroadcastReceiver screen = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent i) {
             if (Intent.ACTION_USER_PRESENT.equals(i.getAction())) {
-                if (!leaving) finish(); // unlocked by fingerprint, face or PIN (a swipe up closes it itself)
+                // Unlocked: by fingerprint, face or PIN, or by the swipe up (whose answer may come after this).
+                if (leaving) leave(openAfterUnlock);
+                else if (!stays(LockScreenActivity.this)) finish();
+            } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction())) {
+                MAIN.removeCallbacks(checkLocked);
+                MAIN.postDelayed(checkLocked, 450);
             }
-            else if (Intent.ACTION_SCREEN_ON.equals(i.getAction())) MAIN.postDelayed(checkLocked, 450);
         }
     };
 
     private float dn;
     private WebView web; // the lock screen page; null when it couldn't be made (then the native views below)
-    private boolean webReady;
+    private boolean webReady, webDrawn;
     private int insetTop, insetBottom;
     private View content;
     private ImageView bg, art;
     private TextView title, sub, tCur, tDur;
     private SeekBar seek;
     private ImageButton play;
-    private boolean seeking, leaving, listening;
+    private boolean seeking, leaving, left, openAfterUnlock, listening;
     private Bitmap shownCover;
     private int shownColor;
     private String shownKey;
@@ -144,6 +171,26 @@ public class LockScreenActivity extends Activity {
         });
     }
 
+    /** "Stay after unlocking" in Settings › Lock screen: face or fingerprint unlock doesn't close it. */
+    static boolean stays(Context c) {
+        String j = look(c);
+        if (j.isEmpty()) return false;
+        try {
+            return new JSONObject(j).optBoolean("stay", false);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** How many times in a row Android didn't let the screen open, and when that last happened. */
+    static int blocked(Context c) {
+        return c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).getInt(PREF_BLOCKED, 0);
+    }
+
+    static long blockedAt(Context c) {
+        return c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).getLong(PREF_BLOCKED_AT, 0);
+    }
+
     /** Whether Android lets B-Side put this screen up from the background. */
     static boolean allowed(Context c) {
         return Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(c);
@@ -151,16 +198,36 @@ public class LockScreenActivity extends Activity {
 
     static void show(Context c) {
         if (!enabled(c)) return;
-        if (shown != null && !shown.isFinishing()) {
-            shown.bind();
+        // Always asked for, even when one is open: it may be out of sight (after a call, or behind another app),
+        // and asking brings that one back to the front (singleInstance → onNewIntent) instead of leaving it there.
+        final Context app = c.getApplicationContext();
+        Intent i = new Intent(app, LockScreenActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+        askedAt = SystemClock.elapsedRealtime();
+        try {
+            app.startActivity(i);
+        } catch (Exception e) {
+            noteOpened(app, false);
             return;
         }
-        Intent i = new Intent(c, LockScreenActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
-        try {
-            c.startActivity(i);
-        } catch (Exception ignored) {
-            // Not allowed from the background right now: Android's own lock screen controls are still there.
+        if (checkOpened != null) MAIN.removeCallbacks(checkOpened);
+        checkOpened = new Runnable() {
+            @Override
+            public void run() {
+                noteOpened(app, openedAt >= askedAt);
+            }
+        };
+        MAIN.postDelayed(checkOpened, CHECK_OPENED_MS);
+    }
+
+    /** Android drops a refused start without a word; this keeps count, so Settings can say what to allow. */
+    private static void noteOpened(Context c, boolean ok) {
+        SharedPreferences p = c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE);
+        int n = p.getInt(PREF_BLOCKED, 0);
+        if (ok) {
+            if (n != 0) p.edit().putInt(PREF_BLOCKED, 0).apply();
+        } else {
+            p.edit().putInt(PREF_BLOCKED, n + 1).putLong(PREF_BLOCKED_AT, System.currentTimeMillis()).apply();
         }
     }
 
@@ -178,6 +245,7 @@ public class LockScreenActivity extends Activity {
     @SuppressWarnings("deprecation")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        openedAt = SystemClock.elapsedRealtime(); // Android let it open (see show)
         JSONObject s = MusicService.now();
         if (s == null || !s.optBoolean("hasTrack")) {
             finish();
@@ -200,11 +268,28 @@ public class LockScreenActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         View page = buildWeb();
         setContentView(page != null ? page : build());
+        if (page != null) MAIN.postDelayed(pageTimeout, PAGE_READY_MS);
         IntentFilter f = new IntentFilter(Intent.ACTION_USER_PRESENT);
         f.addAction(Intent.ACTION_SCREEN_ON);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(screen, f, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(screen, f);
         listening = true;
+        bind();
+    }
+
+    /** Asked for again while open: back to the front, as if new. */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        openedAt = SystemClock.elapsedRealtime();
+        MAIN.removeCallbacks(unstick);
+        if (!left) {
+            leaving = false;
+            openAfterUnlock = false;
+            settle();
+            resetPage();
+        }
         bind();
     }
 
@@ -224,9 +309,20 @@ public class LockScreenActivity extends Activity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        // Out of sight on an unlocked phone (a call came in, Home, an app opened from the notification shade):
+        // done. Left open, it would only sit behind everything.
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        if (!isChangingConfigurations() && !isFinishing() && pm != null && pm.isInteractive() && !locked()) finish();
+    }
+
+    @Override
     protected void onDestroy() {
         MAIN.removeCallbacks(tick);
         MAIN.removeCallbacks(checkLocked);
+        MAIN.removeCallbacks(unstick);
+        MAIN.removeCallbacks(pageTimeout);
         if (shown == this) shown = null;
         if (web != null) {
             web.destroy();
@@ -248,11 +344,17 @@ public class LockScreenActivity extends Activity {
         finish(); // shows Android's own lock screen underneath
     }
 
+    /** Whether Android's lock screen is up, even while this covers it. */
+    private boolean locked() {
+        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        return km != null && (km.isKeyguardLocked() || km.isDeviceLocked());
+    }
+
     /** The screen is on and there's no lock screen to cover (no screen lock, or it hadn't locked yet): step aside. */
     private boolean closeIfUnlocked() {
+        if (leaving || stays(this)) return false;
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-        if (pm != null && pm.isInteractive() && km != null && !km.isKeyguardLocked()) {
+        if (pm != null && pm.isInteractive() && !locked()) {
             finish();
             return true;
         }
@@ -263,6 +365,9 @@ public class LockScreenActivity extends Activity {
     private void unlock(final boolean openApp) {
         if (leaving) return;
         leaving = true;
+        openAfterUnlock = openApp;
+        MAIN.removeCallbacks(unstick);
+        MAIN.postDelayed(unstick, UNSTICK_MS);
         KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         if (Build.VERSION.SDK_INT >= 26 && km != null && km.isKeyguardLocked()) {
             km.requestDismissKeyguard(this, new KeyguardManager.KeyguardDismissCallback() {
@@ -273,9 +378,11 @@ public class LockScreenActivity extends Activity {
 
                 @Override
                 public void onDismissCancelled() {
+                    if (left) return;
+                    MAIN.removeCallbacks(unstick);
                     leaving = false;
                     settle();
-                    if (web != null) web.evaluateJavascript("window.bsideLockReset&&bsideLockReset()", null);
+                    resetPage();
                 }
 
                 @Override
@@ -290,6 +397,9 @@ public class LockScreenActivity extends Activity {
 
     @SuppressWarnings("deprecation")
     private void leave(boolean openApp) {
+        if (left) return; // both the unlock's answer and "unlocked" can arrive
+        left = true;
+        MAIN.removeCallbacks(unstick);
         if (openApp) {
             Intent i = new Intent(this, MainActivity.class).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
                     .putExtra(MusicService.EXTRA_OPEN_PLAYER, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -440,20 +550,31 @@ public class LockScreenActivity extends Activity {
 
             @Override
             public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
-                if (view == web) { // its renderer went away: carry on with the native screen
-                    web = null;
-                    webReady = false;
-                    setContentView(build());
-                    bind();
-                    MAIN.removeCallbacks(tick);
-                    MAIN.post(tick);
-                }
-                view.destroy();
+                if (view == web) useNative(); // its renderer went away: carry on with the native screen
+                else view.destroy();
                 return true;
             }
         });
         w.loadUrl("https://" + LOCK_HOST + "/index.html#lock");
         return w;
+    }
+
+    /** From the page to the native screen, keeping whatever state the unlock is in. */
+    private void useNative() {
+        WebView w = web;
+        if (w == null) return;
+        web = null;
+        webReady = webDrawn = false;
+        MAIN.removeCallbacks(pageTimeout);
+        setContentView(build());
+        w.destroy();
+        bind();
+        MAIN.removeCallbacks(tick);
+        MAIN.post(tick);
+    }
+
+    private void resetPage() {
+        if (web != null && webReady) web.evaluateJavascript("window.bsideLockReset&&bsideLockReset()", null);
     }
 
     private static WebResourceResponse empty() {
@@ -488,6 +609,18 @@ public class LockScreenActivity extends Activity {
         @JavascriptInterface
         public String config() {
             return look(LockScreenActivity.this);
+        }
+
+        /** The page has drawn the song: it's what shows from now on. */
+        @JavascriptInterface
+        public void ready() {
+            MAIN.post(new Runnable() {
+                @Override
+                public void run() {
+                    webDrawn = true;
+                    MAIN.removeCallbacks(pageTimeout);
+                }
+            });
         }
 
         @JavascriptInterface
