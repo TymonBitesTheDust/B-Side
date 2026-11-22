@@ -80,6 +80,13 @@ public class LockScreenActivity extends Activity {
     // phone's own (some phones put the home screen over everything as they unlock).
     private static final long WATCH_MS = 50, JUST_UNLOCKED_MS = 3000;
     private static final String EXTRA_BACK = "app.bside.music.LOCK_BACK";
+    private static final String PREF_LOG = "lockLog";
+    // When it was last up over a locked phone, and whether a bring-back after an unlock is under way (Stay).
+    private static long upLockedAt;
+    private static boolean bringing;
+    // What happened since the screen last went off, for Settings › Lock screen › Copy lock screen log.
+    private static final StringBuilder LOG = new StringBuilder();
+    private static long logFrom;
     private static final String LOCK_HOST = "lock.appassets.androidplatform.net";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static LockScreenActivity shown;
@@ -125,10 +132,14 @@ public class LockScreenActivity extends Activity {
         @Override
         public void run() {
             if (leaving || left || isFinishing()) return;
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            if (pm == null || !pm.isInteractive()) return; // screen off: SCREEN_ON starts it again
             if (locked()) {
-                lockedSeenAt = SystemClock.elapsedRealtime();
+                if (lockedSeenAt == 0) log(LockScreenActivity.this, "up over the lock screen");
+                lockedSeenAt = upLockedAt = SystemClock.elapsedRealtime();
                 MAIN.postDelayed(this, WATCH_MS);
             } else if (lockedSeenAt > 0) {
+                log(LockScreenActivity.this, "saw the phone unlock");
                 unlocked();
             }
         }
@@ -138,9 +149,11 @@ public class LockScreenActivity extends Activity {
         public void onReceive(Context c, Intent i) {
             if (Intent.ACTION_USER_PRESENT.equals(i.getAction())) {
                 // Unlocked: by fingerprint, face or PIN, or by the swipe up (whose answer may come after this).
+                log(c, "Android: unlocked" + (leaving ? " (after the swipe)" : ""));
                 if (leaving) leave(openAfterUnlock);
                 else unlocked();
             } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction())) {
+                log(c, "screen on");
                 watch();
                 MAIN.removeCallbacks(checkLocked);
                 MAIN.postDelayed(checkLocked, 450);
@@ -159,7 +172,7 @@ public class LockScreenActivity extends Activity {
     private ImageButton play;
     private boolean seeking, leaving, left, openAfterUnlock, listening;
     private long lockedSeenAt; // when the lock screen was last seen under this one (0: not since it was asked for)
-    private int broughtBack; // times it came back over the phone's own unlock screen (see onStop)
+    private boolean visible; // between onStart and onStop
     private Bitmap shownCover;
     private int shownColor;
     private String shownKey;
@@ -224,12 +237,14 @@ public class LockScreenActivity extends Activity {
         // Always asked for, even when one is open: it may be out of sight (after a call, or behind another app),
         // and asking brings that one back to the front (singleInstance → onNewIntent) instead of leaving it there.
         final Context app = c.getApplicationContext();
+        logStart(app);
         Intent i = new Intent(app, LockScreenActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
         askedAt = SystemClock.elapsedRealtime();
         try {
             app.startActivity(i);
         } catch (Exception e) {
+            log(app, "Android refused to open it: " + e.getClass().getSimpleName());
             noteOpened(app, false);
             return;
         }
@@ -237,7 +252,9 @@ public class LockScreenActivity extends Activity {
         checkOpened = new Runnable() {
             @Override
             public void run() {
-                noteOpened(app, openedAt >= askedAt);
+                boolean ok = openedAt >= askedAt;
+                if (!ok) log(app, "didn't open within 3 s (blocked by the phone?)");
+                noteOpened(app, ok);
             }
         };
         MAIN.postDelayed(checkOpened, CHECK_OPENED_MS);
@@ -254,13 +271,82 @@ public class LockScreenActivity extends Activity {
         }
     }
 
+    // ───────────────────────── the log ─────────────────────────
+    private static void logStart(Context c) {
+        LOG.setLength(0);
+        logFrom = SystemClock.elapsedRealtime();
+        log(c, "screen off: asked for the lock screen · " + Build.MANUFACTURER + " " + Build.MODEL + ", Android "
+                + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ") · Stay " + (stays(c) ? "on" : "off"));
+    }
+
+    static void log(Context c, String what) {
+        long t = SystemClock.elapsedRealtime() - logFrom;
+        LOG.append(String.format(java.util.Locale.ROOT, "%6.2fs ", t / 1000.0)).append(what).append('\n');
+        if (LOG.length() > 6000) LOG.delete(0, LOG.indexOf("\n", LOG.length() - 5000) + 1);
+        c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).edit().putString(PREF_LOG, LOG.toString()).apply();
+    }
+
+    static String logText(Context c) {
+        return c.getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).getString(PREF_LOG, "");
+    }
+
+    /**
+     * MusicService heard "unlocked". With "Stay until I swipe it away" on, and the lock screen player up over the
+     * lock screen just before: make sure it's still in front, however the phone took it away.
+     */
+    static void afterUnlock(Context c) {
+        if (!enabled(c) || !stays(c) || upLockedAt == 0 || SystemClock.elapsedRealtime() - upLockedAt > JUST_UNLOCKED_MS) return;
+        bringBack(c.getApplicationContext(), 0);
+    }
+
+    /** Checks a moment after an unlock that it's in front, and brings it back if it isn't (up to three times). */
+    private static void bringBack(final Context app, final int attempt) {
+        if (attempt == 0) {
+            if (bringing) return;
+            bringing = true;
+        }
+        MAIN.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                LockScreenActivity a = shown;
+                if (a != null && a.visible && !a.isFinishing() && !a.left) {
+                    if (attempt > 0) log(app, "back in front");
+                    bringing = false;
+                    return;
+                }
+                if (a != null && (a.left || a.leaving)) { // swiped away meanwhile
+                    bringing = false;
+                    return;
+                }
+                if (attempt >= 3) {
+                    log(app, "couldn't bring it back");
+                    bringing = false;
+                    return;
+                }
+                log(app, "not in front after the unlock: bringing it back (" + (attempt + 1) + ")");
+                Intent i = new Intent(app, LockScreenActivity.class).putExtra(EXTRA_BACK, true)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                                | Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                try {
+                    app.startActivity(i);
+                } catch (Exception e) {
+                    log(app, "Android refused: " + e.getClass().getSimpleName());
+                }
+                bringBack(app, attempt + 1);
+            }
+        }, attempt == 0 ? 250 : 600);
+    }
+
     /** Main thread: the song or its state changed. */
     static void refresh() {
         if (shown != null) shown.bind();
     }
 
     static void close() {
-        if (shown != null) shown.finish();
+        if (shown != null) {
+            log(shown, "closed by B-Side (player stopped or setting off)");
+            shown.finish();
+        }
     }
 
     // ───────────────────────── lifecycle ─────────────────────────
@@ -269,8 +355,12 @@ public class LockScreenActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         openedAt = SystemClock.elapsedRealtime(); // Android let it open (see show)
+        boolean back = getIntent() != null && getIntent().getBooleanExtra(EXTRA_BACK, false);
+        log(this, "opened" + (back ? " again" : "") + (locked() ? " (phone locked)" : " (phone unlocked)"));
+        if (back) lockedSeenAt = upLockedAt; // came back after an unlock: still that same round
         JSONObject s = MusicService.now();
         if (s == null || !s.optBoolean("hasTrack")) {
+            log(this, "closed: nothing playing");
             finish();
             return;
         }
@@ -306,10 +396,9 @@ public class LockScreenActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         openedAt = SystemClock.elapsedRealtime();
-        if (!intent.getBooleanExtra(EXTRA_BACK, false)) { // the screen went off again: a new round
-            lockedSeenAt = 0;
-            broughtBack = 0;
-        }
+        boolean back = intent.getBooleanExtra(EXTRA_BACK, false);
+        log(this, back ? "brought to the front again" : "asked for again while open");
+        if (!back) lockedSeenAt = 0; // the screen went off again: a new round
         MAIN.removeCallbacks(unstick);
         if (!left) {
             leaving = false;
@@ -321,8 +410,16 @@ public class LockScreenActivity extends Activity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        visible = true;
+        log(this, "shown");
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        log(this, "resumed" + (locked() ? "" : " (phone unlocked)"));
         if (closeIfUnlocked()) return;
         watch();
         bind();
@@ -332,32 +429,28 @@ public class LockScreenActivity extends Activity {
 
     @Override
     protected void onPause() {
-        MAIN.removeCallbacks(tick);
-        MAIN.removeCallbacks(watchUnlock);
+        MAIN.removeCallbacks(tick); // the unlock watch goes on: some phones pause it as they unlock
+        log(this, "paused");
         super.onPause();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        // Out of sight on an unlocked phone (a call came in, Home, an app opened from the notification shade):
-        // done. Left open, it would only sit behind everything.
+        visible = false;
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-        if (isChangingConfigurations() || isFinishing() || left || pm == null || !pm.isInteractive() || locked()) return;
+        boolean on = pm != null && pm.isInteractive(), lk = locked();
+        log(this, "hidden" + (isFinishing() ? ", closing" : "") + (on ? "" : ", screen off") + (lk ? ", phone locked" : ", phone unlocked"));
+        if (isChangingConfigurations() || isFinishing() || left || !on || lk) return;
         // "Stay until I swipe it away": some phones put the home screen (or the last app) over it as they unlock.
         // Covered within moments of the lock screen going: that's the phone, so come back to the front.
-        if (!leaving && stays(this) && broughtBack < 2 && lockedSeenAt > 0
-                && SystemClock.elapsedRealtime() - lockedSeenAt < JUST_UNLOCKED_MS) {
-            broughtBack++;
-            Intent i = new Intent(this, LockScreenActivity.class).putExtra(EXTRA_BACK, true)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
-                            | Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            try {
-                startActivity(i);
-                return;
-            } catch (Exception ignored) {
-            }
+        if (!leaving && stays(this) && lockedSeenAt > 0 && SystemClock.elapsedRealtime() - lockedSeenAt < JUST_UNLOCKED_MS) {
+            bringBack(getApplicationContext(), 0);
+            return;
         }
+        // Out of sight on an unlocked phone (a call came in, Home, an app opened from the notification shade):
+        // done. Left open, it would only sit behind everything.
+        log(this, "closed: covered on an unlocked phone");
         finish();
     }
 
@@ -368,6 +461,7 @@ public class LockScreenActivity extends Activity {
         MAIN.removeCallbacks(unstick);
         MAIN.removeCallbacks(pageTimeout);
         MAIN.removeCallbacks(watchUnlock);
+        log(this, "gone" + (isFinishing() ? "" : " (Android removed it)"));
         if (shown == this) shown = null;
         if (web != null) {
             web.destroy();
@@ -386,6 +480,7 @@ public class LockScreenActivity extends Activity {
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
+        log(this, "closed: Back");
         finish(); // shows Android's own lock screen underneath
     }
 
@@ -400,6 +495,7 @@ public class LockScreenActivity extends Activity {
         if (leaving || stays(this)) return false;
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null && pm.isInteractive() && !locked()) {
+            log(this, "closed: the phone isn't locked");
             closeNow();
             return true;
         }
@@ -418,7 +514,12 @@ public class LockScreenActivity extends Activity {
         MAIN.removeCallbacks(watchUnlock);
         if (leaving || left) return;
         if (lockedSeenAt == 0) lockedSeenAt = SystemClock.elapsedRealtime(); // Android's message came first
-        if (!stays(this)) closeNow(); // straight to the home screen; with Stay on, it waits for the swipe
+        if (!stays(this)) { // straight to the home screen
+            log(this, "closed: unlocked (Stay off)");
+            closeNow();
+        } else { // waits for the swipe; checks it stays in front
+            bringBack(getApplicationContext(), 0);
+        }
     }
 
     /** Gone at once, with no fade, so it isn't seen over the home screen. */
@@ -432,6 +533,7 @@ public class LockScreenActivity extends Activity {
     /** Asks Android to unlock (it shows the PIN or pattern if there is one), then closes; optionally opens B-Side. */
     private void unlock(final boolean openApp) {
         if (leaving) return;
+        log(this, "swiped up" + (openApp ? " (open B-Side)" : ""));
         leaving = true;
         openAfterUnlock = openApp;
         MAIN.removeCallbacks(unstick);
@@ -467,6 +569,7 @@ public class LockScreenActivity extends Activity {
     private void leave(boolean openApp) {
         if (left) return; // both the unlock's answer and "unlocked" can arrive
         left = true;
+        log(this, "closed: swiped away");
         MAIN.removeCallbacks(unstick);
         if (openApp) {
             Intent i = new Intent(this, MainActivity.class).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)

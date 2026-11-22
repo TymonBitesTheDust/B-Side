@@ -4005,6 +4005,7 @@ function lockSheetBody() {
     <button class="mi" data-lk-stay role="switch" aria-checked="${!!p.stay}"><span class="mt">Stay until I swipe it away<span class="sub">With face or fingerprint unlock the phone can open before you see the player. With this on, it stays up after unlocking until you swipe up</span></span><span class="switch ${p.stay ? 'on' : ''}"></span></button>
     <div class="lbl">On the lock screen</div>
     ${LOCK_SHOW.map(([k, l, sub]) => `<button class="mi" data-lk-show="${k}" role="switch" aria-checked="${!!p.show[k]}"><span class="mt">${esc(l)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span><span class="switch ${p.show[k] ? 'on' : ''}"></span></button>` + (k === 'controls' ? lockSpreadHTML(p) : '')).join('')}
+    ${NATIVE && NATIVE.lockLog ? menuItem('info', 'Copy lock screen log', 'locklog', {sub: 'What happened the last time the screen went off, to paste when reporting a problem'}) : ''}
     ${menuItem('close', 'Reset the lock screen', 'lockreset', {sub: 'Same style as the app, everything but the extras shown, buttons at the edges'})}`;
 }
 function lockSpreadHTML(p) { // under "Play, previous and next": how close previous and next sit to play
@@ -4041,6 +4042,11 @@ function lockSheet() {
       if (stay) { p.stay = !p.stay; setLockPrefs(p); stay.setAttribute('aria-checked', p.stay); $('.switch', stay).classList.toggle('on', p.stay); sfx(p.stay ? 'pop' : 'select'); return; }
       const b = e.target.closest('[data-mi]'); if (!b) return;
       if (b.dataset.mi === 'lockallow') { askLockPermission(); return; }
+      if (b.dataset.mi === 'locklog') {
+        let t = ''; try { t = NATIVE.lockLog() || ''; } catch (er) {}
+        if (!t.trim()) { toast('Nothing yet. Turn the screen off and on with music playing, then try again'); return; }
+        spCopy(`B-Side ${APP_VERSION} lock screen log\n${t}`); return;
+      }
       if (b.dataset.mi === 'lockapp') { try { NATIVE.appSettings ? NATIVE.appSettings() : NATIVE.lockPermission(); } catch (er) {} return; }
       if (b.dataset.mi === 'lockreset') { S.settings.lock = null; setLockPrefs(lockPrefs()); const body = $('.sheet-body', sheetEl), y = body.scrollTop; body.innerHTML = lockSheetBody(); body.scrollTop = y; lockPvReady = false; sfx('delete'); }
     }});
