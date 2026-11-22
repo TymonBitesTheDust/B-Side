@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#f3f3f6">
 <!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
      itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
-<meta name="bside-version" content="1.10.2">
-<meta name="bside-build" content="21">
+<meta name="bside-version" content="1.10.3">
+<meta name="bside-build" content="22">
 <meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
@@ -478,6 +478,11 @@ body.np-open .toast{bottom:calc(24px + var(--sab))}
 .sw.custom{background:conic-gradient(from 90deg,#ff3b3b,#ffb000,#3ccf4e,#18b5d8,#4b5cff,#c043e0,#ff3b3b)}
 .sw.custom.on{background:var(--c)}
 .accent-note{padding:0 16px 12px;color:var(--text-2);font-size:13.5px;line-height:1.45}
+.hist{padding:0 0 14px}
+.hist-row{display:flex;gap:12px;padding:6px 16px;font-size:14px;line-height:1.4}
+.hist-row b{flex:none;min-width:48px;font-weight:600;font-variant-numeric:tabular-nums}
+.hist-row span{color:var(--text-2)}
+.hist-row.now span{color:var(--text)}
 .appicon{width:46px;height:46px;flex:none;display:block}
 .mi.static{cursor:default}
 .mi.static:active{background:none}
@@ -5027,7 +5032,7 @@ async function settingsSheet() {
   ${menuItem('rescan', 'Folders', 'folders', {sub: foldersText()})}
   ${S.tracks.size ? menuItem('trash', 'Clear library', 'clear', {cls: 'danger', sub: plural(S.tracks.size, 'song')}) : ''}
   ${NATIVE && NATIVE.checkUpdate ? `<div class="lbl">Updates</div><div id="updBox">${updBoxHTML()}</div>` : ''}
-  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: `Version ${APP_VERSION} · plays your files locally`})}`;
+  <div class="sep"></div>${menuItem('info', 'About B-Side', 'about', {sub: `Version ${APP_VERSION} · update history`})}`;
   const refreshLook = () => {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
@@ -5073,7 +5078,7 @@ async function settingsSheet() {
     else if (k === 'level') eqSheet('lv'); else if (k === 'eq') eqSheet(); else if (k === 'tone') eqSheet('tone');
     else if (k === 'folders') foldersSheet();
     else if (k === 'background') requestBackground();
-    else if (k === 'about') dialog({title: 'B-Side', text: 'A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Importing from a connected Spotify account reads your playlists from Spotify only when you ask; a Spotify data file is read on your device. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.', ok: 'Close', cancel: ''});
+    else if (k === 'about') aboutSheet();
   }});
 }
 /* Updates (Android): the app checks the B-Side website for a newer player when it opens, downloads it and uses it
@@ -5900,6 +5905,36 @@ const LOCK_COLOURS = [['app', 'Same as app'], ['dark', 'Dark'], ['light', 'Light
 // spread: how far previous and next sit from play, 0 (right beside it) to 100 (out at the edges, as before 1.10.1)
 const lockSpread = v => typeof v === 'number' && isFinite(v) ? clamp(Math.round(v), 0, 100) : 100;
 const spreadLabel = v => v <= 0 ? 'Close' : v >= 100 ? 'Edges' : v + '%';
+// Settings › About B-Side: what each version brought, newest first. Add a line with every release.
+const HISTORY = [
+  ['1.10.3', 'Stay until I swipe it away works, unlocking goes straight to your home screen, and this update history'],
+  ['1.10.2', 'The lock screen player shows up every time, Stay until I swipe it away, and a warning when your phone blocks it'],
+  ['1.10.1', 'Choose how close previous and next sit to play on the lock screen'],
+  ['1.10.0', 'Lock screen player, folders checked for new and deleted songs, bass, treble and stereo expand'],
+  ['1.9.6', 'Spotify sign-in problems stay on screen, with what to do'],
+  ['1.9.5', 'Connect Spotify from any copy of B-Side'],
+  ['1.9.4', 'Persona 3 option rows without the box'],
+  ['1.9.3', 'The Android app updates itself'],
+  ['1.9.2', 'Play on a car or headset starts B-Side, even after it’s closed'],
+  ['1.9.1', 'B-Side online, for connecting Spotify on a computer'],
+  ['1.9', 'Bring your Spotify playlists and Liked Songs over'],
+  ['1.8', 'Fast scroll and Open in Spotify'],
+  ['1.7.2', 'Persona 3 Reload icon in brush ink'],
+  ['1.7.1', 'New Persona 5 and Persona 3 Reload icons'],
+  ['1.7', 'New game-style app icons, no date in the header'],
+  ['1.6', 'The five game styles redesigned'],
+  ['1.5', 'Volume levelling and album artist options'],
+  ['1.4', 'Songs with several singers appear under each one; keeps running longer in the background'],
+  ['1.3', 'Renamed B-Side; keeps playing after you close the app'],
+  ['1.2', 'Theme colour, and an app icon that follows the style'],
+  ['1.1', 'Six styles with their own sound effects; Folders works like a file explorer'],
+  ['1.0', 'The first version, called Cadence'],
+];
+function aboutSheet() {
+  const rows = HISTORY.map(([v, t]) => `<div class="hist-row${v === APP_VERSION ? ' now' : ''}"><b>${esc(v)}</b><span>${esc(t)}</span></div>`).join('');
+  openSheet({head: sheetHead('About B-Side', `Version ${APP_VERSION}`), body: `<div class="lbl">Update history</div><div class="hist">${rows}</div>
+    <div class="lbl">About</div><div class="accent-note">A local music player. Songs you add are read and played on your device; nothing is uploaded. “Open in Spotify” sends only the song, album or artist name to Spotify, and only when you tap it. Importing from a connected Spotify account reads your playlists from Spotify only when you ask; a Spotify data file is read on your device. Tags, album art and lyrics come from your files. The game styles are fan-made tributes; B-Side isn’t affiliated with or endorsed by the makers of NieR: Automata, Persona, Red Dead Redemption or Cyberpunk 2077, and their names belong to their owners.</div>`});
+}
 function lockPrefs() { const l = S.settings.lock || {}; return {style: l.style || 'app', colours: l.colours || 'app', show: Object.assign({}, LOCK_SHOW_DEFAULT, l.show || {}), spread: lockSpread(l.spread), stay: !!l.stay}; }
 function setLockPrefs(p) { S.settings.lock = p; persistSoon(); pushLockLook(); lockPreviewSend(); }
 function lockLook() { // what lock.js needs to dress the lock screen
