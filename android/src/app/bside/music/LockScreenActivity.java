@@ -76,6 +76,10 @@ import java.util.Locale;
 public class LockScreenActivity extends Activity {
     private static final String PREF = "lockPlayer", PREF_LOOK = "lockLook", PREF_BLOCKED = "lockBlocked", PREF_BLOCKED_AT = "lockBlockedAt";
     private static final long CHECK_OPENED_MS = 3000, UNSTICK_MS = 12000, PAGE_READY_MS = 8000;
+    // How often the lock screen is checked while it covers it, and how soon after unlocking a cover counts as the
+    // phone's own (some phones put the home screen over everything as they unlock).
+    private static final long WATCH_MS = 50, JUST_UNLOCKED_MS = 3000;
+    private static final String EXTRA_BACK = "app.bside.music.LOCK_BACK";
     private static final String LOCK_HOST = "lock.appassets.androidplatform.net";
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static LockScreenActivity shown;
@@ -113,14 +117,31 @@ public class LockScreenActivity extends Activity {
             if (web != null && !webDrawn) useNative();
         }
     };
+    /**
+     * While it covers the lock screen: notices the moment the phone unlocks (face, fingerprint, Smart Lock), well
+     * before Android's "unlocked" message arrives, so it can close before it's seen over the home screen.
+     */
+    private final Runnable watchUnlock = new Runnable() {
+        @Override
+        public void run() {
+            if (leaving || left || isFinishing()) return;
+            if (locked()) {
+                lockedSeenAt = SystemClock.elapsedRealtime();
+                MAIN.postDelayed(this, WATCH_MS);
+            } else if (lockedSeenAt > 0) {
+                unlocked();
+            }
+        }
+    };
     private final BroadcastReceiver screen = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent i) {
             if (Intent.ACTION_USER_PRESENT.equals(i.getAction())) {
                 // Unlocked: by fingerprint, face or PIN, or by the swipe up (whose answer may come after this).
                 if (leaving) leave(openAfterUnlock);
-                else if (!stays(LockScreenActivity.this)) finish();
+                else unlocked();
             } else if (Intent.ACTION_SCREEN_ON.equals(i.getAction())) {
+                watch();
                 MAIN.removeCallbacks(checkLocked);
                 MAIN.postDelayed(checkLocked, 450);
             }
@@ -137,6 +158,8 @@ public class LockScreenActivity extends Activity {
     private SeekBar seek;
     private ImageButton play;
     private boolean seeking, leaving, left, openAfterUnlock, listening;
+    private long lockedSeenAt; // when the lock screen was last seen under this one (0: not since it was asked for)
+    private int broughtBack; // times it came back over the phone's own unlock screen (see onStop)
     private Bitmap shownCover;
     private int shownColor;
     private String shownKey;
@@ -283,6 +306,10 @@ public class LockScreenActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         openedAt = SystemClock.elapsedRealtime();
+        if (!intent.getBooleanExtra(EXTRA_BACK, false)) { // the screen went off again: a new round
+            lockedSeenAt = 0;
+            broughtBack = 0;
+        }
         MAIN.removeCallbacks(unstick);
         if (!left) {
             leaving = false;
@@ -297,6 +324,7 @@ public class LockScreenActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (closeIfUnlocked()) return;
+        watch();
         bind();
         MAIN.removeCallbacks(tick);
         if (web == null) MAIN.post(tick);
@@ -305,6 +333,7 @@ public class LockScreenActivity extends Activity {
     @Override
     protected void onPause() {
         MAIN.removeCallbacks(tick);
+        MAIN.removeCallbacks(watchUnlock);
         super.onPause();
     }
 
@@ -314,7 +343,22 @@ public class LockScreenActivity extends Activity {
         // Out of sight on an unlocked phone (a call came in, Home, an app opened from the notification shade):
         // done. Left open, it would only sit behind everything.
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-        if (!isChangingConfigurations() && !isFinishing() && pm != null && pm.isInteractive() && !locked()) finish();
+        if (isChangingConfigurations() || isFinishing() || left || pm == null || !pm.isInteractive() || locked()) return;
+        // "Stay until I swipe it away": some phones put the home screen (or the last app) over it as they unlock.
+        // Covered within moments of the lock screen going: that's the phone, so come back to the front.
+        if (!leaving && stays(this) && broughtBack < 2 && lockedSeenAt > 0
+                && SystemClock.elapsedRealtime() - lockedSeenAt < JUST_UNLOCKED_MS) {
+            broughtBack++;
+            Intent i = new Intent(this, LockScreenActivity.class).putExtra(EXTRA_BACK, true)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                            | Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            try {
+                startActivity(i);
+                return;
+            } catch (Exception ignored) {
+            }
+        }
+        finish();
     }
 
     @Override
@@ -323,6 +367,7 @@ public class LockScreenActivity extends Activity {
         MAIN.removeCallbacks(checkLocked);
         MAIN.removeCallbacks(unstick);
         MAIN.removeCallbacks(pageTimeout);
+        MAIN.removeCallbacks(watchUnlock);
         if (shown == this) shown = null;
         if (web != null) {
             web.destroy();
@@ -355,10 +400,33 @@ public class LockScreenActivity extends Activity {
         if (leaving || stays(this)) return false;
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null && pm.isInteractive() && !locked()) {
-            finish();
+            closeNow();
             return true;
         }
         return false;
+    }
+
+    /** Checks for the unlock every WATCH_MS while the screen is on and it covers the lock screen. */
+    private void watch() {
+        MAIN.removeCallbacks(watchUnlock);
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        if (!leaving && !left && pm != null && pm.isInteractive()) MAIN.post(watchUnlock);
+    }
+
+    /** The phone unlocked without the swipe up (face, fingerprint, PIN on Android's own lock screen). */
+    private void unlocked() {
+        MAIN.removeCallbacks(watchUnlock);
+        if (leaving || left) return;
+        if (lockedSeenAt == 0) lockedSeenAt = SystemClock.elapsedRealtime(); // Android's message came first
+        if (!stays(this)) closeNow(); // straight to the home screen; with Stay on, it waits for the swipe
+    }
+
+    /** Gone at once, with no fade, so it isn't seen over the home screen. */
+    @SuppressWarnings("deprecation")
+    private void closeNow() {
+        if (Build.VERSION.SDK_INT >= 34) overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0);
+        finish();
+        overridePendingTransition(0, 0);
     }
 
     /** Asks Android to unlock (it shows the PIN or pattern if there is one), then closes; optionally opens B-Side. */

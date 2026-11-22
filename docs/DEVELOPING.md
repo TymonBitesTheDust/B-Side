@@ -75,6 +75,9 @@ The player's version lives in three `<meta>` tags at the top of `web/app.html`:
 | `bside-build` | A number that goes up with every release | Every release; installed apps update to a page with a higher build |
 | `bside-native` | The oldest app `versionCode` this page works with | When the page needs something new from the Android part |
 
+Every release also adds one short line at the top of `HISTORY` in `web/app.html`: that's the update history in
+*Settings → About B-Side*.
+
 - **Player-only change:** raise `bside-version` and `bside-build`, run `python3 web/build.py`, and merge to `main`.
   GitHub Pages publishes `docs/index.html`, and phones pick it up the next time B-Side opens.
 - **Android change:** also raise `versionCode` / `versionName` in `android/AndroidManifest.xml` and `android/build.sh`,
