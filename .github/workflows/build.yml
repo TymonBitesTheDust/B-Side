@@ -6,8 +6,8 @@
 # the APK is signed with that key, so it installs over B-Side. Without them it builds "B-Side Test"
 # (app.bside.music.test), which installs next to B-Side and can't update it.
 #
-# Every run keeps both files under the run's Artifacts. Pushing a tag like V1.10.0 also makes a draft release
-# with both files attached, ready to publish.
+# Every run keeps both files under the run's Artifacts. Pushing a tag like V1.10.0 also attaches both files to
+# that tag's release (your draft, if you made one first, or a new draft), ready to publish.
 name: Build B-Side
 
 on:
@@ -21,8 +21,10 @@ permissions:
   contents: write # only used to draft a release when a V* tag is pushed
 
 env:
-  # the certificate every B-Side release so far was signed with; a release build must match it
-  RELEASE_CERT_SHA256: 0eabd9696e0e39db005751547ef1b29399eed25e85e9c88213ecfef3ecf8a507
+  # the certificate a release build must be signed with, so it installs over the B-Side people have:
+  # the 1.10 key (made 19 November 2026; it signed the 1.10.0 and 1.10.1 APKs from Claude).
+  # 1.9.6 and older used 0eabd9696e0e39db005751547ef1b29399eed25e85e9c88213ecfef3ecf8a507.
+  RELEASE_CERT_SHA256: 112c805cae5d7422acaf5f474da17edbd432f4a0c8cefa61c696840a0788aeaa
   ECJ_VERSION: 3.33.0
 
 jobs:
@@ -103,5 +105,10 @@ jobs:
             echo "::error::Add the BSIDE_KEYSTORE and BSIDE_KS_PASS secrets first: a release needs the release key."
             exit 1
           fi
-          gh release create "$GITHUB_REF_NAME" android/build/B-Side.apk android/build/B-Side.html \
-            --draft --title "B-Side $GITHUB_REF_NAME" --generate-notes
+          # a release (or draft) you already made for this tag gets the files and keeps its notes
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" android/build/B-Side.apk android/build/B-Side.html --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" android/build/B-Side.apk android/build/B-Side.html \
+              --draft --title "B-Side $GITHUB_REF_NAME" --generate-notes
+          fi

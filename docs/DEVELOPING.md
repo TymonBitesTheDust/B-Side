@@ -59,7 +59,10 @@ To get the base64, run this in the folder with the key:
 base64 -w0 bside-release.jks        # Linux (on a Mac: base64 -i bside-release.jks)
 ```
 
-The workflow checks that the APK's certificate matches the one earlier releases used, and fails if it doesn't.
+The workflow checks that the APK's certificate matches `RELEASE_CERT_SHA256` in the workflow, and fails if it doesn't.
+Since 1.10.2 that's the 1.10 key (made on 19 November 2026); 1.9.6 and older were signed with the original key, and
+the 1.10.0 APK on GitHub with a third key that is no longer used. Pushing a `V…` tag attaches both files to the
+release you drafted for that tag, keeping your notes, or makes a new draft if there isn't one.
 Without the secrets it builds B-Side Test instead, so a build can't be mistaken for a release.
 
 ## Release
