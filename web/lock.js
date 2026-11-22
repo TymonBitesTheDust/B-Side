@@ -6,7 +6,8 @@
    markup so every style dresses it the way it dresses the app, and sends taps back.
 
    Look (from the player's settings): {skin, dark, vars: {CSS custom properties}, show: {clock, date, cover,
-   artist, album, progress, controls, fav, lyrics, hint, bgArt}}. Song: {title, artist, album, duration and
+   artist, album, progress, controls, fav, lyrics, hint, bgArt}, spread: 0–100, how far previous and next sit from
+   play (0 right beside it, 100 out at the edges)}. Song: {title, artist, album, duration and
    position in ms, playing, speed, tint "r,g,b", fav, tid, cover URL}. Lyrics: {id, lines: [[seconds, text]…]}. */
 (() => {
 'use strict';
@@ -49,7 +50,9 @@ B.insertAdjacentHTML('beforeend', `<section class="np open lock" id="np" aria-la
         </div>
         <div class="ctrls">
           <button class="ib big" id="btnPrev" aria-label="Previous">${ic('prev')}</button>
+          <i class="lk-sp" aria-hidden="true"></i>
           <button class="play" id="btnPlay" aria-label="Play or pause"><svg class="ico i-play"><use href="#i-play"/></svg><svg class="ico i-pause"><use href="#i-pause"/></svg></button>
+          <i class="lk-sp" aria-hidden="true"></i>
           <button class="ib big" id="btnNext" aria-label="Next">${ic('next')}</button>
         </div>
       </div>
@@ -69,6 +72,9 @@ function applyLook() {
   const sh = Object.assign({}, SHOW, look.show || {});
   for (const k of Object.keys(SHOW)) np.classList.toggle('lk-no-' + k, !sh[k]);
   np.classList.toggle('lk-bg', !!sh.bgArt);
+  // previous and next: each gap between them and play takes this share of the room left over (1 = out at the edges)
+  const sp = typeof look.spread === 'number' && isFinite(look.spread) ? Math.max(0, Math.min(100, look.spread)) : 100;
+  np.style.setProperty('--lk-grow', (sp / 200).toFixed(3));
   return sh;
 }
 function draw() {

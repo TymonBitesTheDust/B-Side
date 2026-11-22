@@ -7,8 +7,8 @@
 <meta name="theme-color" content="#f3f3f6">
 <!-- Release: bside-version is shown in Settings; bside-build goes up with every release (the Android app updates
      itself from the website to a page with a higher build); bside-native is the oldest app versionCode this page works with. -->
-<meta name="bside-version" content="1.10.0">
-<meta name="bside-build" content="19">
+<meta name="bside-version" content="1.10.1">
+<meta name="bside-build" content="20">
 <meta name="bside-native" content="15">
 <meta name="description" content="B-Side — a local music player with six styles and sound effects. Pick songs or folders and play them right here.">
 <title>B-Side</title>
@@ -557,6 +557,10 @@ body.np-open .fscroll{visibility:hidden}
 .lock.lk-no-clock .lk-time,.lock.lk-no-date .lk-date,.lock.lk-no-clock.lk-no-date .lk-clock,.lock.lk-no-cover .np-stage,.lock.lk-no-progress .lk-prog,
 .lock.lk-no-controls .ctrls,.lock.lk-no-fav #npFav{display:none}
 .lock.lk-no-hint .lk-hint{visibility:hidden}
+/* previous and next sit as close to play as Settings › Lock screen asks: the two spacers share --lk-grow of the spare
+   room each (.5 each fills it, the same as space-between); whatever they leave is split evenly outside the buttons */
+.lock .ctrls{justify-content:center}
+.lock .ctrls>.lk-sp{display:block;flex:var(--lk-grow,.5) 1 4px;min-width:0;height:1px}
 .lock.leaving .lk-move{opacity:0;transform:translateY(-30vh)}
 @media (max-height:520px){.lock{--art:min(36vw,52vh)}.lock .lk-clock{display:none}.lock .np-body{flex-direction:row;justify-content:center;gap:30px}}
 /* each style's clock */
@@ -577,6 +581,8 @@ body.np-open .fscroll{visibility:hidden}
 .lk-phone{position:relative;width:164px;height:355px;border-radius:24px;overflow:hidden;background:#000;box-shadow:0 0 0 5px var(--surface-2),0 14px 34px rgba(0,0,0,.28);flex:none}
 .lk-phone iframe{position:absolute;left:0;top:0;width:390px;height:844px;border:0;transform:scale(.4205);transform-origin:0 0;pointer-events:none;background:#000}
 .lk-sk .sk-card{padding-bottom:9px}
+.lk-spread{padding:2px 16px 10px 32px}
+.lk-spread .tl{font-weight:400;color:var(--text-2)}
 /* ==========================================================================
    NieR: Automata (id "archive"): a YoRHa menu. Beige paper on a fine grid,
    dark-brown ink, light-brown plates with small square markers. Whatever you
@@ -2195,7 +2201,8 @@ body.np-open .fscroll{visibility:hidden}
    markup so every style dresses it the way it dresses the app, and sends taps back.
 
    Look (from the player's settings): {skin, dark, vars: {CSS custom properties}, show: {clock, date, cover,
-   artist, album, progress, controls, fav, lyrics, hint, bgArt}}. Song: {title, artist, album, duration and
+   artist, album, progress, controls, fav, lyrics, hint, bgArt}, spread: 0–100, how far previous and next sit from
+   play (0 right beside it, 100 out at the edges)}. Song: {title, artist, album, duration and
    position in ms, playing, speed, tint "r,g,b", fav, tid, cover URL}. Lyrics: {id, lines: [[seconds, text]…]}. */
 (() => {
 'use strict';
@@ -2254,7 +2261,9 @@ B.insertAdjacentHTML('beforeend', `<section class="np open lock" id="np" aria-la
         </div>
         <div class="ctrls">
           <button class="ib big" id="btnPrev" aria-label="Previous">${ic('prev')}</button>
+          <i class="lk-sp" aria-hidden="true"></i>
           <button class="play" id="btnPlay" aria-label="Play or pause"><svg class="ico i-play"><use href="#i-play"/></svg><svg class="ico i-pause"><use href="#i-pause"/></svg></button>
+          <i class="lk-sp" aria-hidden="true"></i>
           <button class="ib big" id="btnNext" aria-label="Next">${ic('next')}</button>
         </div>
       </div>
@@ -2274,6 +2283,9 @@ function applyLook() {
   const sh = Object.assign({}, SHOW, look.show || {});
   for (const k of Object.keys(SHOW)) np.classList.toggle('lk-no-' + k, !sh[k]);
   np.classList.toggle('lk-bg', !!sh.bgArt);
+  // previous and next: each gap between them and play takes this share of the room left over (1 = out at the edges)
+  const sp = typeof look.spread === 'number' && isFinite(look.spread) ? Math.max(0, Math.min(100, look.spread)) : 100;
+  np.style.setProperty('--lk-grow', (sp / 200).toFixed(3));
   return sh;
 }
 function draw() {
@@ -5878,12 +5890,15 @@ const LOCK_SHOW = [['clock', 'Clock'], ['date', 'Date'], ['cover', 'Cover'], ['a
   ['controls', 'Play, previous and next'], ['fav', 'Favourite button'], ['lyrics', 'Lyrics, line by line', 'For songs with synced lyrics'], ['hint', '“Swipe up to unlock”'], ['bgArt', 'Blurred cover behind', 'Instead of the style’s own background']];
 const LOCK_SHOW_DEFAULT = {clock: true, date: true, cover: true, artist: true, album: true, progress: true, controls: true, fav: false, lyrics: false, hint: true, bgArt: false};
 const LOCK_COLOURS = [['app', 'Same as app'], ['dark', 'Dark'], ['light', 'Light']];
-function lockPrefs() { const l = S.settings.lock || {}; return {style: l.style || 'app', colours: l.colours || 'app', show: Object.assign({}, LOCK_SHOW_DEFAULT, l.show || {})}; }
+// spread: how far previous and next sit from play, 0 (right beside it) to 100 (out at the edges, as before 1.10.1)
+const lockSpread = v => typeof v === 'number' && isFinite(v) ? clamp(Math.round(v), 0, 100) : 100;
+const spreadLabel = v => v <= 0 ? 'Close' : v >= 100 ? 'Edges' : v + '%';
+function lockPrefs() { const l = S.settings.lock || {}; return {style: l.style || 'app', colours: l.colours || 'app', show: Object.assign({}, LOCK_SHOW_DEFAULT, l.show || {}), spread: lockSpread(l.spread)}; }
 function setLockPrefs(p) { S.settings.lock = p; persistSoon(); pushLockLook(); lockPreviewSend(); }
 function lockLook() { // what lock.js needs to dress the lock screen
   const p = lockPrefs(), skin = p.style !== 'app' && SKINS.some(k => k.id === p.style) ? p.style : skinOf();
   const dark = skin === 'riot' || (p.colours === 'app' ? themeDark() : p.colours === 'dark');
-  return {skin, dark, vars: accentVars(skin, dark), show: p.show};
+  return {skin, dark, vars: accentVars(skin, dark), show: p.show, spread: p.spread};
 }
 let lastLook = '';
 function pushLockLook() {
@@ -5935,6 +5950,10 @@ function lockPreviewData() {
   const lines = l && l.synced ? l.lines.map(x => [x.t, x.text]) : t ? [] : [[60, 'Lyrics show up here, line by line'], [80, 'for songs with synced lyrics']];
   return {look: lockLook(), song, lyrics: {id: song.tid, lines}, t};
 }
+function lockPreviewLook() { // only the look changed: the preview keeps its song and cover
+  const f = $('#lkPreview'); if (!f || !lockPvReady || !f.contentWindow) return;
+  try { f.contentWindow.postMessage({bsideLock: {look: lockLook()}}, '*'); } catch (e) {}
+}
 function lockPreviewSend() {
   const f = $('#lkPreview'); if (!f || !lockPvReady || !f.contentWindow) return;
   const d = lockPreviewData(), post = song => { try { f.contentWindow.postMessage({bsideLock: {look: d.look, song, lyrics: d.lyrics}}, '*'); } catch (e) {} };
@@ -5954,13 +5973,30 @@ function lockSheetBody() {
     <div class="seg" id="lkCol">${LOCK_COLOURS.map(([k, l]) => `<button data-lk-col="${k}" class="${p.colours === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="accent-note" id="lkColNote">${lockLook().skin === 'riot' ? 'Persona 5 is always dark.' : '“Same as app” follows Settings › Appearance.'}</div>
     <div class="lbl">On the lock screen</div>
-    ${LOCK_SHOW.map(([k, l, sub]) => `<button class="mi" data-lk-show="${k}" role="switch" aria-checked="${!!p.show[k]}"><span class="mt">${esc(l)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span><span class="switch ${p.show[k] ? 'on' : ''}"></span></button>`).join('')}
-    ${menuItem('close', 'Reset the lock screen', 'lockreset', {sub: 'Same style as the app, everything but the extras shown'})}`;
+    ${LOCK_SHOW.map(([k, l, sub]) => `<button class="mi" data-lk-show="${k}" role="switch" aria-checked="${!!p.show[k]}"><span class="mt">${esc(l)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span><span class="switch ${p.show[k] ? 'on' : ''}"></span></button>` + (k === 'controls' ? lockSpreadHTML(p) : '')).join('')}
+    ${menuItem('close', 'Reset the lock screen', 'lockreset', {sub: 'Same style as the app, everything but the extras shown, buttons at the edges'})}`;
+}
+function lockSpreadHTML(p) { // under "Play, previous and next": how close previous and next sit to play
+  return `<div class="vol-row tone-row lk-spread" id="lkSpreadRow" ${p.show.controls ? '' : 'hidden'}><span class="tl">Spacing</span><div class="seek"><input type="range" id="lkSpread" min="0" max="100" step="5" value="${p.spread}" aria-label="How far previous and next sit from play" aria-valuetext="${esc(spreadLabel(p.spread))}" style="--p:${p.spread}%"></div><b id="lkSpreadLbl">${esc(spreadLabel(p.spread))}</b></div>`;
 }
 function lockSheet() {
   lockPvReady = false;
   openSheet({head: sheetHead('Lock screen', 'B-Side’s player over Android’s lock screen'), body: lockSheetBody(),
-    onMount: el => { el._lock = true; el._cleanup = () => { el._lock = false; lockPvReady = false; }; },
+    onMount: el => {
+      el._lock = true;
+      const spreadOf = e => e.target && e.target.id === 'lkSpread' ? e.target : null;
+      const onInput = e => { // while dragging, only the preview follows
+        const r = spreadOf(e); if (!r) return;
+        const p = lockPrefs(), v = lockSpread(+r.value); if (p.spread === v) return;
+        p.spread = v; S.settings.lock = p;
+        r.style.setProperty('--p', v + '%'); r.setAttribute('aria-valuetext', spreadLabel(v));
+        const lb = $('#lkSpreadLbl', el); if (lb) lb.textContent = spreadLabel(v);
+        lockPreviewLook();
+      };
+      const onChange = e => { if (!spreadOf(e)) return; persistSoon(); pushLockLook(); sfx('drop'); }; // let go: save it and tell the lock screen
+      el.addEventListener('input', onInput); el.addEventListener('change', onChange);
+      el._cleanup = () => { el._lock = false; lockPvReady = false; el.removeEventListener('input', onInput); el.removeEventListener('change', onChange); };
+    },
     onClick: async e => {
       const p = lockPrefs();
       if (e.target.closest('[data-lk="toggle"]')) { await toggleLockPlayer(); refreshLockBox(); return; }
@@ -5969,7 +6005,7 @@ function lockSheet() {
       const col = e.target.closest('[data-lk-col]');
       if (col) { p.colours = col.dataset.lkCol; setLockPrefs(p); $$('[data-lk-col]', sheetEl).forEach(c => c.classList.toggle('on', c === col)); lockColNote(); sfx('select'); return; }
       const sh = e.target.closest('[data-lk-show]');
-      if (sh) { const k = sh.dataset.lkShow; p.show[k] = !p.show[k]; setLockPrefs(p); sh.setAttribute('aria-checked', p.show[k]); $('.switch', sh).classList.toggle('on', p.show[k]); sfx(p.show[k] ? 'pop' : 'select'); return; }
+      if (sh) { const k = sh.dataset.lkShow; p.show[k] = !p.show[k]; setLockPrefs(p); sh.setAttribute('aria-checked', p.show[k]); $('.switch', sh).classList.toggle('on', p.show[k]); if (k === 'controls') { const r = $('#lkSpreadRow', sheetEl); if (r) r.hidden = !p.show[k]; } sfx(p.show[k] ? 'pop' : 'select'); return; }
       const b = e.target.closest('[data-mi]'); if (!b) return;
       if (b.dataset.mi === 'lockallow') { askLockPermission(); return; }
       if (b.dataset.mi === 'lockreset') { S.settings.lock = null; setLockPrefs(lockPrefs()); const body = $('.sheet-body', sheetEl), y = body.scrollTop; body.innerHTML = lockSheetBody(); body.scrollTop = y; lockPvReady = false; sfx('delete'); }
