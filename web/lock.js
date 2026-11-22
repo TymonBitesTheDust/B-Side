@@ -131,15 +131,22 @@ function marquee() {
 setInterval(() => { if (!document.hidden) { tick(); clock(); } }, 250);
 
 /* ── what it's given ── */
+let drawnSent = false;
 function pull() { // lock mode: read everything again from the app
   if (!BRIDGE) return;
-  look = parse(BRIDGE.config()) || look;
-  song = parse(BRIDGE.state());
-  const ly = parse(BRIDGE.lyrics && BRIDGE.lyrics()); if (ly) lyrics = ly;
-  if (h24 == null && BRIDGE.clock24) try { h24 = !!BRIDGE.clock24(); } catch (e) {}
+  try {
+    look = parse(BRIDGE.config()) || look;
+    song = parse(BRIDGE.state());
+    const ly = parse(BRIDGE.lyrics && BRIDGE.lyrics()); if (ly) lyrics = ly;
+    if (h24 == null && BRIDGE.clock24) h24 = !!BRIDGE.clock24();
+  } catch (e) {}
   draw();
+  // The app shows the plain native screen until it hears this, so a page that fails never leaves it blank.
+  if (!drawnSent) { drawnSent = true; try { BRIDGE.ready && BRIDGE.ready(); } catch (e) {} }
 }
 window.bsideLockUpdate = pull;
+// The screen came on: the song may have moved on while the page wasn't being drawn.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { if (BRIDGE) pull(); else { tick(); clock(true); } } });
 window.bsideInsets = (top, bottom) => { D.style.setProperty('--sat', (+top || 0) + 'px'); D.style.setProperty('--sab', (+bottom || 0) + 'px'); };
 if (BRIDGE) { try { const i = JSON.parse(BRIDGE.insets()); window.bsideInsets(i.top, i.bottom); } catch (e) {} pull(); }
 else if (MODE === 'lock') draw();
@@ -194,5 +201,5 @@ const end = e => {
   else { move.style.transform = ''; move.style.opacity = ''; }
 };
 np.addEventListener('pointerup', end); np.addEventListener('pointercancel', end);
-window.bsideLockReset = () => { np.classList.remove('leaving', 'dragging'); move.style.transform = ''; move.style.opacity = ''; }; // unlocking was cancelled
+window.bsideLockReset = () => { drag = null; dragged = false; np.classList.remove('leaving', 'dragging'); move.style.transform = ''; move.style.opacity = ''; }; // unlocking was cancelled, or it's shown again
 })();
