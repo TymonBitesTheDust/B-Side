@@ -117,7 +117,8 @@ public class MainActivity extends Activity {
     boolean launchPicker(String mode, WebChromeClient.FileChooserParams params) {
         try {
             if ("folder".equals(mode)) {
-                startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQ_TREE);
+                // Asks for write access too, so the tag editor can save new details into the songs.
+                startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(ACCESS), REQ_TREE);
             } else if ("data".equals(mode)) { // a Spotify data file: .zip, .json or .csv, whatever type Android gives it
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -130,6 +131,7 @@ public class MainActivity extends Activity {
                 i.setType("*/*");
                 i.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"audio/*", "application/ogg", "application/x-flac"});
                 i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                i.addFlags(ACCESS);
                 startActivityForResult(i, REQ_FILES);
             }
             return true;
@@ -159,7 +161,7 @@ public class MainActivity extends Activity {
                 }
                 if (requestCode == REQ_FILES) {
                     final List<Uri> kept = new ArrayList<>();
-                    for (int k = 0; k < list.size() && k < 300; k++) if (keepAccess(list.get(k))) kept.add(list.get(k));
+                    for (int k = 0; k < list.size() && k < 300; k++) if (keepAccess(list.get(k), data.getFlags())) kept.add(list.get(k));
                     if (!kept.isEmpty()) {
                         deliverWithSources(list.toArray(new Uri[0]), kept);
                         return;
@@ -174,7 +176,7 @@ public class MainActivity extends Activity {
                 return;
             }
             final Uri tree = data.getData();
-            final boolean kept = keepAccess(tree);
+            final boolean kept = keepAccess(tree, data.getFlags());
             host.notice("Reading folder…");
             new Thread(new Runnable() {
             @Override
@@ -246,12 +248,25 @@ public class MainActivity extends Activity {
         }, "file-sources").start();
     }
 
+    /** What the pickers ask for: reading, writing (for the tag editor) and keeping that after the screen closes. */
+    private static final int ACCESS = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION;
+
     /**
-     * Keeps read access to picked songs and folders after this screen closes, so music that carries on in the
-     * background can still open the next file, and folders can be checked again. Best effort: not every picker
-     * offers lasting access.
+     * Keeps access to picked songs and folders after this screen closes, so music that carries on in the
+     * background can still open the next file, folders can be checked again, and the tag editor can save into
+     * the files. Read and write when the picker gave both, else read only. Best effort: not every picker offers
+     * lasting access.
      */
-    private boolean keepAccess(Uri u) {
+    private boolean keepAccess(Uri u, int granted) {
+        int rw = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+        if ((granted & rw) == rw) {
+            try {
+                getContentResolver().takePersistableUriPermission(u, rw);
+                return true;
+            } catch (Exception ignored) {
+            }
+        }
         try {
             getContentResolver().takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
             return true;

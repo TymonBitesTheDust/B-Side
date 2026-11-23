@@ -389,6 +389,7 @@ public class MusicService extends Service {
         } catch (Exception ignored) {
         }
         LockScreenActivity.close();
+        BSideWidget.push(this, false);
         if (nm != null) nm.cancel(NID);
         if (session != null) {
             session.setActive(false);
@@ -428,6 +429,7 @@ public class MusicService extends Service {
                 .build());
         if (!session.isActive()) session.setActive(true);
 
+        BSideWidget.pushIfChanged(this, playing);
         Notification n = build(playing);
         if (playing) {
             MAIN.removeCallbacks(dropForeground);

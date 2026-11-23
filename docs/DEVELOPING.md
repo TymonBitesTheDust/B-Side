@@ -97,6 +97,28 @@ by one gain node. Tags are parsed in JavaScript with no libraries: ID3v1 and ID3
 Opus), MP4 metadata and RIFF INFO; loudness from `REPLAYGAIN_*`, Opus `R128_*_GAIN` or iTunes `iTunNORM`. The library
 and copied song files live in IndexedDB, settings in `localStorage`.
 
+Playback runs on two `<audio>` elements, *decks*, so the next song can be loaded and started on time. About 20 s
+before a song ends the next one is loaded on the other deck; 12 s before, the hand-over is planned on the
+`AudioContext` clock (a `ConstantSourceNode` whose `onended` fires even when the page is in the background and its
+timers are throttled). Gapless starts the next deck as the first one ends, a little early by the delay that deck
+was measured to need; a crossfade ramps both decks' fade gains with equal-power curves (`setValueCurveAtTime`). Each
+deck has its own level and fade gain before the shared chain. Seeking, pausing, changing speed or the queue cancels
+the plan, and it's made again.
+
+The one-time decode that measures loudness also stores each song's *shape*: where the sound starts and ends and any
+quiet stretch of 2.5 s or more inside it (below −48 dBFS), for *Skip silence*, and 240 peak values for the waveform
+seekbar (`t.wave`, 6 bits each). The waveform is drawn on a canvas under the seekbar with each style's own bars
+(`WAVE_LOOK`).
+
+Listening history is a list of `[minute, song id, seconds]` in `localStorage` (`bside:history`); a song counts after
+30 seconds or half of it. Stats, the recap and Lost memories are worked out from it when they're opened.
+
+The tag editor writes new ID3v2.3/2.4 or FLAC metadata in JavaScript: the frames and blocks it doesn't edit are kept
+byte for byte, and padding is used so the file keeps its size when it can. The new start of the file is read back
+before anything is written, and only the start is replaced; the music after it is never touched. In Chrome and Edge
+it's written with the folder's `FileSystemFileHandle`; on Android by `TagWriter` (below). Song ids are made from name
+and size, so a file whose size changes keeps its id through `bside:alias`.
+
 The lock screen player is the same page in lock mode: `web/lock.js` runs first and, when it's opened with the
 `BSideLock` bridge or as `#lock` / `#lockpreview`, it keeps only the icon sprite and draws the Now Playing screen's markup
 with a clock, so every style dresses it exactly as it dresses the app. The player's own script then returns at once
@@ -127,11 +149,17 @@ flowchart LR
     S["MusicService<br/>foreground media service · notification<br/>lock screen · headset · wake lock"]
     L["LockScreenActivity<br/>optional player over the lock screen"]
     F["FolderScan<br/>reads picked folders, checks single files"]
+    G["BSideWidget<br/>home-screen widget"]
+    T["TagWriter<br/>saves edited tags into files"]
     W -- now playing --> S
     S -- play / pause / skip / seek --> W
     S -- screen off --> L
     L -- play / pause / skip / seek --> W
     W -- rescan --> F
+    W -- widget pictures --> G
+    S -- playing / paused --> G
+    G -- play / pause / skip --> S
+    W -- new tags --> T
 ```
 
 - **`WebHost`** owns the WebView at process level rather than inside the screen. Closing B-Side, swiping it away or
@@ -167,6 +195,19 @@ flowchart LR
   allows the start from the background with `SYSTEM_ALERT_WINDOW` ("Display over other apps"), which the page asks for
   when the setting is turned on. The page sends a 720 px cover for it while it's on. The lock page is read with
   `WebUpdater.peek`, which doesn't count as a page start.
+- **`BSideWidget`** is the home-screen widget. The page draws it in the chosen style twice, one picture with pause and
+  one with play (`widgetPictures` in `app.html`, at the size and density `widgetInfo` reports), and sends both with
+  `setWidget`; they're kept in the app's files. `MusicService` shows the one that matches when playing starts or stops,
+  so it's right even after B-Side closes. The buttons are transparent views over the picture, laid out in
+  `res/layout/widget.xml` where the page draws them (8 dp from the right, then 44, 52 and 44 dp). They broadcast to the
+  widget, which passes them on like a headset button (`MusicService.resume`). A new or resized widget asks the page to
+  draw again (`bsideWidgetDraw`). Before the first picture, a plain layout with the notification icons shows.
+- **`TagWriter`** saves the tag editor's changes into a file (`writeHead`). The page sends the new start of the file and
+  how long the old one was; a song inside a picked folder is found by its folder path and name. Same size: the bytes
+  are written in place through `openFileDescriptor("rw")` and checked. Otherwise the rest of the file is copied to the
+  cache, the new start and the rest are written back, and the file is put back as it was if anything fails. Since
+  1.11.0 the pickers ask for write access and keep it (`takePersistableUriPermission` with read and write);
+  `canWrite` tells the page whether a song or folder has it.
 - **`MainActivity`** serves the page at `https://appassets.androidplatform.net/`, handles the Storage Access Framework
   pickers and "Open with", and switches the home-screen icon between 16 `<activity-alias>` entries.
 
@@ -195,6 +236,8 @@ b-side/
 │   │   ├── MediaButtonReceiver.java
 │   │   ├── LockScreenActivity.java
 │   │   ├── FolderScan.java
+│   │   ├── BSideWidget.java
+│   │   ├── TagWriter.java
 │   │   └── LoopbackLogin.java
 │   ├── res/              hand-made resources (strings, theme, notification icons)
 │   ├── res-gen/          launcher icons generated by gen_icons.py

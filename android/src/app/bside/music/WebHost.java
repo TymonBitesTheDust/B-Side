@@ -189,6 +189,12 @@ final class WebHost {
         if (h.web == null) h.create(h.activity != null ? h.activity : h.app);
     }
 
+    /** A widget was added or resized: the page draws its picture again (if the page is running). */
+    static void redrawWidget() {
+        WebHost h = inst;
+        if (h != null) h.js("window.bsideWidgetDraw&&bsideWidgetDraw()");
+    }
+
     void setInsets(int top, int bottom) {
         insetTop = top;
         insetBottom = bottom;
@@ -539,10 +545,58 @@ final class WebHost {
         /** Gives back Android's lasting access to a folder or song B-Side no longer keeps. */
         @JavascriptInterface
         public void release(String uri) {
+            Uri u = Uri.parse(uri);
             try {
-                app.getContentResolver().releasePersistableUriPermission(Uri.parse(uri), Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            } catch (Exception ignored) {
+                app.getContentResolver().releasePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            } catch (Exception e) {
+                try {
+                    app.getContentResolver().releasePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Exception ignored) {
+                }
             }
+        }
+
+        // ── tag editor: writing a song's new details into its file ──
+
+        /**
+         * Writes a song's new tags into its file, off the main thread (see TagWriter.write for what json holds),
+         * and answers bsideScanResult(token, {ok, size, doc, err}).
+         */
+        @JavascriptInterface
+        public void writeHead(final String json, final String token) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    org.json.JSONObject r;
+                    try {
+                        r = TagWriter.write(app, new org.json.JSONObject(json));
+                    } catch (Exception e) {
+                        r = new org.json.JSONObject();
+                    }
+                    js("window.bsideScanResult&&bsideScanResult(" + org.json.JSONObject.quote(token) + "," + r + ")");
+                }
+            }, "tag-write").start();
+        }
+
+        /** Whether Android lets B-Side change this song or the files in this folder (picked with write access). */
+        @JavascriptInterface
+        public boolean canWrite(String uri) {
+            return TagWriter.canWrite(app, Uri.parse(uri));
+        }
+
+        // ── home-screen widget ──
+
+        /** {"count": widgets placed, "w", "h": the biggest one's size in dp, "density"} */
+        @JavascriptInterface
+        public String widgetInfo() {
+            return BSideWidget.info(app);
+        }
+
+        /** The widget's two pictures, drawn by the page in the chosen style (PNG, base64): playing and paused. */
+        @JavascriptInterface
+        public void setWidget(final String playing, final String paused) {
+            if (playing == null || paused == null) return;
+            BSideWidget.save(app, playing, paused);
         }
 
         /** A check of the folders has finished: forget the files it found. */

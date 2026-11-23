@@ -10,4 +10,7 @@
     <string name="prev">Previous</string>
     <string name="lock_unlock">Swipe up to unlock</string>
     <string name="lock_open">Unlock and open B-Side</string>
+    <string name="widget_desc">The song playing, with previous, play and next, in your B-Side style</string>
+    <string name="widget_open">Open B-Side</string>
+    <string name="widget_fallback">B-Side · open it once to set up</string>
 </resources>
