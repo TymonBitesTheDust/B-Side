@@ -5011,11 +5011,12 @@ window.bsideWidgetDraw = () => widgetSoon(true);
 function setWidgetPrefs(p) { S.settings.widget = p; persistSoon(); widgetSoon(true); widgetPreview(); }
 async function widgetPreview() {
   const im = $('#wgPreview', sheetEl); if (!im) return;
+  // drawn at the widget's real size, then shown smaller if the sheet is narrower, so it looks as it will
   const info = widgetOK() ? widgetInfo() : {count: 0, w: 0, h: 0}, box = im.parentElement.getBoundingClientRect();
-  const W = clamp(Math.round(Math.min(info.w || 330, box.width - 24 || 330)), 200, 460), H = clamp(Math.round(info.h || 80), 60, 140);
+  const W = clamp(Math.round(info.w || 340), 250, 460), H = clamp(Math.round(info.h || 80), 60, 140), fit = Math.min(W, (box.width || W + 24) - 24);
   const t = S.current ? T(S.current) : null, live = !!t && loadedId === t.id && !audio.paused;
-  const pics = await widgetPictures(widgetLook(), await widgetSong(t), W, H, Math.min(3, window.devicePixelRatio || 2));
-  if (im.isConnected) { im.src = live || !t ? pics.pauseUrl : pics.playUrl; im.style.width = W + 'px'; }
+  const pics = await widgetPictures(widgetLook(), await widgetSong(t), W, H, Math.min(3, (window.devicePixelRatio || 2) * fit / W + .5));
+  if (im.isConnected) { im.src = live || !t ? pics.pauseUrl : pics.playUrl; im.style.width = fit + 'px'; }
 }
 function widgetSheetBody() {
   const p = widgetPrefs(), cur = SKINS.find(k => k.id === skinOf()) || SKINS[0], n = widgetOK() ? widgetInfo().count : 0;
