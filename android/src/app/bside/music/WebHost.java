@@ -572,6 +572,12 @@ final class WebHost {
             LockScreenActivity.setLook(app, json);
         }
 
+        /** What the lock screen player did since the screen last went off (Settings › Lock screen › Copy lock screen log). */
+        @JavascriptInterface
+        public String lockLog() {
+            return LockScreenActivity.logText(app);
+        }
+
         /** Opens B-Side's page in Android's app settings (permissions some phones add, such as "Show on Lock screen"). */
         @JavascriptInterface
         public void appSettings() {

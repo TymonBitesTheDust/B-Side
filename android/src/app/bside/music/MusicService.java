@@ -68,6 +68,10 @@ public class MusicService extends Service {
     private final BroadcastReceiver screenOff = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent i) {
+            if (Intent.ACTION_USER_PRESENT.equals(i.getAction())) { // unlocked: Stay may need the player back
+                LockScreenActivity.afterUnlock(MusicService.this);
+                return;
+            }
             if (!Intent.ACTION_SCREEN_OFF.equals(i.getAction())) return;
             JSONObject s = state;
             if (s == null || !s.optBoolean("hasTrack")) return;
@@ -322,6 +326,7 @@ public class MusicService extends Service {
         });
         // Screen-off can only be heard by a receiver registered while running; checked against the setting each time.
         IntentFilter off = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        off.addAction(Intent.ACTION_USER_PRESENT);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(screenOff, off, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(screenOff, off);
     }
