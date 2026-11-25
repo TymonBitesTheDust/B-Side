@@ -30,7 +30,7 @@ if [ -n "$TEST_PACKAGE" ]; then
 fi
 "$TOOLS/aapt2" link -o "$OUT/base.apk" -I "$TOOLS/android.jar" \
   --manifest "$HERE/AndroidManifest.xml" -A "$OUT/assets" --java "$OUT/gen" \
-  --min-sdk-version 24 --target-sdk-version 34 --version-code 19 --version-name 1.10.3 \
+  --min-sdk-version 24 --target-sdk-version 34 --version-code 20 --version-name 1.11.0 \
   "$OUT/res.zip" "$OUT/res-gen.zip" ${TEST_ARGS[@]+"${TEST_ARGS[@]}"}
 
 echo "▸ compiling java"

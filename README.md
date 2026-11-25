@@ -49,6 +49,10 @@ On a computer you can also drag songs and folders straight onto the window. In C
 - **Albums your way**: choose where the album artist shows, and whether albums with the same name but different artists stay apart (*Settings → Albums*).
 - **Fast scroll** for long lists (*Settings → Fast scroll*): a **Scrollbar** you drag on the right edge, or **A–Z** letters you tap or slide along to jump to the first song, album or artist starting with that letter.
 - **Smart playlists**: Favourites, Recently added, Most played and Recently played, next to your own playlists.
+- **Edit a song's details**: title, artist, album, album artist, genre, track, disc, year, lyrics and cover, for one song or a whole album at once (*⋮ → Edit details*). For MP3 and FLAC files B-Side can save the changes into the file itself, so every other app sees them too: on Android, and in Chrome or Edge for folders you added there. Otherwise the changes are kept in B-Side.
+- **Listening stats**: your top songs, artists and albums for the week, month, year or all time, how long you listened and what time of day (*Settings → Library → Listening stats*). It all stays on your device.
+- **A yearly recap**, told in your style: your song, artist and album of the year, your top five and your busiest month, with a button to play your top songs.
+- **Lost memories**: songs you played around this date in earlier years.
 - **Everything comes from your files**: titles, artists, albums, cover art and lyrics, including `cover.jpg` / `folder.jpg` pictures and `.lrc` lyric files in the same folder.
 - **Folders stay up to date.** B-Side remembers the folders you add and checks them again for new and deleted songs: when it opens, every hour, once a day or only when you tap **Rescan** (*Settings → Folders*). New songs are added; songs whose files were deleted leave your library, the queue and your playlists. A folder that can't be read (say, a memory card that's out) never loses songs. Songs you remove from B-Side yourself aren't added back.
 
@@ -56,6 +60,11 @@ On a computer you can also drag songs and folders straight onto the window. In C
 - A mini player and a full **Now Playing** screen tinted by the album art. Swipe the cover to skip, drag down to close.
 - **Playing queue**: drag to reorder, and *Play next* or *Add to queue* from any song, album, artist, folder or playlist.
 - Shuffle, repeat all and repeat one.
+- **Gapless playback**: the next song starts the moment one ends, so live albums and DJ mixes flow on without a gap.
+- **Crossfade** of up to 12 seconds, where the end of one song fades into the next. Songs from the same album played in order stay gapless.
+- **Skip silence**: skips quiet starts and ends of songs, and long quiet stretches inside them.
+- **Fade on play and pause** instead of an abrupt stop.
+- **Waveform seekbar** (*Settings → Look → Seekbar*): Now Playing shows the shape of the song, drawn the way each style would draw it.
 - **Volume levelling** plays every song at about the same loudness, so you don't reach for the volume between a quiet song and a loud one.
 - **7-band equaliser** with 10 presets (Pop, Rock, Jazz, Bass boost, Vocal and more).
 - **Bass, treble and stereo expand**: turn the low and high end up or down by up to 12 dB, and widen the sound for headphones. Songs recorded in mono are left as they are.
@@ -91,7 +100,8 @@ Each style changes the whole look and feel, not just the colours: the type, shap
 
 ### On Android
 - **Keeps playing after you close the app**, with controls in the notification, on the lock screen, and on headphones and Bluetooth devices.
-- **Lock screen player** (optional, *Settings → Lock screen player*): when the screen goes off while music plays, B-Side's own player fills the lock screen. Swipe up to unlock. Give it the same style as the app or any of the six, light or dark, and choose what it shows: clock, date, cover, artist, album, progress bar, buttons (and how close previous and next sit to play), a favourite button, the lyrics line by line, the unlock hint, or a blurred cover behind it all. A live preview shows the result as you go. It only shows playback controls, never your library. Android asks you to allow *Display over other apps* for it.
+- **Home-screen widget**: what's playing, with its cover and previous, play and next, drawn in your B-Side style, or any of the six, light or dark (*Settings → Lock screen and widget*). It keeps working after B-Side is closed. Touch and hold your home screen, tap *Widgets* and find B-Side to add it.
+- **Lock screen player** (optional, *Settings → Lock screen and widget*): when the screen goes off while music plays, B-Side's own player fills the lock screen. Swipe up to unlock. Give it the same style as the app or any of the six, light or dark, and choose what it shows: clock, date, cover, artist, album, progress bar, buttons (and how close previous and next sit to play), a favourite button, the lyrics line by line, the unlock hint, or a blurred cover behind it all. A live preview shows the result as you go. It only shows playback controls, never your library. Android asks you to allow *Display over other apps* for it.
 - **Songs you added one by one** are checked too, and leave B-Side when their file is deleted.
 - **Play from your car or headphones even when B-Side is closed.** Press Play and B-Side picks up your last song where you left off.
 - **Pauses when headphones are unplugged.**
@@ -159,7 +169,11 @@ When it says **"Connected as [your name]"**, tap **Import all**, or one playlist
 | Even out loud and quiet songs | Now Playing → Sound button → *Volume levelling* |
 | Turn the bass or treble up, or widen the stereo | Now Playing → Sound button → *Bass, treble and stereo* |
 | Pick up new songs and drop deleted ones | **Folders** tab → **Rescan**, or *Settings → Folders* to choose how often |
-| Show the player on the lock screen (Android) | *Settings → Lock screen player*, then allow *Display over other apps*. Choose its style and what it shows on the same page |
+| Show the player on the lock screen (Android) | *Settings → Lock screen and widget → Lock screen player*, then allow *Display over other apps*. Choose its style and what it shows on the same page |
+| Add the widget (Android) | Touch and hold your home screen → *Widgets* → B-Side. Choose its style in *Settings → Lock screen and widget* |
+| Turn on gapless or crossfade | *Settings → Playback → Gapless and crossfade* |
+| Fix a song's title, artist or cover | Its **⋮** → *Edit details* (or *Edit album details* on an album) |
+| See what you listen to most | *Settings → Library → Listening stats*, and *Your recap* at the bottom |
 | Fix how an artist is split | *Settings → Artists* |
 | Stop an album splitting in two | *Settings → Albums* → switch off *Separate albums by album artist* |
 | Skip from Now Playing | Swipe the album cover left or right |
@@ -176,6 +190,8 @@ When it says **"Connected as [your name]"**, tap **Import all**, or one playlist
 - **B-Side stops in the background** (common on Samsung). In B-Side, go to *Settings → Background playback*. On Samsung phones also open *Settings → Battery → Background usage limits* and keep B-Side out of *Sleeping apps* and *Deep sleeping apps*.
 - **A newer version is ready.** *Settings → Restart to use …* switches straight away, or it starts the next time you open B-Side.
 - **A song won't play.** B-Side plays MP3, M4A/AAC, FLAC, Ogg, Opus and WAV. Android plays all of them; a few Linux browsers can't play AAC.
+- **The tag editor can't change the file** (*Save into the song file too* is greyed out). On Android, songs and folders added before 1.11.0 were only given read access: add them again (B-Side keeps their history) and Android asks to let B-Side change them. In a browser it works for folders added in Chrome or Edge. Only MP3 and FLAC files can be changed; the edits are always kept in B-Side.
+- **Settings is in sections** since 1.11.0: Look, Sound effects, Playback, Lock screen and widget, Library, Layout and Updates. Tap one to open it.
 - **Your library is kept on the device**, so it's still there next time. Removing a song from B-Side never deletes the original file.
 - **A folder says it can't be opened any more.** Android or the browser no longer lets B-Side read it, often after it was moved or renamed. Its songs stay; open *Settings → Folders*, tap it and choose it again.
 - **The lock screen player doesn't appear.** Check that *Display over other apps* is allowed for B-Side. On Xiaomi, Redmi and POCO phones also allow *Show on Lock screen* in B-Side's app permissions. It shows while music plays and for 10 minutes after you pause, and steps aside if your phone has no screen lock. If face or fingerprint unlock opens the phone before you see it, turn on *Stay until I swipe it away*. If your phone blocks it, *Settings → Lock screen* says so and which setting to check.
