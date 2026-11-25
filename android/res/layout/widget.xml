@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The picture the page drew, with the buttons over it where it drew them: 8 dp in from the right, then next
-     (44 dp), play (52 dp) and previous (44 dp). Keep these in step with WIDGET_BTNS in app.html. -->
+     (44 dp), play (52 dp) and previous (44 dp). Keep these in step with WIDGET_BTNS in app.html.
+     Only the view types Android allows in widgets can be used here (FrameLayout, LinearLayout, ImageView, TextView…):
+     anything else, even a plain <View>, stops the whole widget from loading. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -15,7 +17,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:paddingEnd="8dp">
         <FrameLayout
             android:id="@+id/w_open"
             android:layout_width="0dp"
@@ -53,8 +56,5 @@
             android:scaleType="center"
             android:src="@drawable/ic_n_next"
             android:contentDescription="@string/next" />
-        <View
-            android:layout_width="8dp"
-            android:layout_height="1dp" />
     </LinearLayout>
 </FrameLayout>

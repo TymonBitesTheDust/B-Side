@@ -1417,10 +1417,11 @@ const AUTO_PL = {
 const userPl = id => S.playlists.find(p => p.id === id);
 
 /* ───────────────────────── layers (back button) ───────────────────────── */
-const layers = []; let popWaiters = [], ignorePops = 0, HIST = true;
+const layers = []; let popWaiters = [], ignorePops = 0, HIST = true, backPressed = false;
 try { history.replaceState({bside: 0}, ''); } catch (e) { HIST = false; }
 function pushLayer(name, onClose) { layers.push({name, onClose}); if (HIST) { try { history.pushState({bside: layers.length}, ''); } catch (e) { HIST = false; } } }
-function handlePop() { const l = layers.pop(); try { l && l.onClose(); } catch (e) { console.error(e); } const w = popWaiters.shift(); if (w) w(); }
+// viaBack: the person pressed Back (Android's, or the browser's), rather than the app closing it in code
+function handlePop() { const l = layers.pop(), viaBack = backPressed || !popWaiters.length; backPressed = false; try { l && l.onClose(viaBack); } catch (e) { console.error(e); } const w = popWaiters.shift(); if (w) w(); }
 window.addEventListener('popstate', () => { if (ignorePops > 0) { ignorePops--; return; } if (layers.length) handlePop(); });
 function closeTop() {
   return new Promise(res => {
@@ -1434,7 +1435,7 @@ function closeTop() {
 }
 const topLayer = () => layers.length ? layers[layers.length - 1].name : null;
 async function closeOverlays() { while (layers.length && ['sheet', 'dialog', 'np'].includes(topLayer())) await closeTop(); }
-window.bsideBack = () => { if (layers.length) { closeTop(); return true; } return false; };
+window.bsideBack = () => { if (layers.length) { backPressed = true; closeTop(); return true; } return false; };
 
 /* Synthesized UI sounds, one bank per style (no audio files). Every style answers the same events. */
 let sxC=null,sxM=null,sxE=null,sxN=null;
@@ -1538,14 +1539,31 @@ function dialog({title, text = '', input = null, ok = 'OK', cancel = 'Cancel', d
   });
 }
 const sheetEl = $('#sheet'), scrim = $('#scrim');
-async function openSheet({head = '', body = '', onClick = null, onMount = null}) {
+/* A part of Settings (Home-screen widget, Equaliser, About…) opens in place of Settings; Back brings Settings back,
+   as it was, instead of closing everything. Tapping outside or swiping the sheet down still closes it. */
+let pendingBack = null, sheetBack = null;
+async function openPart(fn) {
+  const sb = $('.sheet-body', sheetEl), y = sb ? sb.scrollTop : 0;
+  pendingBack = () => settingsSheet({scroll: y});
+  try { await fn(); } finally { pendingBack = null; }
+}
+async function openSheet({head = '', body = '', onClick = null, onMount = null, back}) {
+  // a sheet opened from a part of Settings (a period in Listening stats, say) keeps the way back
+  if (back === undefined) back = pendingBack || (topLayer() === 'sheet' ? sheetBack : null);
+  pendingBack = null;
   if (topLayer() === 'sheet') await closeTop();
   sheetEl.innerHTML = `<div class="grip"></div>${head}<div class="sheet-body">${body}</div>`;
   sheetEl.onclick = onClick;
   sheetEl.scrollTop = 0;
   requestAnimationFrame(() => { sheetEl.classList.add('open'); scrim.classList.add('show'); });
   sfx('open');
-  pushLayer('sheet', () => { sheetEl.classList.remove('open'); scrim.classList.remove('show'); sfx('close'); sheetEl.onclick = null; if (sheetEl._cleanup) { sheetEl._cleanup(); sheetEl._cleanup = null; } });
+  sheetBack = back;
+  pushLayer('sheet', viaBack => {
+    sheetEl.onclick = null; if (sheetEl._cleanup) { sheetEl._cleanup(); sheetEl._cleanup = null; }
+    sheetBack = null; sfx('close');
+    if (back && viaBack) { back(); return; } // the sheet stays up and shows Settings again
+    sheetEl.classList.remove('open'); scrim.classList.remove('show');
+  });
   if (onMount) onMount(sheetEl);
   return sheetEl;
 }
@@ -3379,7 +3397,12 @@ function lookBoxHTML() { // light/dark, or, in Persona 5 (always dark), how much
   }
   return `<div class="lbl">Appearance</div><div class="seg" id="themeSeg">${['system', 'light', 'dark'].map(k => `<button data-theme-k="${k}" class="${S.settings.theme === k ? 'on' : ''}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>`;
 }
-async function settingsSheet() {
+const SETTINGS_PARTS = { // Settings items that open a page of their own (Back returns to Settings)
+  lockscreen: () => lockSheet(), spotify: () => spotifySheet(), tabs: () => tabsSheet(), npacts: () => npActsSheet(),
+  artists: () => artistSplitSheet(), albums: () => albumsSheet(), level: () => eqSheet('lv'), eq: () => eqSheet(), tone: () => eqSheet('tone'),
+  xfade: () => xfadeSheet(), stats: () => statsSheet(), widget: () => widgetSheet(), folders: () => foldersSheet(), about: () => aboutSheet(),
+};
+async function settingsSheet({scroll = 0} = {}) {
   let usage = '';
   try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); if (e.usage >= 1048576) usage = `Using ${(e.usage / 1048576).toFixed(0)} MB on this device`; } } catch (e) {}
   const persistNote = !S.dbOk ? 'Not available in this browser — the library lasts for this session' : S.settings.persist ? (usage || 'Your library is still here next time') : 'Library is cleared when you close the app';
@@ -3431,7 +3454,8 @@ async function settingsSheet() {
     const ab = $('#accentBox', sheetEl), ib = $('#iconBox', sheetEl), lb = $('#lookBox', sheetEl); if (ab) ab.innerHTML = accentBoxHTML(); if (ib) ib.innerHTML = iconBoxHTML(); if (lb) lb.innerHTML = lookBoxHTML();
     const ck = $('.sk-card[data-skin-k="bside"] .sk-ic', sheetEl); if (ck) ck.src = iconURL('bside', accentHex(), 'full', 52);
   };
-  openSheet({head: sheetHead('Settings'), body, onMount: el => {
+  openSheet({head: sheetHead('Settings'), body, back: null, onMount: el => {
+    if (scroll) { const sb = $('.sheet-body', el); if (sb) sb.scrollTop = scroll; }
     $$('details.sset', el).forEach(d => d.addEventListener('toggle', () => {
       const open = $$('details.sset', el).filter(x => x.open).map(x => x.dataset.sec);
       S.settings.secOpen = open; persistSoon(); if (d.open) sfx('open'); else sfx('close');
@@ -3468,18 +3492,13 @@ async function settingsSheet() {
     const b = e.target.closest('[data-mi]'); if (!b) return; const k = b.dataset.mi;
     if (k === 'autoupd') { S.settings.autoUpdate = S.settings.autoUpdate === false; persistSoon(); if (S.settings.autoUpdate) checkUpdate(true); const u = $('#updBox', sheetEl); if (u) u.innerHTML = updBoxHTML(); return; }
     if (k === 'applyupd') { persist(); try { NATIVE.applyUpdate(); } catch (e) {} return; }
-    if (k === 'lockscreen') { lockSheet(); return; }
+    const part = SETTINGS_PARTS[k];
+    if (part) { openPart(part); return; }
     if (k === 'lockallow') { askLockPermission(); return; }
     if (k === 'persist') { if (!S.dbOk) { toast('Storage is not available here'); return; } await setPersist(!S.settings.persist); b.querySelector('.switch').classList.toggle('on', S.settings.persist); b.querySelector('.sub').textContent = S.settings.persist ? 'Your library is still here next time' : 'Library is cleared when you close the app'; return; }
     await closeTop();
     if (k === 'files') pickFiles(); else if (k === 'folder') pickFolder(); else if (k === 'clear') clearLibrary();
-    else if (k === 'spotify') spotifySheet();
-    else if (k === 'tabs') tabsSheet(); else if (k === 'npacts') npActsSheet(); else if (k === 'artists') artistSplitSheet(); else if (k === 'albums') albumsSheet();
-    else if (k === 'level') eqSheet('lv'); else if (k === 'eq') eqSheet(); else if (k === 'tone') eqSheet('tone');
-    else if (k === 'xfade') xfadeSheet(); else if (k === 'stats') statsSheet(); else if (k === 'widget') widgetSheet();
-    else if (k === 'folders') foldersSheet();
     else if (k === 'background') requestBackground();
-    else if (k === 'about') aboutSheet();
   }});
 }
 
@@ -4042,7 +4061,7 @@ $('#npActs').addEventListener('click', e => { if (Date.now() < suppressTabClick)
 $('#abBack').addEventListener('click', () => closeTop());
 $('#abSearchBtn').addEventListener('click', openSearch);
 $('#abAdd').addEventListener('click', addSheet);
-$('#abMore').addEventListener('click', settingsSheet);
+$('#abMore').addEventListener('click', () => settingsSheet());
 $('#miniOpen').addEventListener('click', openNP);
 $('#miniOpen').addEventListener('keydown', e => { if (e.key === 'Enter') openNP(); });
 const tapToggle = () => { sfx('pop'); toggle(); }, tapNext = () => { sfx('select'); next(); }, tapPrev = () => { sfx('select'); prev(); };
@@ -5000,7 +5019,7 @@ async function widgetDraw() {
   const info = widgetInfo(); if (!info.count) return;
   const t = S.current ? T(S.current) : null, look = widgetLook();
   const W = clamp(Math.round(info.w || 320), 150, 720), H = clamp(Math.round(info.h || 80), 40, 320);
-  const dpr = Math.min(clamp(+info.density || 2, 1, 3), Math.sqrt(260000 / (W * H))); // about 1 MB a picture at most
+  const dpr = Math.min(clamp(+info.density || 2, 1, 3), Math.sqrt(180000 / (W * H))); // about 700 KB a picture at most
   const key = JSON.stringify([t && t.id, t && t.title, t && artistOf(t), t && t.artKey, look, W, H, dpr]);
   if (key === widgetKey) return; widgetKey = key;
   let pics; try { pics = await widgetPictures(look, await widgetSong(t), W, H, dpr); } catch (e) { console.warn('widget', e); widgetKey = ''; return; }
