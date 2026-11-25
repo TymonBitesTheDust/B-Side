@@ -46,6 +46,12 @@ jobs:
             exit 1
           fi
 
+      - name: Keep the Java compiler between runs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bside-tools
+          key: bside-tools-ecj-${{ env.ECJ_VERSION }}
+
       - name: Gather the Android tools
         run: |
           BT="$ANDROID_HOME/build-tools/34.0.0"
@@ -55,8 +61,21 @@ jobs:
           fi
           mkdir -p "$RUNNER_TEMP/tools"
           cp "$BT/aapt2" "$BT/lib/d8.jar" "$BT/lib/apksigner.jar" "$PLATFORM/android.jar" "$RUNNER_TEMP/tools/"
-          curl -fsSL -o "$RUNNER_TEMP/tools/ecj.jar" \
-            "https://repo1.maven.org/maven2/org/eclipse/jdt/ecj/$ECJ_VERSION/ecj-$ECJ_VERSION.jar"
+          # The Java compiler comes from Maven Central, which sometimes answers "too many requests" (429).
+          # It's kept between runs, and fetched with retries, from Google's copy of Maven Central if need be.
+          ECJ="$HOME/.cache/bside-tools/ecj-$ECJ_VERSION.jar"
+          if [ ! -s "$ECJ" ]; then
+            mkdir -p "$(dirname "$ECJ")"
+            P="org/eclipse/jdt/ecj/$ECJ_VERSION/ecj-$ECJ_VERSION.jar"
+            for URL in "https://repo1.maven.org/maven2/$P" "https://maven-central.storage-download.googleapis.com/maven2/$P"; do
+              if curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "$ECJ.part" "$URL" && unzip -tq "$ECJ.part" >/dev/null; then
+                mv "$ECJ.part" "$ECJ"; break
+              fi
+              rm -f "$ECJ.part"; echo "::warning::Couldn't get the compiler from $URL, trying the next copy"
+            done
+            [ -s "$ECJ" ] || { echo "::error::Couldn't download the Java compiler (ecj $ECJ_VERSION). Re-run the job in a few minutes."; exit 1; }
+          fi
+          cp "$ECJ" "$RUNNER_TEMP/tools/ecj.jar"
           echo "TOOLS=$RUNNER_TEMP/tools" >> "$GITHUB_ENV"
 
       - name: Build the app
